@@ -7,83 +7,151 @@
 <meta name="robots" content="noindex, nofollow">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#F3F5F2;--card:#fff;--ink:#14201B;--mute:#586560;--line:#E0E5E0;--brand:#0F5B4A;--tint:#E6F0EB;--sale:#C93338;--warn:#B9770E;--ok:#0F5B4A;--focus:#0B57D0;
-box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+:root{--bg:#F3F5F2;--card:#fff;--ink:#14201B;--mute:#586560;--line:#E0E5E0;--brand:#0F5B4A;--tint:#E6F0EB;--sale:#C93338;--warn:#B9770E;--ok:#167a3e;--focus:#0B57D0;--gold:#FFC53D}
 *{box-sizing:border-box;margin:0}
 [hidden]{display:none!important}
-body{background:var(--bg);color:var(--ink);font:400 14px/1.5 "DM Sans",system-ui,sans-serif}
-h1,h2{font-family:"Bricolage Grotesque",sans-serif}
-button,input,select{font:inherit}
+body{background:var(--bg);color:var(--ink);font:400 14px/1.5 "DM Sans",system-ui,sans-serif;padding-bottom:env(safe-area-inset-bottom,0px)}
+h1,h2,h3{font-family:"Bricolage Grotesque",sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:3px solid var(--focus);outline-offset:2px}
-.wrap{max-width:1100px;margin:0 auto;padding:0 16px}
+a{color:var(--brand)}
 
 /* login */
 .login{min-height:100vh;display:grid;place-items:center;padding:16px}
 .login form{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:28px;width:100%;max-width:380px;display:flex;flex-direction:column;gap:14px}
-.login h1{font-size:24px;margin-bottom:2px}
-.login p{color:var(--mute);font-size:13px;margin-bottom:8px}
+.login h1{font-size:24px}
+.login p{color:var(--mute);font-size:13px}
 .fld{display:flex;flex-direction:column;gap:5px}
 .fld label{font-size:13px;color:var(--mute);font-weight:500}
-.fld input,.fld select{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:9px;padding:11px 12px;font-size:15px;width:100%}
+.fld input,.fld select,.fld textarea{border:1px solid var(--line);background:var(--bg);border-radius:9px;padding:10px 12px;font-size:15px;width:100%}
 .fld input:focus,.fld select:focus{border-color:var(--brand)}
-.btn{background:var(--brand);color:#fff;font-weight:700;padding:12px;border-radius:10px;border:0;width:100%}
+.fld .hint{font-size:12px;color:var(--mute)}
+.btn{background:var(--brand);color:#fff;font-weight:700;padding:11px 16px;border-radius:10px;border:0}
 .btn:hover{filter:brightness(1.08)}
 .btn:disabled{opacity:.6;cursor:not-allowed}
+.btn.block{width:100%}
+.btn.sec{background:var(--card);color:var(--ink);border:1px solid var(--line);font-weight:500}
+.btn.sec:hover{background:var(--tint);filter:none}
+.btn.danger{background:var(--sale)}
+.btn.sm{padding:6px 11px;font-size:13px;border-radius:8px}
 .err{color:var(--sale);font-size:13px;min-height:18px}
 
-/* app shell */
-header{background:var(--brand);color:#fff;position:sticky;top:0;z-index:10}
-.hd{display:flex;align-items:center;gap:12px;padding:14px 16px;flex-wrap:wrap}
+/* shell */
+header{background:var(--brand);color:#fff;position:sticky;top:0;z-index:20}
+.hd{display:flex;align-items:center;gap:12px;padding:12px 16px;max-width:1240px;margin:0 auto}
 .logo{font:800 20px "Bricolage Grotesque",sans-serif}
-.logo b{color:#FFC53D}
-.hd .sp{flex:1}
-.ghost{background:rgba(255,255,255,.14);border:0;color:#fff;border-radius:9px;padding:9px 14px;font-weight:500}
+.logo b{color:var(--gold)}
+.sp{flex:1}
+.ghost{background:rgba(255,255,255,.14);border:0;color:#fff;border-radius:9px;padding:8px 13px;font-weight:500}
 .ghost:hover{background:rgba(255,255,255,.26)}
+nav{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:55px;z-index:15}
+.tabs{display:flex;gap:2px;overflow-x:auto;max-width:1240px;margin:0 auto;padding:0 8px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{background:none;border:0;padding:13px 14px;color:var(--mute);font-weight:500;border-bottom:3px solid transparent;white-space:nowrap;display:flex;align-items:center;gap:6px}
+.tab:hover{color:var(--ink)}
+.tab.on{color:var(--brand);border-bottom-color:var(--brand);font-weight:700}
+.dot{background:var(--sale);color:#fff;border-radius:99px;font-size:11px;font-weight:700;padding:1px 7px;min-width:20px;text-align:center}
+main{max-width:1240px;margin:0 auto;padding:20px 16px 80px}
+.pagehead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.pagehead h2{font-size:22px}
 
-main{padding:20px 0 60px}
-.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
-.bar select,.bar input{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:9px;padding:9px 12px}
-.bar .sp{flex:1}
-.count{color:var(--mute);font-size:13px}
+/* cards & kpis */
+.grid{display:grid;gap:14px}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin-bottom:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+.card h3{font-size:15px;margin-bottom:10px}
+.kpi .lbl{color:var(--mute);font-size:12px;text-transform:uppercase;letter-spacing:.04em;font-weight:700}
+.kpi .val{font:800 26px "Bricolage Grotesque",sans-serif;margin:4px 0 2px}
+.kpi .sub{color:var(--mute);font-size:13px}
+.kpi.alert{border-color:#F0C36D;background:#FFF9E8}
+.kpi.alert .val{color:var(--warn)}
+.two{grid-template-columns:2fr 1fr}
+.three{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+@media(max-width:860px){.two{grid-template-columns:1fr}}
+.list .row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);align-items:center}
+.list .row:last-child{border:0}
+.list .row small{color:var(--mute);display:block;font-size:12px}
+.muted{color:var(--mute)}
+.chart{width:100%;height:auto;display:block}
+.chart text{font:11px "DM Sans",sans-serif;fill:var(--mute)}
+.chart .bar{fill:var(--brand)}
+.chart .bar:hover{fill:#0b4538}
+.chart .today{fill:var(--gold)}
+.bars .brow{display:grid;grid-template-columns:90px 1fr 34px;gap:8px;align-items:center;margin:6px 0;font-size:13px}
+.bars .track{background:var(--bg);border-radius:99px;height:10px;overflow:hidden}
+.bars .fill{height:100%;background:var(--brand);border-radius:99px}
 
+/* tables */
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.bar input,.bar select{border:1px solid var(--line);background:var(--card);border-radius:9px;padding:9px 12px;min-width:0}
+.bar input[type=search]{flex:1;min-width:180px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:6px 13px;font-size:13px}
+.chip.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.chip small{opacity:.75;margin-left:4px}
 .tablewrap{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:auto}
-table{width:100%;border-collapse:collapse;min-width:760px}
-th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
-th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--mute);background:var(--bg);position:sticky;top:0}
-tbody tr:hover{background:var(--tint)}
-tbody tr{cursor:pointer}
+table{width:100%;border-collapse:collapse;min-width:720px}
+th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--mute);background:var(--bg)}
+tbody tr:last-child td{border-bottom:0}
+tr.click{cursor:pointer}
+tr.click:hover{background:var(--tint)}
 td.code{font-weight:700;color:var(--brand)}
-.badge{display:inline-flex;padding:4px 10px;border-radius:99px;font-size:12px;font-weight:700}
+td.r,th.r{text-align:right}
+.badge{display:inline-flex;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:700}
 .badge.pending{background:#FFF3D6;color:#8a5a00}
 .badge.confirmed{background:var(--tint);color:var(--brand)}
 .badge.dispatched{background:#E6EEFB;color:#2448B0}
-.badge.delivered{background:#E6F7EC;color:#167a3e}
-.badge.cancelled{background:#FBE4E4;color:var(--sale)}
-.empty{text-align:center;padding:48px 16px;color:var(--mute)}
-.loading{text-align:center;padding:48px 16px;color:var(--mute)}
-.pager{display:flex;justify-content:center;gap:10px;margin-top:16px}
-.pager button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:9px;padding:8px 16px}
-.pager button:disabled{opacity:.5;cursor:not-allowed}
+.badge.delivered{background:#E6F7EC;color:var(--ok)}
+.badge.cancelled,.badge.out{background:#FBE4E4;color:var(--sale)}
+.badge.low{background:#FFF3D6;color:#8a5a00}
+.badge.hidden{background:#EEE;color:#555}
+.badge.ok{background:#E6F7EC;color:var(--ok)}
+.empty,.loading{text-align:center;padding:44px 16px;color:var(--mute)}
+.pager{display:flex;justify-content:center;align-items:center;gap:12px;margin-top:14px;color:var(--mute)}
+.pname{display:flex;align-items:center;gap:10px}
+.pname .em{font-size:22px;width:34px;text-align:center}
+.stock{display:inline-flex;align-items:center;gap:4px}
+.stock button{border:1px solid var(--line);background:var(--card);border-radius:7px;width:26px;height:26px;line-height:1;font-weight:700}
+.stock button:hover{background:var(--tint)}
+.stock input{width:56px;text-align:center;border:1px solid var(--line);border-radius:7px;padding:4px;background:var(--card)}
+.switch{position:relative;width:38px;height:22px;display:inline-block}
+.switch input{opacity:0;width:0;height:0}
+.switch span{position:absolute;inset:0;background:#C9D1CC;border-radius:99px;transition:.15s}
+.switch span:before{content:"";position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.15s}
+.switch input:checked+span{background:var(--brand)}
+.switch input:checked+span:before{transform:translateX(16px)}
+.switch input:focus-visible+span{outline:3px solid var(--focus);outline-offset:2px}
 
-/* order detail drawer */
+/* drawer + modal */
 .scrim{position:fixed;inset:0;background:rgba(6,20,15,.5);opacity:0;pointer-events:none;transition:opacity .2s;z-index:40}
 .scrim.open{opacity:1;pointer-events:auto}
-.drawer{position:fixed;top:0;right:0;bottom:0;width:min(420px,92vw);background:var(--card);z-index:50;transform:translateX(102%);transition:transform .25s ease;display:flex;flex-direction:column;box-shadow:-6px 0 30px rgba(0,0,0,.2)}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(440px,94vw);background:var(--card);z-index:50;transform:translateX(102%);transition:transform .25s ease;display:flex;flex-direction:column;box-shadow:-6px 0 30px rgba(0,0,0,.2)}
 .drawer.open{transform:none}
 .dh{display:flex;align-items:center;justify-content:space-between;padding:16px;background:var(--brand);color:#fff}
 .dh .x{background:rgba(255,255,255,.16);border:0;color:#fff;width:34px;height:34px;border-radius:9px;font-size:16px}
 .dbody{flex:1;overflow-y:auto;padding:16px}
-.drow{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
-.drow b{font-weight:600}
-.ditem{display:flex;justify-content:space-between;padding:6px 0;font-size:14px}
-.dsec{font-size:12px;text-transform:uppercase;color:var(--mute);font-weight:700;margin:16px 0 6px}
-.statusrow{display:flex;gap:8px;align-items:center;margin-top:6px}
-.statusrow select{flex:1}
-.statusrow button{background:var(--brand);color:#fff;border:0;border-radius:9px;padding:9px 14px;font-weight:600}
-.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,16px);background:var(--ink);color:#fff;padding:11px 18px;border-radius:99px;opacity:0;transition:.2s;pointer-events:none;z-index:100;font-size:14px}
+.dsec{font-size:12px;text-transform:uppercase;color:var(--mute);font-weight:700;margin:18px 0 6px;letter-spacing:.04em}
+.dsec:first-child{margin-top:0}
+.drow{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--line)}
+.drow span:first-child{color:var(--mute)}
+.drow b{font-weight:600;text-align:right}
+.ditem{display:flex;justify-content:space-between;gap:10px;padding:6px 0}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.steps{display:flex;gap:6px;flex-wrap:wrap}
+.step{border:1px solid var(--line);background:var(--card);border-radius:9px;padding:8px 12px;font-weight:500;text-transform:capitalize}
+.step.cur{background:var(--brand);color:#fff;border-color:var(--brand);cursor:default}
+.step.cancel{color:var(--sale);border-color:#F1C3C5}
+.step.cancel.cur{background:var(--sale);color:#fff;border-color:var(--sale)}
+.modal{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:16px;background:rgba(6,20,15,.5)}
+.modal form,.modal .box{background:var(--card);border-radius:16px;padding:22px;width:100%;max-width:480px;max-height:92vh;overflow-y:auto;display:flex;flex-direction:column;gap:13px}
+.modal h3{font-size:19px}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.mact{display:flex;gap:10px;justify-content:flex-end;margin-top:4px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,16px);background:var(--ink);color:#fff;padding:11px 18px;border-radius:99px;opacity:0;transition:.2s;pointer-events:none;z-index:100;font-size:14px;max-width:92vw;text-align:center}
 .toast.show{opacity:1;transform:translate(-50%,0)}
-@media(max-width:700px){table{min-width:620px}}
+@media print{header,nav,.pager,.bar,.chips,.actions,.scrim{display:none!important}}
 </style>
 </head>
 <body>
@@ -91,166 +159,449 @@ td.code{font-weight:700;color:var(--brand)}
 <section class="login" id="loginView">
 <form id="loginForm">
 <h1>Shevs <b style="color:var(--brand)">Admin</b></h1>
-<p>Enter your API URL and admin key to manage orders. These are stored only in this browser.</p>
-<div class="fld"><label for="apiBase">API base URL</label><input id="apiBase" placeholder="https://api.shevs.co.ke" required></div>
-<div class="fld"><label for="adminKey">Admin key</label><input id="adminKey" type="password" required></div>
+<p>Enter your API URL and admin key to manage your shop. They're stored only in this browser.</p>
+<div class="fld"><label for="apiBase">API base URL</label><input id="apiBase" placeholder="https://shevs-api-production.up.railway.app" required></div>
+<div class="fld"><label for="adminKey">Admin key</label><input id="adminKey" type="password" autocomplete="current-password" required></div>
 <div class="err" id="loginErr" aria-live="polite"></div>
-<button class="btn" type="submit">Connect</button>
+<button class="btn block" type="submit">Connect</button>
 </form>
 </section>
 
 <div id="appView" hidden>
-<header><div class="wrap hd">
+<header><div class="hd">
 <span class="logo">Shevs <b>Admin</b></span>
 <span class="sp"></span>
-<button class="ghost" type="button" onclick="refresh()">Refresh</button>
-<button class="ghost" type="button" onclick="logout()">Log out</button>
+<button class="ghost" type="button" data-act="refresh">Refresh</button>
+<button class="ghost" type="button" data-act="logout">Log out</button>
 </div></header>
-
-<main class="wrap">
-<div class="bar">
-<select id="statusFilter" aria-label="Filter by status">
-<option value="">All statuses</option>
-<option value="pending">Pending</option>
-<option value="confirmed">Confirmed</option>
-<option value="dispatched">Dispatched</option>
-<option value="delivered">Delivered</option>
-<option value="cancelled">Cancelled</option>
-</select>
-<span class="sp"></span>
-<span class="count" id="count"></span>
+<nav><div class="tabs" id="tabs" role="tablist">
+<button class="tab" data-view="dashboard">Dashboard</button>
+<button class="tab" data-view="orders">Orders <span class="dot" id="pendDot" hidden></span></button>
+<button class="tab" data-view="products">Products</button>
+<button class="tab" data-view="categories">Categories</button>
+<button class="tab" data-view="coupons">Coupons</button>
+<button class="tab" data-view="customers">Customers</button>
+</div></nav>
+<main id="content"></main>
 </div>
 
-<div class="tablewrap">
-<table>
-<thead><tr><th>Order</th><th>Customer</th><th>Phone</th><th>County</th><th>Total</th><th>Status</th><th>Placed</th></tr></thead>
-<tbody id="rows"></tbody>
-</table>
-</div>
-<div class="pager">
-<button type="button" id="prevBtn" onclick="changePage(-1)">Previous</button>
-<button type="button" id="nextBtn" onclick="changePage(1)">Next</button>
-</div>
-</main>
-</div>
-
-<div class="scrim" id="scrim" onclick="closeDrawer()"></div>
+<div class="scrim" id="scrim"></div>
 <aside class="drawer" id="drawer" aria-hidden="true">
-<div class="dh"><h2 id="drawerTitle" style="font-size:17px">Order</h2><button class="x" onclick="closeDrawer()" aria-label="Close">✕</button></div>
+<div class="dh"><h2 id="drawerTitle" style="font-size:17px">Order</h2><button class="x" data-act="closeDrawer" aria-label="Close">✕</button></div>
 <div class="dbody" id="drawerBody"></div>
 </aside>
+<div id="modalRoot"></div>
 <div class="toast" id="toast" role="status"></div>
 
 <script>
+"use strict";
 const $=id=>document.getElementById(id);
-const kes=n=>"KES "+Number(n).toLocaleString("en-KE");
-const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const kes=n=>"KES "+Math.round(Number(n)||0).toLocaleString("en-KE");
+const num=n=>(Number(n)||0).toLocaleString("en-KE");
+const TZ="Africa/Nairobi";
+const fdate=d=>new Date(d).toLocaleString("en-KE",{timeZone:TZ,day:"numeric",month:"short",hour:"numeric",minute:"2-digit"});
+const fdateLong=d=>new Date(d).toLocaleString("en-KE",{timeZone:TZ,day:"numeric",month:"short",year:"numeric",hour:"numeric",minute:"2-digit"});
+const fday=d=>new Date(d).toLocaleDateString("en-KE",{timeZone:TZ,day:"numeric",month:"short",year:"numeric"});
+const waNumber=p=>{let d=String(p||"").replace(/\D/g,"");if(d.startsWith("0"))d="254"+d.slice(1);return d};
+const STATUSES=["pending","confirmed","dispatched","delivered","cancelled"];
+const DEFAULT_API="https://shevs-api-production.up.railway.app";
+const LOW=5;
 
-let API="",KEY="",page=1,pageSize=25,lastCount=0;
+let API="",KEY="",view="dashboard",cats=[],knownPending=null,pollT=null;
+const st={
+ orders:{page:1,size:25,status:"",q:"",from:"",to:"",total:0,rows:[]},
+ products:{page:1,size:25,q:"",category:"",state:"",total:0,rows:[]},
+ customers:{page:1,size:25,q:"",total:0,rows:[]}
+};
 
-function loadCreds(){API=localStorage.getItem("shevs.admin.api")||"";KEY=localStorage.getItem("shevs.admin.key")||""}
-function saveCreds(api,key){localStorage.setItem("shevs.admin.api",api);localStorage.setItem("shevs.admin.key",key);API=api;KEY=key}
-function clearCreds(){localStorage.removeItem("shevs.admin.api");localStorage.removeItem("shevs.admin.key");API="";KEY=""}
-
+/* ---------- api ---------- */
 async function api(path,opts={}){
-const r=await fetch(API.replace(/\/$/,"")+path,{...opts,headers:{"Content-Type":"application/json","x-admin-key":KEY,...(opts.headers||{})}});
-const data=await r.json().catch(()=>({}));
-if(!r.ok)throw new Error((data&&data.error&&data.error.message)||`Request failed (${r.status})`);
-return data}
+ let r;
+ try{r=await fetch(API.replace(/\/$/,"")+"/api/admin"+path,{...opts,headers:{"Content-Type":"application/json","x-admin-key":KEY,...(opts.headers||{})}})}
+ catch(e){throw new Error("Can't reach the server. Check your connection.")}
+ const data=await r.json().catch(()=>({}));
+ if(r.status===401){const e=new Error("Invalid admin key.");e.auth=true;throw e}
+ if(!r.ok){
+  const er=(data&&data.error)||{};
+  const det=Array.isArray(er.details)?er.details.map(x=>x.message).filter(Boolean).join(" "):"";
+  throw new Error(det||er.message||`Request failed (${r.status})`)
+ }
+ return data}
+const qs=o=>{const p=new URLSearchParams();Object.entries(o).forEach(([k,v])=>{if(v!==""&&v!=null)p.set(k,v)});const s=p.toString();return s?"?"+s:""};
+function handleErr(e){if(e.auth){logout("Your session expired. Enter the admin key again.");return}toast(e.message)}
 
-function toast(m){const t=$("toast");t.textContent=m;t.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove("show"),2600)}
+function toast(m){const t=$("toast");t.textContent=m;t.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove("show"),3200)}
+const debounce=(fn,ms=350)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms)}};
+
+/* ---------- auth ---------- */
+function loadCreds(){API=localStorage.getItem("shevs.admin.api")||"";KEY=localStorage.getItem("shevs.admin.key")||""}
+function logout(msg){
+ localStorage.removeItem("shevs.admin.api");localStorage.removeItem("shevs.admin.key");
+ clearInterval(pollT);API="";KEY="";
+ $("appView").hidden=true;$("loginView").hidden=false;$("adminKey").value="";
+ $("apiBase").value=DEFAULT_API;$("loginErr").textContent=typeof msg==="string"?msg:"";closeDrawer();closeModal();document.title="Shevs Admin"}
 
 $("loginForm").addEventListener("submit",async e=>{
-e.preventDefault();
-const api_=$("apiBase").value.trim(),key=$("adminKey").value.trim();
-const btn=e.target.querySelector("button"),label=btn.textContent;
-btn.disabled=true;btn.textContent="Connecting\u2026";$("loginErr").textContent="";
-try{
-API=api_;KEY=key;
-await api("/api/admin/orders?pageSize=1");
-saveCreds(api_,key);
-showApp()
-}catch(err){
-$("loginErr").textContent=err.message.includes("401")||/unauthorized|invalid/i.test(err.message)?"Invalid admin key.":`Couldn't connect: ${err.message}`;
-}finally{btn.disabled=false;btn.textContent=label}
-});
+ e.preventDefault();
+ const a=$("apiBase").value.trim(),k=$("adminKey").value.trim();
+ const btn=e.target.querySelector("button"),label=btn.textContent;
+ btn.disabled=true;btn.textContent="Connecting…";$("loginErr").textContent="";
+ try{API=a;KEY=k;await api("/stats");
+  localStorage.setItem("shevs.admin.api",a);localStorage.setItem("shevs.admin.key",k);start()}
+ catch(err){$("loginErr").textContent=err.auth?"Invalid admin key.":"Couldn't connect: "+err.message}
+ finally{btn.disabled=false;btn.textContent=label}});
 
-function logout(){clearCreds();location.reload()}
+function start(){
+ $("loginView").hidden=true;$("appView").hidden=false;
+ const h=location.hash.slice(1);if(["dashboard","orders","products","categories","coupons","customers"].includes(h))view=h;
+ go(view);
+ clearInterval(pollT);pollT=setInterval(poll,45000);poll()}
 
-function showApp(){$("loginView").hidden=true;$("appView").hidden=false;load()}
+/* ---------- navigation ---------- */
+function go(v){
+ view=v;history.replaceState(null,"","#"+v);
+ document.querySelectorAll(".tab").forEach(t=>{const on=t.dataset.view===v;t.classList.toggle("on",on);t.setAttribute("aria-selected",on)});
+ ({dashboard:vDashboard,orders:vOrders,products:vProducts,categories:vCategories,coupons:vCoupons,customers:vCustomers})[v]()}
+$("tabs").addEventListener("click",e=>{const b=e.target.closest(".tab");if(b)go(b.dataset.view)});
 
-async function load(){
-$("rows").innerHTML=`<tr><td colspan="7" class="loading">Loading orders\u2026</td></tr>`;
-const status=$("statusFilter").value;
-const qs=new URLSearchParams({page,pageSize,...(status?{status}:{})});
-try{
-const data=await api("/api/admin/orders?"+qs.toString());
-lastCount=data.orders.length;
-renderRows(data.orders);
-$("count").textContent=`Page ${page} \u2022 ${data.orders.length} order${data.orders.length===1?"":"s"}`;
-$("prevBtn").disabled=page<=1;
-$("nextBtn").disabled=data.orders.length<pageSize;
-}catch(err){
-$("rows").innerHTML=`<tr><td colspan="7" class="empty">Couldn't load orders: ${esc(err.message)}</td></tr>`;
+async function poll(){
+ try{
+  const d=await api("/orders"+qs({status:"pending",pageSize:1}));
+  const n=d.total;
+  const dot=$("pendDot");dot.hidden=!n;dot.textContent=n;
+  document.title=(n?`(${n}) `:"")+"Shevs Admin";
+  if(knownPending!=null&&n>knownPending){toast(`🛒 ${n-knownPending} new order${n-knownPending>1?"s":""} received`);if(view==="orders"&&!$("drawer").classList.contains("open"))loadOrders();if(view==="dashboard")vDashboard()}
+  knownPending=n;
+ }catch(e){if(e.auth)handleErr(e)}}
+
+/* ---------- shared pieces ---------- */
+const badge=s=>`<span class="badge ${esc(s)}">${esc(s)}</span>`;
+function pager(s,fn){
+ const pages=Math.max(1,Math.ceil(s.total/s.size));
+ return `<div class="pager"><button class="btn sec sm" data-pg="${fn}:-1" ${s.page<=1?"disabled":""}>Previous</button><span>Page ${s.page} of ${pages} · ${num(s.total)} total</span><button class="btn sec sm" data-pg="${fn}:1" ${s.page>=pages?"disabled":""}>Next</button></div>`}
+document.addEventListener("click",e=>{
+ const p=e.target.closest("[data-pg]");if(p){const[fn,d]=p.dataset.pg.split(":");({orders:()=>{st.orders.page+=+d;loadOrders()},products:()=>{st.products.page+=+d;loadProducts()},customers:()=>{st.customers.page+=+d;loadCustomers()}})[fn]();return}
+ const a=e.target.closest("[data-act]");if(a){if(a.tagName==="A"&&a.getAttribute("href")==="#orders"||a.getAttribute("href")==="#products")e.preventDefault();act(a.dataset.act,a)}});
+function act(name,el){
+ if(name==="refresh"){go(view);poll()}
+ else if(name==="logout")logout();
+ else if(name==="closeDrawer")closeDrawer();
+ else if(name==="closeModal")closeModal();
+ else if(name==="openOrder")openOrder(el.dataset.code);
+ else if(name==="setStatus")setStatus(el.dataset.code,el.dataset.status);
+ else if(name==="exportOrders")exportOrders(el);
+ else if(name==="newProduct")productForm();
+ else if(name==="editProduct")productForm(+el.dataset.id);
+ else if(name==="delProduct")delProduct(+el.dataset.id,el.dataset.name);
+ else if(name==="newCategory")categoryForm();
+ else if(name==="editCategory")categoryForm(+el.dataset.id);
+ else if(name==="delCategory")delCategory(+el.dataset.id,el.dataset.name);
+ else if(name==="newCoupon")couponForm();
+ else if(name==="editCoupon")couponForm(+el.dataset.id);
+ else if(name==="delCoupon")delCoupon(+el.dataset.id,el.dataset.code);
+ else if(name==="stockStep")stockStep(+el.dataset.id,+el.dataset.d,el);
+ else if(name==="copyOrder")copyOrder();
+ else if(name==="printOrder")window.print();
+ else if(name==="goOrders"){st.orders.status=el.dataset.status||"";st.orders.page=1;go("orders")}
+ else if(name==="goProducts"){st.products.state=el.dataset.state||"";st.products.page=1;go("products")}
 }
-}
+function confirmBox(title,msg,okLabel){
+ return new Promise(res=>{
+  const root=$("modalRoot");
+  root.innerHTML=`<div class="modal" role="dialog" aria-modal="true"><div class="box"><h3>${esc(title)}</h3><p class="muted">${esc(msg)}</p><div class="mact"><button class="btn sec" id="cNo">Cancel</button><button class="btn danger" id="cYes">${esc(okLabel||"Confirm")}</button></div></div></div>`;
+  $("cNo").onclick=()=>{root.innerHTML="";res(false)};$("cYes").onclick=()=>{root.innerHTML="";res(true)};$("cYes").focus()})}
+function closeModal(){$("modalRoot").innerHTML=""}
+function modal(html,onSubmit){
+ const root=$("modalRoot");
+ root.innerHTML=`<div class="modal" role="dialog" aria-modal="true"><form novalidate>${html}</form></div>`;
+ const f=root.querySelector("form");
+ const first=f.querySelector("input:not([type=hidden]),select");if(first)first.focus();
+ f.addEventListener("submit",async e=>{e.preventDefault();const btn=f.querySelector("[type=submit]");btn.disabled=true;
+  try{await onSubmit(f)}catch(err){f.querySelector(".err").textContent=err.message;if(err.auth)handleErr(err)}finally{btn.disabled=false}})}
+addEventListener("keydown",e=>{if(e.key==="Escape"){closeDrawer();closeModal()}});
+$("scrim").addEventListener("click",closeDrawer);
+$("modalRoot").addEventListener("mousedown",e=>{if(e.target.classList.contains("modal")&&e.target.querySelector("form"))closeModal()});
 
-function renderRows(orders){
-if(!orders.length){$("rows").innerHTML=`<tr><td colspan="7" class="empty">No orders here yet.</td></tr>`;return}
-$("rows").innerHTML=orders.map(o=>`<tr onclick="openOrder('${o.order_code}')">
-<td class="code">${esc(o.order_code)}</td>
-<td>${esc(o.customer_name)}</td>
-<td>${esc(o.phone)}</td>
-<td>${esc(o.county)}</td>
-<td>${kes(o.total)}</td>
-<td><span class="badge ${o.status}">${esc(o.status)}</span></td>
-<td>${new Date(o.created_at).toLocaleDateString("en-KE",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</td>
-</tr>`).join("")}
+/* ---------- dashboard ---------- */
+async function vDashboard(){
+ const c=$("content");c.innerHTML=`<div class="loading">Loading dashboard…</div>`;
+ try{
+  const d=await api("/stats");render(d)}catch(e){c.innerHTML=`<div class="empty">Couldn't load: ${esc(e.message)}</div>`;handleErr(e)}
+ function render(d){
+  const pend=d.statusCounts.pending,max=Math.max(1,...d.daily.map(x=>x.revenue));
+  const W=700,H=190,pl=6,bw=(W-pl*2)/d.daily.length;
+  const bars=d.daily.map((x,i)=>{const h=Math.max(x.revenue?3:0,(x.revenue/max)*(H-48)),xx=pl+i*bw+bw*.15,y=H-26-h;
+   const lab=new Date(x.day+"T00:00:00Z").toLocaleDateString("en-KE",{timeZone:"UTC",day:"numeric",month:"short"});
+   return `<g><title>${lab}: ${kes(x.revenue)} · ${x.orders} order${x.orders===1?"":"s"}</title><rect class="bar ${i===d.daily.length-1?"today":""}" x="${xx}" y="${y}" width="${bw*.7}" height="${h}" rx="3"/>${i%2===(d.daily.length-1)%2?`<text x="${xx+bw*.35}" y="${H-8}" text-anchor="middle">${lab}</text>`:""}</g>`}).join("");
+  const sc=d.statusCounts,totalO=Object.values(sc).reduce((a,b)=>a+b,0)||1;
+  c.innerHTML=`
+  <div class="pagehead"><h2>Dashboard</h2><span class="muted">Revenue excludes cancelled orders</span></div>
+  <div class="grid kpis">
+   <div class="card kpi ${pend?"alert":""}"><div class="lbl">Needs action</div><div class="val">${num(pend)}</div><div class="sub">pending order${pend===1?"":"s"} · <a href="#orders" data-act="goOrders" data-status="pending">review</a></div></div>
+   <div class="card kpi"><div class="lbl">Today</div><div class="val">${kes(d.today.revenue)}</div><div class="sub">${num(d.today.orders)} order${d.today.orders===1?"":"s"}</div></div>
+   <div class="card kpi"><div class="lbl">Last 7 days</div><div class="val">${kes(d.week.revenue)}</div><div class="sub">${num(d.week.orders)} orders</div></div>
+   <div class="card kpi"><div class="lbl">Last 30 days</div><div class="val">${kes(d.month.revenue)}</div><div class="sub">${num(d.month.orders)} orders</div></div>
+   <div class="card kpi"><div class="lbl">Average order</div><div class="val">${kes(d.averageOrder)}</div><div class="sub">${num(d.customers)} customers · ${num(d.all.orders)} orders</div></div>
+  </div>
+  <div class="grid two" style="margin-bottom:14px">
+   <div class="card"><h3>Revenue — last 14 days</h3><svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Daily revenue for the last 14 days"><line x1="0" x2="${W}" y1="${H-26}" y2="${H-26}" stroke="#E0E5E0"/>${bars}</svg></div>
+   <div class="card"><h3>Orders by status</h3><div class="bars">${STATUSES.map(s=>`<div class="brow"><a href="#orders" data-act="goOrders" data-status="${s}" style="text-decoration:none;color:inherit;text-transform:capitalize">${s}</a><div class="track"><div class="fill" style="width:${sc[s]/totalO*100}%"></div></div><b>${sc[s]}</b></div>`).join("")}</div></div>
+  </div>
+  <div class="grid three">
+   <div class="card list"><h3>Recent orders</h3>${d.recentOrders.length?d.recentOrders.map(o=>`<div class="row" style="cursor:pointer" data-act="openOrder" data-code="${esc(o.order_code)}"><div><b>${esc(o.order_code)}</b><small>${esc(o.customer_name)} · ${fdate(o.created_at)}</small></div><div style="text-align:right">${kes(o.total)}<br>${badge(o.status)}</div></div>`).join(""):`<p class="muted">No orders yet.</p>`}</div>
+   <div class="card list"><h3>Best sellers · 30 days</h3>${d.topProducts.length?d.topProducts.map(p=>`<div class="row"><div>${esc(p.name)}<small>${num(p.units)} sold</small></div><b>${kes(p.revenue)}</b></div>`).join(""):`<p class="muted">No sales in the last 30 days.</p>`}</div>
+   <div class="card list"><h3>Stock alerts ${d.lowStockCount?`<span class="dot">${d.lowStockCount}</span>`:""}</h3>${d.lowStock.length?d.lowStock.map(p=>`<div class="row"><div>${esc(p.emoji)} ${esc(p.name)}</div>${p.stock<=0?`<span class="badge out">Out of stock</span>`:`<span class="badge low">${p.stock} left</span>`}</div>`).join("")+`<div class="actions"><button class="btn sec sm" data-act="goProducts" data-state="low">Manage stock</button></div>`:`<p class="muted">All products have ${LOW+1}+ in stock. 👍</p>`}</div>
+  </div>`}}
 
-function refresh(){load()}
-function changePage(d){const next=page+d;if(next<1)return;if(d>0&&lastCount<pageSize)return;page=next;load()}
-$("statusFilter").addEventListener("change",()=>{page=1;load()});
+/* ---------- orders ---------- */
+function vOrders(){
+ const s=st.orders;
+ $("content").innerHTML=`
+ <div class="pagehead"><h2>Orders</h2><span class="sp"></span><button class="btn sec" data-act="exportOrders">⬇ Export CSV</button></div>
+ <div class="chips" id="oChips"></div>
+ <div class="bar">
+  <input type="search" id="oQ" placeholder="Search order code, name or phone" value="${esc(s.q)}" aria-label="Search orders">
+  <label class="muted">From <input type="date" id="oFrom" value="${esc(s.from)}"></label>
+  <label class="muted">To <input type="date" id="oTo" value="${esc(s.to)}"></label>
+  <button class="btn sec sm" id="oClear">Clear</button>
+ </div>
+ <div class="tablewrap"><table><thead><tr><th>Order</th><th>Customer</th><th>Phone</th><th>County</th><th>Payment</th><th class="r">Total</th><th>Status</th><th>Placed</th></tr></thead><tbody id="oRows"></tbody></table></div>
+ <div id="oPager"></div>`;
+ $("oQ").addEventListener("input",debounce(()=>{s.q=$("oQ").value.trim();s.page=1;loadOrders()}));
+ $("oFrom").addEventListener("change",()=>{s.from=$("oFrom").value;s.page=1;loadOrders()});
+ $("oTo").addEventListener("change",()=>{s.to=$("oTo").value;s.page=1;loadOrders()});
+ $("oClear").addEventListener("click",()=>{Object.assign(s,{q:"",from:"",to:"",status:"",page:1});vOrders()});
+ loadOrders();renderChips()}
+async function renderChips(){
+ try{const d=await api("/stats");const sc=d.statusCounts,all=Object.values(sc).reduce((a,b)=>a+b,0);
+  const el=$("oChips");if(!el)return;
+  el.innerHTML=[["", "All",all],...STATUSES.map(x=>[x,x[0].toUpperCase()+x.slice(1),sc[x]])].map(([v,l,n])=>`<button class="chip ${st.orders.status===v?"on":""}" data-chip="${v}">${l}<small>${n}</small></button>`).join("");
+  el.onclick=e=>{const b=e.target.closest("[data-chip]");if(!b)return;st.orders.status=b.dataset.chip;st.orders.page=1;renderChips();loadOrders()}}catch(e){}}
+async function loadOrders(){
+ const s=st.orders,body=$("oRows");if(!body)return;
+ body.innerHTML=`<tr><td colspan="8" class="loading">Loading orders…</td></tr>`;
+ try{
+  const d=await api("/orders"+qs({page:s.page,pageSize:s.size,status:s.status,q:s.q,from:s.from,to:s.to}));
+  s.total=d.total;s.rows=d.orders;
+  body.innerHTML=d.orders.length?d.orders.map(o=>`<tr class="click" data-act="openOrder" data-code="${esc(o.order_code)}"><td class="code">${esc(o.order_code)}</td><td>${esc(o.customer_name)}</td><td>${esc(o.phone)}</td><td>${esc(o.county)}</td><td>${o.payment_method==="mpesa"?"M-Pesa":"Cash on delivery"}</td><td class="r">${kes(o.total)}</td><td>${badge(o.status)}</td><td>${fdate(o.created_at)}</td></tr>`).join(""):`<tr><td colspan="8" class="empty">No orders match.</td></tr>`;
+  $("oPager").innerHTML=d.total>s.size?pager(s,"orders"):`<div class="pager">${num(d.total)} order${d.total===1?"":"s"}</div>`;
+ }catch(e){body.innerHTML=`<tr><td colspan="8" class="empty">Couldn't load orders: ${esc(e.message)}</td></tr>`;handleErr(e)}}
 
-const STATUSES=["pending","confirmed","dispatched","delivered","cancelled"];
-
+let curOrder=null;
 async function openOrder(code){
-$("drawerTitle").textContent=code;
-$("drawerBody").innerHTML=`<p style="color:var(--mute)">Loading\u2026</p>`;
-openDrawer();
-try{
-// Order detail (items, totals) is served by the public order-lookup endpoint —
-// order codes aren't guessable, and no admin-only data lives there.
-const data=await api(`/api/orders/${encodeURIComponent(code)}`);
-$("drawerBody").innerHTML=`
-<div class="dsec">Items</div>
-${data.items.map(it=>`<div class="ditem"><span>${it.qty} \u00d7 ${esc(it.name_snapshot)}</span><span>${kes(it.line_total)}</span></div>`).join("")}
-<div class="drow"><span>Delivery</span><b>${data.deliveryFee?kes(data.deliveryFee):"Free"}</b></div>
-${data.discount?`<div class="drow"><span>Discount</span><b>-${kes(data.discount)}</b></div>`:""}
-<div class="drow"><span>Total</span><b>${kes(data.total)}</b></div>
-<div class="dsec">Status</div>
-<div class="statusrow">
-<select id="statusSelect">${STATUSES.map(s=>`<option value="${s}" ${s===data.status?"selected":""}>${s}</option>`).join("")}</select>
-<button type="button" onclick="saveStatus('${code}')">Save</button>
-</div>`;
-}catch(err){$("drawerBody").innerHTML=`<p style="color:var(--sale)">Couldn't load this order: ${esc(err.message)}</p>`}
-}
-
-async function saveStatus(code){
-const status=$("statusSelect").value;
-try{
-await api(`/api/admin/orders/${encodeURIComponent(code)}/status`,{method:"PATCH",body:JSON.stringify({status})});
-toast(`${code} marked ${status}`);
-closeDrawer();
-load();
-}catch(err){toast(`Couldn't update: ${err.message}`)}
-}
-
+ $("drawerTitle").textContent=code;$("drawerBody").innerHTML=`<p class="muted">Loading…</p>`;openDrawer();
+ try{const d=await api("/orders/"+encodeURIComponent(code));curOrder=d;drawerOrder(d)}
+ catch(e){$("drawerBody").innerHTML=`<p style="color:var(--sale)">Couldn't load this order: ${esc(e.message)}</p>`;handleErr(e)}}
+function drawerOrder({order:o,items}){
+ const wa=waNumber(o.phone),msg=encodeURIComponent(`Hello ${o.customer_name}, this is Shevs about your order ${o.order_code} (${kes(o.total)}).`);
+ const next={pending:"confirmed",confirmed:"dispatched",dispatched:"delivered"}[o.status];
+ $("drawerBody").innerHTML=`
+ <div class="dsec">Status</div>
+ <div class="steps">${STATUSES.map(s=>`<button class="step ${s==="cancelled"?"cancel":""} ${s===o.status?"cur":""}" data-act="setStatus" data-code="${esc(o.order_code)}" data-status="${s}" ${s===o.status?"disabled":""}>${s}</button>`).join("")}</div>
+ ${next?`<div class="actions"><button class="btn" data-act="setStatus" data-code="${esc(o.order_code)}" data-status="${next}">Mark as ${next} →</button></div>`:""}
+ <div class="dsec">Customer</div>
+ <div class="drow"><span>Name</span><b>${esc(o.customer_name)}</b></div>
+ <div class="drow"><span>Phone</span><b>${esc(o.phone)}</b></div>
+ <div class="drow"><span>County</span><b>${esc(o.county)}</b></div>
+ <div class="drow"><span>Address</span><b>${esc(o.address)}</b></div>
+ <div class="actions"><a class="btn sec sm" href="tel:${esc(o.phone)}">📞 Call</a><a class="btn sec sm" target="_blank" rel="noopener" href="https://wa.me/${wa}?text=${msg}">💬 WhatsApp</a></div>
+ <div class="dsec">Items</div>
+ ${items.map(it=>`<div class="ditem"><span>${it.qty} × ${esc(it.name_snapshot)}<br><small class="muted">${kes(it.unit_price_snapshot)} each</small></span><b>${kes(it.line_total)}</b></div>`).join("")}
+ <div class="dsec">Payment</div>
+ <div class="drow"><span>Method</span><b>${o.payment_method==="mpesa"?"M-Pesa":"Cash on delivery"}</b></div>
+ <div class="drow"><span>Subtotal</span><b>${kes(o.subtotal)}</b></div>
+ <div class="drow"><span>Delivery</span><b>${Number(o.delivery_fee)?kes(o.delivery_fee):"Free"}</b></div>
+ ${Number(o.discount)?`<div class="drow"><span>Discount${o.coupon_code?` (${esc(o.coupon_code)})`:""}</span><b>-${kes(o.discount)}</b></div>`:""}
+ <div class="drow"><span><b>Total</b></span><b style="font-size:17px">${kes(o.total)}</b></div>
+ <div class="dsec">Placed</div><div class="drow"><span>Date</span><b>${fdateLong(o.created_at)}</b></div>
+ <div class="actions" style="margin-top:16px"><button class="btn sec sm" data-act="copyOrder">Copy summary</button><button class="btn sec sm" data-act="printOrder">Print</button></div>
+ ${o.status==="cancelled"?`<p class="muted" style="margin-top:12px;font-size:13px">Cancelled orders return their items to stock.</p>`:""}`}
+async function setStatus(code,status){
+ if(status==="cancelled"&&!(await confirmBox("Cancel this order?",`${code} will be marked cancelled and its items returned to stock.`,"Cancel order")))return;
+ try{const r=await api(`/orders/${encodeURIComponent(code)}/status`,{method:"PATCH",body:JSON.stringify({status})});
+  toast(`${code} marked ${status}${r.restocked?` · ${r.restocked} item${r.restocked>1?"s":""} back in stock`:""}`);
+  const d=await api("/orders/"+encodeURIComponent(code));curOrder=d;drawerOrder(d);
+  if(view==="orders"){loadOrders();renderChips()}if(view==="dashboard")vDashboard();poll()
+ }catch(e){toast(e.message);handleErr(e)}}
+function copyOrder(){
+ if(!curOrder)return;const{order:o,items}=curOrder;
+ const t=`Order ${o.order_code} (${o.status})\n${o.customer_name} · ${o.phone}\n${o.address}, ${o.county}\n\n${items.map(i=>`${i.qty} × ${i.name_snapshot} — ${kes(i.line_total)}`).join("\n")}\n\nDelivery: ${Number(o.delivery_fee)?kes(o.delivery_fee):"Free"}${Number(o.discount)?`\nDiscount: -${kes(o.discount)}`:""}\nTotal: ${kes(o.total)} (${o.payment_method==="mpesa"?"M-Pesa":"Cash on delivery"})`;
+ (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast("Order summary copied"),()=>toast("Couldn't copy — select and copy manually"))}
 function openDrawer(){$("drawer").classList.add("open");$("scrim").classList.add("open");$("drawer").setAttribute("aria-hidden","false")}
 function closeDrawer(){$("drawer").classList.remove("open");$("scrim").classList.remove("open");$("drawer").setAttribute("aria-hidden","true")}
-addEventListener("keydown",e=>{if(e.key==="Escape")closeDrawer()});
 
+async function exportOrders(btn){
+ const s=st.orders;btn.disabled=true;const old=btn.textContent;btn.textContent="Preparing…";
+ try{
+  let rows=[],page=1,total=Infinity;
+  while(rows.length<total&&page<=100){const d=await api("/orders"+qs({page,pageSize:200,status:s.status,q:s.q,from:s.from,to:s.to}));total=d.total;rows=rows.concat(d.orders);if(!d.orders.length)break;page++}
+  const cell=v=>{v=String(v==null?"":v);if(/^[=+\-@]/.test(v))v="'"+v;return `"${v.replace(/"/g,'""')}"`};
+  const head=["Order","Placed","Customer","Phone","County","Address","Payment","Status","Subtotal","Delivery","Discount","Coupon","Total"];
+  const csv="﻿"+[head,...rows.map(o=>[o.order_code,new Date(o.created_at).toLocaleString("en-KE",{timeZone:TZ}),o.customer_name,o.phone,o.county,o.address,o.payment_method,o.status,o.subtotal,o.delivery_fee,o.discount,o.coupon_code||"",o.total])].map(r=>r.map(cell).join(",")).join("\r\n");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+  a.download=`shevs-orders-${new Date().toISOString().slice(0,10)}.csv`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  toast(`Exported ${rows.length} order${rows.length===1?"":"s"}`);
+ }catch(e){toast(e.message);handleErr(e)}finally{btn.disabled=false;btn.textContent=old}}
+
+/* ---------- products ---------- */
+async function ensureCats(force){if(!cats.length||force){try{cats=(await api("/categories")).categories}catch(e){handleErr(e)}}return cats}
+async function vProducts(){
+ const s=st.products;await ensureCats();
+ $("content").innerHTML=`
+ <div class="pagehead"><h2>Products</h2><span class="sp"></span><button class="btn" data-act="newProduct">+ Add product</button></div>
+ <div class="bar">
+  <input type="search" id="pQ" placeholder="Search products" value="${esc(s.q)}" aria-label="Search products">
+  <select id="pCat" aria-label="Category"><option value="">All categories</option>${cats.map(c=>`<option value="${c.id}" ${String(c.id)===String(s.category)?"selected":""}>${esc(c.icon)} ${esc(c.name)}</option>`).join("")}</select>
+  <select id="pState" aria-label="Stock and visibility">${[["","All products"],["active","Visible in shop"],["hidden","Hidden"],["low","Low stock (≤"+LOW+")"],["out","Out of stock"]].map(([v,l])=>`<option value="${v}" ${s.state===v?"selected":""}>${l}</option>`).join("")}</select>
+ </div>
+ <div class="tablewrap"><table><thead><tr><th>Product</th><th>Category</th><th class="r">Price</th><th>Stock</th><th>Visible</th><th></th></tr></thead><tbody id="pRows"></tbody></table></div>
+ <div id="pPager"></div>`;
+ $("pQ").addEventListener("input",debounce(()=>{s.q=$("pQ").value.trim();s.page=1;loadProducts()}));
+ $("pCat").addEventListener("change",()=>{s.category=$("pCat").value;s.page=1;loadProducts()});
+ $("pState").addEventListener("change",()=>{s.state=$("pState").value;s.page=1;loadProducts()});
+ $("pRows").addEventListener("change",async e=>{
+  const t=e.target;
+  if(t.dataset.vis){try{await api("/products/"+t.dataset.vis,{method:"PATCH",body:JSON.stringify({active:t.checked})});toast(t.checked?"Now visible in the shop":"Hidden from the shop")}catch(err){t.checked=!t.checked;toast(err.message);handleErr(err)}}
+  else if(t.dataset.stock){const v=Math.max(0,Math.floor(Number(t.value)));if(!Number.isFinite(v)){return}try{await api("/products/"+t.dataset.stock,{method:"PATCH",body:JSON.stringify({stock:v})});t.value=v;toast("Stock updated")}catch(err){toast(err.message);handleErr(err);loadProducts()}}});
+ loadProducts()}
+async function loadProducts(){
+ const s=st.products,body=$("pRows");if(!body)return;
+ body.innerHTML=`<tr><td colspan="6" class="loading">Loading products…</td></tr>`;
+ try{
+  const d=await api("/products"+qs({page:s.page,pageSize:s.size,q:s.q,category:s.category,state:s.state}));
+  s.total=d.total;s.rows=d.products;
+  body.innerHTML=d.products.length?d.products.map(p=>{
+   const sale=Number(p.compare_at_price)>Number(p.price)?` <small class="muted"><s>${kes(p.compare_at_price)}</s></small>`:"";
+   const flag=p.stock<=0?`<span class="badge out">Out</span>`:p.stock<=LOW?`<span class="badge low">Low</span>`:"";
+   return `<tr><td><div class="pname"><span class="em">${esc(p.emoji||"📦")}</span><div><b>${esc(p.name)}</b><br><small class="muted">${esc(p.eta_label)}</small></div></div></td><td>${esc(p.category_name)}</td><td class="r">${kes(p.price)}${sale}</td>
+   <td><span class="stock"><button data-act="stockStep" data-id="${p.id}" data-d="-1" aria-label="Decrease stock">−</button><input type="number" min="0" value="${p.stock}" data-stock="${p.id}" aria-label="Stock for ${esc(p.name)}"><button data-act="stockStep" data-id="${p.id}" data-d="1" aria-label="Increase stock">+</button></span> ${flag}</td>
+   <td><label class="switch"><input type="checkbox" data-vis="${p.id}" ${p.active?"checked":""} aria-label="Visible in shop"><span></span></label></td>
+   <td class="r"><button class="btn sec sm" data-act="editProduct" data-id="${p.id}">Edit</button> <button class="btn sec sm" data-act="delProduct" data-id="${p.id}" data-name="${esc(p.name)}" aria-label="Delete ${esc(p.name)}">🗑</button></td></tr>`}).join(""):`<tr><td colspan="6" class="empty">No products match. <a href="#products" data-act="newProduct">Add one</a>.</td></tr>`;
+  $("pPager").innerHTML=d.total>s.size?pager(s,"products"):`<div class="pager">${num(d.total)} product${d.total===1?"":"s"}</div>`;
+ }catch(e){body.innerHTML=`<tr><td colspan="6" class="empty">Couldn't load products: ${esc(e.message)}</td></tr>`;handleErr(e)}}
+async function stockStep(id,d,el){
+ const inp=el.parentElement.querySelector("input");const v=Math.max(0,(Number(inp.value)||0)+d);
+ try{await api("/products/"+id,{method:"PATCH",body:JSON.stringify({stock:v})});inp.value=v;
+  const row=inp.closest("td");row.querySelectorAll(".badge").forEach(b=>b.remove());
+  if(v<=0)row.insertAdjacentHTML("beforeend",` <span class="badge out">Out</span>`);else if(v<=LOW)row.insertAdjacentHTML("beforeend",` <span class="badge low">Low</span>`)}
+ catch(e){toast(e.message);handleErr(e)}}
+async function productForm(id){
+ await ensureCats();
+ if(!cats.length){toast("Add a category first.");go("categories");return}
+ let p={name:"",emoji:"",category_id:cats[0].id,price:"",compare_at_price:"",stock:0,eta_label:"2–4 days",active:1};
+ if(id){p=st.products.rows.find(x=>x.id===id);if(!p)return}
+ modal(`<h3>${id?"Edit product":"Add product"}</h3>
+ <div class="fld"><label for="fName">Name</label><input id="fName" name="name" maxlength="160" required value="${esc(p.name)}"></div>
+ <div class="frow"><div class="fld"><label for="fCat">Category</label><select id="fCat" name="categoryId">${cats.map(c=>`<option value="${c.id}" ${c.id===p.category_id?"selected":""}>${esc(c.icon)} ${esc(c.name)}</option>`).join("")}</select></div>
+ <div class="fld"><label for="fEmoji">Emoji</label><input id="fEmoji" name="emoji" maxlength="8" placeholder="🎧" value="${esc(p.emoji)}"></div></div>
+ <div class="frow"><div class="fld"><label for="fPrice">Price (KES)</label><input id="fPrice" name="price" type="number" min="1" step="1" required value="${esc(p.price?Math.round(p.price):"")}"></div>
+ <div class="fld"><label for="fWas">Was price (KES)</label><input id="fWas" name="compareAtPrice" type="number" min="1" step="1" value="${esc(p.compare_at_price?Math.round(p.compare_at_price):"")}"><span class="hint">Shown crossed out. Leave blank for no sale.</span></div></div>
+ <div class="frow"><div class="fld"><label for="fStock">Stock</label><input id="fStock" name="stock" type="number" min="0" step="1" required value="${esc(p.stock)}"></div>
+ <div class="fld"><label for="fEta">Delivery estimate</label><input id="fEta" name="etaLabel" maxlength="40" value="${esc(p.eta_label)}"></div></div>
+ <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" name="active" ${p.active?"checked":""}> Visible in the shop</label>
+ <div class="err" aria-live="polite"></div>
+ <div class="mact"><button type="button" class="btn sec" data-act="closeModal">Cancel</button><button class="btn" type="submit">${id?"Save changes":"Add product"}</button></div>`,
+ async f=>{
+  const g=n=>f.elements[n].value.trim();
+  const price=Number(g("price"));if(!g("name"))throw new Error("Enter a product name.");if(!(price>0))throw new Error("Enter a price above 0.");
+  const was=g("compareAtPrice")?Number(g("compareAtPrice")):price;if(was<price)throw new Error("The 'was' price can't be lower than the selling price.");
+  const body={name:g("name"),categoryId:Number(g("categoryId")),emoji:g("emoji"),price,compareAtPrice:was,stock:Math.max(0,Math.floor(Number(g("stock"))||0)),etaLabel:g("etaLabel")||"2–4 days",active:f.elements.active.checked};
+  await api(id?"/products/"+id:"/products",{method:id?"PATCH":"POST",body:JSON.stringify(body)});
+  closeModal();toast(id?"Product updated":"Product added");loadProducts()})}
+async function delProduct(id,name){
+ if(!(await confirmBox("Delete product?",`"${name}" will be removed from the shop. Past orders keep their details. To just stop selling it, hide it instead.`,"Delete")))return;
+ try{await api("/products/"+id,{method:"DELETE"});toast("Product deleted");loadProducts()}catch(e){toast(e.message);handleErr(e)}}
+
+/* ---------- categories ---------- */
+async function vCategories(){
+ const c=$("content");c.innerHTML=`<div class="loading">Loading…</div>`;
+ try{
+  await ensureCats(true);
+  c.innerHTML=`<div class="pagehead"><h2>Categories</h2><span class="sp"></span><button class="btn" data-act="newCategory">+ Add category</button></div>
+  <div class="tablewrap"><table><thead><tr><th>Icon</th><th>Name</th><th class="r">Products</th><th class="r">Order</th><th></th></tr></thead><tbody>
+  ${cats.length?cats.map(x=>`<tr><td style="font-size:22px">${esc(x.icon)}</td><td><b>${esc(x.name)}</b></td><td class="r">${x.product_count}</td><td class="r">${x.sort_order}</td><td class="r"><button class="btn sec sm" data-act="editCategory" data-id="${x.id}">Edit</button> <button class="btn sec sm" data-act="delCategory" data-id="${x.id}" data-name="${esc(x.name)}" aria-label="Delete ${esc(x.name)}">🗑</button></td></tr>`).join(""):`<tr><td colspan="5" class="empty">No categories yet.</td></tr>`}
+  </tbody></table></div>`}catch(e){c.innerHTML=`<div class="empty">Couldn't load: ${esc(e.message)}</div>`}}
+function categoryForm(id){
+ const x=id?cats.find(c=>c.id===id):{name:"",icon:"",sort_order:""};if(!x)return;
+ modal(`<h3>${id?"Edit category":"Add category"}</h3>
+ <div class="frow"><div class="fld"><label for="cName">Name</label><input id="cName" name="name" maxlength="80" required value="${esc(x.name)}"></div>
+ <div class="fld"><label for="cIcon">Icon (emoji)</label><input id="cIcon" name="icon" maxlength="8" required placeholder="📱" value="${esc(x.icon)}"></div></div>
+ <div class="fld"><label for="cOrder">Display order</label><input id="cOrder" name="sortOrder" type="number" min="0" value="${esc(x.sort_order)}"><span class="hint">Lower numbers show first. Leave blank to put it last.</span></div>
+ <div class="err" aria-live="polite"></div>
+ <div class="mact"><button type="button" class="btn sec" data-act="closeModal">Cancel</button><button class="btn" type="submit">${id?"Save changes":"Add category"}</button></div>`,
+ async f=>{
+  const name=f.elements.name.value.trim(),icon=f.elements.icon.value.trim();
+  if(name.length<2)throw new Error("Enter a category name.");if(!icon)throw new Error("Pick an emoji icon.");
+  const so=f.elements.sortOrder.value.trim();const body={name,icon};if(so!=="")body.sortOrder=Number(so);
+  await api(id?"/categories/"+id:"/categories",{method:id?"PATCH":"POST",body:JSON.stringify(body)});
+  closeModal();toast(id?"Category updated":"Category added");vCategories()})}
+async function delCategory(id,name){
+ if(!(await confirmBox("Delete category?",`"${name}" will be removed. Categories that still have products can't be deleted.`,"Delete")))return;
+ try{await api("/categories/"+id,{method:"DELETE"});toast("Category deleted");vCategories()}catch(e){toast(e.message);handleErr(e)}}
+
+/* ---------- coupons ---------- */
+let coupons=[];
+async function vCoupons(){
+ const c=$("content");c.innerHTML=`<div class="loading">Loading…</div>`;
+ try{
+  coupons=(await api("/coupons")).coupons;
+  const now=Date.now();
+  c.innerHTML=`<div class="pagehead"><h2>Coupons</h2><span class="sp"></span><button class="btn" data-act="newCoupon">+ New coupon</button></div>
+  <div class="tablewrap"><table><thead><tr><th>Code</th><th class="r">Discount</th><th class="r">Min. spend</th><th>Expires</th><th class="r">Used</th><th>Active</th><th></th></tr></thead><tbody>
+  ${coupons.length?coupons.map(x=>{const exp=x.expires_at&&new Date(x.expires_at).getTime()<now;
+   return `<tr><td class="code">${esc(x.code)}</td><td class="r">${kes(x.discount_amount)}</td><td class="r">${Number(x.min_subtotal)?kes(x.min_subtotal):"—"}</td><td>${x.expires_at?fday(x.expires_at)+(exp?` <span class="badge out">Expired</span>`:""):"Never"}</td><td class="r">${x.times_used}</td>
+   <td><label class="switch"><input type="checkbox" data-cact="${x.id}" ${x.active?"checked":""} aria-label="Active"><span></span></label></td>
+   <td class="r"><button class="btn sec sm" data-act="editCoupon" data-id="${x.id}">Edit</button> <button class="btn sec sm" data-act="delCoupon" data-id="${x.id}" data-code="${esc(x.code)}" aria-label="Delete ${esc(x.code)}">🗑</button></td></tr>`}).join(""):`<tr><td colspan="7" class="empty">No coupons yet.</td></tr>`}
+  </tbody></table></div>`;
+  c.querySelector("tbody").addEventListener("change",async e=>{const t=e.target;if(!t.dataset.cact)return;
+   try{await api("/coupons/"+t.dataset.cact,{method:"PATCH",body:JSON.stringify({active:t.checked})});toast(t.checked?"Coupon enabled":"Coupon disabled")}catch(err){t.checked=!t.checked;toast(err.message);handleErr(err)}})
+ }catch(e){c.innerHTML=`<div class="empty">Couldn't load: ${esc(e.message)}</div>`;handleErr(e)}}
+function couponForm(id){
+ const x=id?coupons.find(c=>c.id===id):{code:"",discount_amount:"",min_subtotal:0,expires_at:null,active:1};if(!x)return;
+ const exp=x.expires_at?new Date(new Date(x.expires_at).getTime()+3*3600000).toISOString().slice(0,10):"";
+ modal(`<h3>${id?"Edit coupon":"New coupon"}</h3>
+ <div class="fld"><label for="kCode">Code</label><input id="kCode" name="code" maxlength="40" required style="text-transform:uppercase" placeholder="WELCOME200" value="${esc(x.code)}"></div>
+ <div class="frow"><div class="fld"><label for="kAmt">Discount (KES)</label><input id="kAmt" name="discountAmount" type="number" min="1" step="1" required value="${esc(x.discount_amount?Math.round(x.discount_amount):"")}"></div>
+ <div class="fld"><label for="kMin">Minimum spend (KES)</label><input id="kMin" name="minSubtotal" type="number" min="0" step="1" value="${esc(Math.round(x.min_subtotal||0))}"></div></div>
+ <div class="fld"><label for="kExp">Expires on (optional)</label><input id="kExp" name="expiresAt" type="date" value="${esc(exp)}"><span class="hint">Valid through the end of that day (Nairobi time).</span></div>
+ <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" name="active" ${x.active?"checked":""}> Active</label>
+ <div class="err" aria-live="polite"></div>
+ <div class="mact"><button type="button" class="btn sec" data-act="closeModal">Cancel</button><button class="btn" type="submit">${id?"Save changes":"Create coupon"}</button></div>`,
+ async f=>{
+  const code=f.elements.code.value.trim().toUpperCase(),amt=Number(f.elements.discountAmount.value);
+  if(!/^[A-Z0-9_-]{2,40}$/.test(code))throw new Error("Code must be 2–40 letters, numbers, - or _.");if(!(amt>0))throw new Error("Enter a discount above 0.");
+  const d=f.elements.expiresAt.value;
+  // end of the chosen day in Nairobi (UTC+3) = 20:59:59 UTC
+  const expiresAt=d?new Date(d+"T20:59:59Z").toISOString():null;
+  const body={code,discountAmount:amt,minSubtotal:Number(f.elements.minSubtotal.value)||0,active:f.elements.active.checked,expiresAt};
+  await api(id?"/coupons/"+id:"/coupons",{method:id?"PATCH":"POST",body:JSON.stringify(body)});
+  closeModal();toast(id?"Coupon updated":"Coupon created");vCoupons()})}
+async function delCoupon(id,code){
+ if(!(await confirmBox("Delete coupon?",`${code} will stop working immediately. Past orders keep their discount.`,"Delete")))return;
+ try{await api("/coupons/"+id,{method:"DELETE"});toast("Coupon deleted");vCoupons()}catch(e){toast(e.message);handleErr(e)}}
+
+/* ---------- customers ---------- */
+function vCustomers(){
+ const s=st.customers;
+ $("content").innerHTML=`<div class="pagehead"><h2>Customers</h2><span class="muted">Grouped by phone number</span></div>
+ <div class="bar"><input type="search" id="uQ" placeholder="Search name or phone" value="${esc(s.q)}" aria-label="Search customers"></div>
+ <div class="tablewrap"><table><thead><tr><th>Customer</th><th>Phone</th><th>County</th><th class="r">Orders</th><th class="r">Total spent</th><th>Last order</th><th></th></tr></thead><tbody id="uRows"></tbody></table></div><div id="uPager"></div>`;
+ $("uQ").addEventListener("input",debounce(()=>{s.q=$("uQ").value.trim();s.page=1;loadCustomers()}));
+ loadCustomers()}
+async function loadCustomers(){
+ const s=st.customers,body=$("uRows");if(!body)return;
+ body.innerHTML=`<tr><td colspan="7" class="loading">Loading customers…</td></tr>`;
+ try{
+  const d=await api("/customers"+qs({page:s.page,pageSize:s.size,q:s.q}));s.total=d.total;
+  body.innerHTML=d.customers.length?d.customers.map(u=>`<tr><td><b>${esc(u.name)}</b>${u.orders>1?` <span class="badge ok">Repeat</span>`:""}</td><td>${esc(u.phone)}</td><td>${esc(u.county)}</td><td class="r">${u.orders}</td><td class="r">${kes(u.spent)}</td><td>${fdate(u.last_order)}</td><td class="r"><a class="btn sec sm" target="_blank" rel="noopener" href="https://wa.me/${waNumber(u.phone)}">💬 WhatsApp</a></td></tr>`).join(""):`<tr><td colspan="7" class="empty">No customers yet.</td></tr>`;
+  $("uPager").innerHTML=d.total>s.size?pager(s,"customers"):`<div class="pager">${num(d.total)} customer${d.total===1?"":"s"}</div>`;
+ }catch(e){body.innerHTML=`<tr><td colspan="7" class="empty">Couldn't load customers: ${esc(e.message)}</td></tr>`;handleErr(e)}}
+
+/* ---------- boot ---------- */
 loadCreds();
-if(API&&KEY){$("apiBase").value=API;$("adminKey").value=KEY;showApp()}
+$("apiBase").value=API||DEFAULT_API;
+if(API&&KEY){$("adminKey").value=KEY;start()}
 </script>
 </body>
 </html>

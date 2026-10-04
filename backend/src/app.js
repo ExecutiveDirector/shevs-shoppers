@@ -19,7 +19,7 @@ function createApp() {
   app.use(
     cors({
       origin: allowedOrigins.length ? allowedOrigins : false,
-      methods: ["GET", "POST", "PATCH"],
+      methods: ["GET", "POST", "PATCH", "DELETE"],
     })
   );
   app.use(compression());
