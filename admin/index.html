@@ -45,15 +45,19 @@ img{max-width:100%}
 .err{color:var(--sale);font-size:13px;min-height:18px}
 
 /* app shell */
-.app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+.app{display:grid;grid-template-columns:var(--sw,240px) 1fr;min-height:100vh;transition:grid-template-columns .2s}
 .side{background:var(--card);border-right:1px solid var(--line);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:16px 12px;overflow-y:auto}
-.logo{font:800 20px "Bricolage Grotesque",sans-serif;padding:4px 8px 14px;display:block;word-break:break-word}
+.brandrow{display:flex;align-items:center;gap:10px;padding:2px 4px 14px}
+.mark{flex:none;width:36px;height:36px;border-radius:11px;background:var(--brand);color:#fff;display:grid;place-items:center;font:800 19px "Bricolage Grotesque",sans-serif}
+.logo{font:800 19px/1.1 "Bricolage Grotesque",sans-serif;flex:1;min-width:0;word-break:break-word}
+.cbtn{width:30px;height:30px;border-radius:8px;font-size:15px;color:var(--mute)}
 .logo b{color:var(--link)}
 .nsec{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);padding:14px 10px 5px}
 .nlink{display:flex;align-items:center;gap:10px;width:100%;background:none;border:0;padding:9px 10px;border-radius:10px;color:var(--ink);text-align:left;font-weight:500}
 .nlink:hover{background:var(--tint)}
 .nlink.on{background:var(--brand);color:#fff;font-weight:700}
 .nlink .ic{width:22px;text-align:center}
+.dot.warn{background:var(--warn)}
 .dot{background:var(--sale);color:#fff;border-radius:99px;font-size:11px;font-weight:700;padding:1px 7px;min-width:20px;text-align:center;margin-left:auto}
 .sidefoot{margin-top:auto;padding-top:14px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:4px}
 .mainwrap{min-width:0}
@@ -74,13 +78,55 @@ main{max-width:1240px;margin:0 auto;padding:22px 20px 90px}
 .pagehead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
 .pagehead h2{font-size:24px}
 .sub{color:var(--mute)}
+.crumb{color:var(--mute);font-size:13px;white-space:nowrap}
+.crumb b{color:var(--ink);font-weight:700}
+.gsearch kbd{position:absolute;right:9px;top:50%;transform:translateY(-50%);font:600 11px "DM Sans",sans-serif;color:var(--mute);border:1px solid var(--line);border-radius:6px;padding:1px 6px;background:var(--card);pointer-events:none}
+.gsearch input:focus+kbd{display:none}
+.gsres .sel{background:var(--tint)}
+.gsres a{display:flex;justify-content:space-between;gap:10px;padding:8px 10px;border-radius:8px;color:var(--ink);text-decoration:none}
+.gsres a:hover{background:var(--tint)}
+.gsres button span.ci,.gsres a span.ci{display:inline-block;width:24px}
+.gsres small.k{font:600 11px "DM Sans",sans-serif;border:1px solid var(--line);border-radius:6px;padding:0 6px;color:var(--mute)}
+.sync{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--mute);white-space:nowrap}
+.sync i{width:8px;height:8px;border-radius:99px;background:var(--ok)}
+.sync.off i{background:var(--warn)}
+.bell{position:relative}
+.bell .dot{position:absolute;top:-6px;right:-6px;margin:0;font-size:10px;padding:0 5px;min-width:17px}
+.qa{position:relative}
+.qamenu{left:auto;right:0;width:210px;top:calc(100% + 6px)}
+.tabs{display:none}
+.sidefoot a.nlink{text-decoration:none}
+@media(min-width:901px){
+ body.collapsed{--sw:72px}
+ body.collapsed .side{padding:16px 8px}
+ body.collapsed .nl,body.collapsed .logo{display:none}
+ body.collapsed .brandrow{flex-direction:column;gap:8px;padding:2px 0 10px}
+ body.collapsed .nsec{font-size:0;padding:0;margin:10px 8px 6px;border-top:1px solid var(--line)}
+ body.collapsed .nlink{justify-content:center;position:relative;padding:11px 0}
+ body.collapsed .nlink .ic{width:auto;font-size:18px}
+ body.collapsed .nlink .dot{position:absolute;top:1px;right:7px;margin:0;font-size:10px;padding:0 5px;min-width:16px}
+}
+@media(max-width:900px){
+ .crumb,.sync,.sp,.cbtn{display:none}
+ .side.open~.mainwrap::after{content:"";position:fixed;inset:0;background:rgba(7,20,15,.45);z-index:50}
+ .gsearch{max-width:none}
+ .tabs{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+ .tabs button{position:relative;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:1px;padding:7px 0 6px;font-size:11.5px;font-weight:500;color:var(--mute);min-height:54px}
+ .tabs button .ic{font-size:19px;line-height:1.2}
+ .tabs button.on{color:var(--link);font-weight:700}
+ .tabs button.on:before{content:"";position:absolute;top:0;left:30%;right:30%;height:3px;border-radius:0 0 3px 3px;background:var(--brand)}
+ .tabs .dot{position:absolute;top:3px;left:calc(50% + 6px);margin:0;font-size:10px;padding:0 5px;min-width:16px}
+ .toast{bottom:76px}
+ .gsearch kbd{display:none}
+ .qamenu{right:-40px}
+}
 @media(max-width:900px){
  .app{grid-template-columns:1fr}
  .side{position:fixed;left:0;top:0;bottom:0;z-index:60;width:260px;transform:translateX(-102%);transition:transform .22s;box-shadow:var(--shadow)}
  .side.open{transform:none}
  #burger{display:inline-grid}
  .top{padding:10px 12px}
- main{padding:16px 12px 90px}
+ main{padding:16px 12px 100px}
 }
 
 /* cards & kpis */
@@ -245,24 +291,30 @@ td.w{white-space:normal;min-width:240px}
 
 <div class="app" id="appView" hidden>
  <aside class="side" id="side">
-  <span class="logo" id="brandName">Shevs <b>Admin</b></span>
+  <div class="brandrow"><span class="mark" id="brandMark" aria-hidden="true">S</span><span class="logo" id="brandName">Shevs <b>Admin</b></span><button class="icon cbtn" id="cbtn" data-act="collapse" title="Collapse sidebar  ( [ )" aria-label="Collapse sidebar">«</button></div>
   <nav id="nav" aria-label="Main"></nav>
   <div class="sidefoot">
-   <button class="nlink" data-act="toggleTheme"><span class="ic">🌓</span> Dark / light</button>
-   <button class="nlink" data-act="logout"><span class="ic">🚪</span> Log out</button>
+   <a class="nlink" href="../" target="_blank" rel="noopener" title="Open the shop"><span class="ic">🛍️</span><span class="nl">View shop ↗</span></a>
+   <button class="nlink" data-act="toggleTheme" title="Dark / light"><span class="ic">🌓</span><span class="nl">Dark / light</span></button>
+   <button class="nlink" data-act="logout" title="Log out"><span class="ic">🚪</span><span class="nl">Log out</span></button>
   </div>
  </aside>
  <div class="mainwrap">
   <header class="top">
    <button class="icon" id="burger" data-act="menu" aria-label="Open menu">☰</button>
-   <div class="gsearch"><input id="gs" type="search" placeholder="Search orders, products, customers…  ( press / )" aria-label="Search everything" autocomplete="off"><div class="gsres" id="gsRes" hidden></div></div>
+   <div class="crumb" id="crumb"></div>
+   <div class="gsearch"><input id="gs" type="search" placeholder="Search or jump to…" aria-label="Search or jump to" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="gsRes"><kbd id="gsk">Ctrl K</kbd><div class="gsres" id="gsRes" hidden></div></div>
    <span class="sp"></span>
+   <span class="sync" id="sync" title="Connecting…"><i></i><span class="t">Live</span></span>
+   <button class="icon bell" data-act="goOrders" data-status="pending" title="Pending orders" aria-label="Pending orders">🔔<span class="dot" id="bellN" hidden></span></button>
+   <div class="qa"><button class="btn sm" data-act="qaToggle" aria-haspopup="true">＋ New</button><div class="gsres qamenu" id="qaMenu" hidden><button data-act="newProduct"><span><span class="ci">📦</span>Product</span></button><button data-act="newCategory"><span><span class="ci">🗂️</span>Category</span></button><button data-act="newCoupon"><span><span class="ci">🏷️</span>Coupon</span></button></div></div>
    <button class="icon" data-act="refresh" title="Refresh" aria-label="Refresh">⟳</button>
   </header>
   <main id="content"></main>
  </div>
 </div>
 
+<nav class="tabs" id="tabs" aria-label="Quick navigation"></nav>
 <div class="scrim" id="scrim"></div>
 <aside class="drawer" id="drawer" aria-hidden="true">
  <div class="dh"><h2 id="drawerTitle">Order</h2><button class="x" data-act="closeDrawer" aria-label="Close">✕</button></div>
@@ -291,10 +343,11 @@ const STATUSES=["pending","confirmed","dispatched","delivered","cancelled"];
 const DEFAULT_API="https://shevs-api-production.up.railway.app";
 const VIEWS=["dashboard","orders","customers","coupons","products","categories","settings"];
 const NAV=[
- ["Overview",[["dashboard","🏠","Dashboard"]]],
- ["Sales",[["orders","🧾","Orders"],["customers","👥","Customers"],["coupons","🏷️","Coupons"]]],
- ["Catalogue",[["products","📦","Products"],["categories","🗂️","Categories"]]],
- ["Store",[["settings","⚙️","Settings"]]]];
+ ["Overview",[["dashboard","🏠","Dashboard","d"]]],
+ ["Sales",[["orders","🧾","Orders","o"],["customers","👥","Customers","u"],["coupons","🏷️","Coupons","c"]]],
+ ["Catalogue",[["products","📦","Products","p"],["categories","🗂️","Categories","a"]]],
+ ["Store",[["settings","⚙️","Settings","s"]]]];
+const TABS=[["dashboard","🏠","Home"],["orders","🧾","Orders"],["products","📦","Products"],["customers","👥","Customers"]];
 const ACCENTS={green:["#0F5B4A","Forest"],blue:["#1D4ED8","Ocean"],purple:["#6D28D9","Plum"],orange:["#C2410C","Sunset"],rose:["#BE123C","Rose"],slate:["#334155","Slate"]};
 const REASONS={restock:"Restock",correction:"Stock count",damaged:"Damaged / lost",return:"Customer return",other:"Other",sale:"Sale",cancel:"Order cancelled",reopen:"Order re-opened"};
 
@@ -307,14 +360,16 @@ const st={
 };
 
 /* ---------- personal preferences (saved in this browser) ---------- */
-let prefs={theme:"auto",accent:"green",density:"comfortable",home:"dashboard"};
+let prefs={theme:"auto",accent:"green",density:"comfortable",home:"dashboard",collapsed:false};
 try{Object.assign(prefs,JSON.parse(localStorage.getItem("shevs.admin.prefs")||"{}"))}catch(e){}
 if(!ACCENTS[prefs.accent])prefs.accent="green";
 function applyPrefs(){
  const dark=prefs.theme==="dark"||(prefs.theme==="auto"&&matchMedia("(prefers-color-scheme: dark)").matches);
  document.documentElement.dataset.theme=dark?"dark":"light";
  document.documentElement.style.setProperty("--brand",ACCENTS[prefs.accent][0]);
- document.body.dataset.density=prefs.density}
+ document.body.dataset.density=prefs.density;
+ document.body.classList.toggle("collapsed",!!prefs.collapsed);
+ const cb=document.getElementById("cbtn");if(cb){cb.textContent=prefs.collapsed?"»":"«";cb.title=(prefs.collapsed?"Expand":"Collapse")+" sidebar  ( [ )";cb.setAttribute("aria-label",cb.title)}}
 function savePrefs(){try{localStorage.setItem("shevs.admin.prefs",JSON.stringify(prefs))}catch(e){}applyPrefs()}
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change",applyPrefs);
 applyPrefs();
@@ -364,25 +419,33 @@ async function start(){
  const h=location.hash.slice(1);
  go(VIEWS.includes(h)?h:(VIEWS.includes(prefs.home)?prefs.home:"dashboard"));
  clearInterval(pollT);pollT=setInterval(poll,45000);poll()}
-function brand(){$("brandName").innerHTML=esc(S.shop_name)+" <b>Admin</b>";document.title=($("pendDot")&&!$("pendDot").hidden?`(${$("pendDot").textContent}) `:"")+S.shop_name+" Admin"}
+function brand(){$("brandName").innerHTML=esc(S.shop_name)+" <b>Admin</b>";$("brandMark").textContent=(S.shop_name||"S").trim().charAt(0).toUpperCase()||"S";document.title=($("pendDot")&&!$("pendDot").hidden?`(${$("pendDot").textContent}) `:"")+S.shop_name+" Admin"}
 
 /* ---------- navigation ---------- */
 function buildNav(){
- $("nav").innerHTML=NAV.map(([sec,items])=>`<div class="nsec">${sec}</div>`+items.map(([v,ic,l])=>`<button class="nlink" data-view="${v}"><span class="ic">${ic}</span>${l}${v==="orders"?`<span class="dot" id="pendDot" hidden></span>`:""}</button>`).join("")).join("")}
+ $("nav").innerHTML=NAV.map(([sec,items])=>`<div class="nsec">${sec}</div>`+items.map(([v,ic,l,k])=>`<button class="nlink" data-view="${v}" title="${l}  ( g then ${k} )"><span class="ic">${ic}</span><span class="nl">${l}</span>${v==="orders"?`<span class="dot" id="pendDot" hidden></span>`:v==="products"?`<span class="dot warn" id="lowDot" hidden title="Low or out of stock"></span>`:""}</button>`).join("")).join("");
+ $("tabs").innerHTML=TABS.map(([v,ic,l])=>`<button data-act="goView" data-view="${v}"><span class="ic">${ic}</span>${l}${v==="orders"?`<span class="dot" id="pendTab" hidden></span>`:v==="products"?`<span class="dot warn" id="lowTab" hidden></span>`:""}</button>`).join("")+`<button data-act="menu"><span class="ic">☰</span>More</button>`}
 $("nav").addEventListener("click",e=>{const b=e.target.closest(".nlink");if(b){go(b.dataset.view);$("side").classList.remove("open")}});
+function setBadges(pend,low){
+ [["pendDot",pend],["pendTab",pend],["bellN",pend],["lowDot",low],["lowTab",low]].forEach(([id,n])=>{const el=$(id);if(el){el.hidden=!n;el.textContent=n>99?"99+":n}})}
+function setSync(ok){const el=$("sync");el.classList.toggle("off",!ok);el.querySelector(".t").textContent=ok?"Live":"Offline";el.title=ok?"Updated "+new Date().toLocaleTimeString("en-KE",{hour:"2-digit",minute:"2-digit"}):"Can't reach the server. Retrying…"}
 function go(v){
  closeAll();view=v;history.replaceState(null,"","#"+v);
  document.querySelectorAll(".nlink[data-view]").forEach(t=>{const on=t.dataset.view===v;t.classList.toggle("on",on);t.setAttribute("aria-current",on?"page":"false")});
+ document.querySelectorAll("#tabs [data-view]").forEach(t=>t.classList.toggle("on",t.dataset.view===v));
+ const sec=NAV.find(([,it])=>it.some(x=>x[0]===v));const item=sec&&sec[1].find(x=>x[0]===v);
+ $("crumb").innerHTML=item?`${esc(sec[0])} › <b>${item[2]}</b>`:"";
  window.scrollTo(0,0);
  ({dashboard:vDashboard,orders:vOrders,products:vProducts,categories:vCategories,coupons:vCoupons,customers:vCustomers,settings:vSettings})[v]()}
 async function poll(){
  try{
-  const d=await api("/orders"+qs({status:"pending",pageSize:1}));
-  const n=d.total,dot=$("pendDot");if(dot){dot.hidden=!n;dot.textContent=n}
+  const d=await api("/stats");
+  const n=(d.statusCounts&&d.statusCounts.pending)||0,low=d.lowStockCount||0;
+  setBadges(n,low);setSync(true);
   document.title=(n?`(${n}) `:"")+S.shop_name+" Admin";
   if(knownPending!=null&&n>knownPending){toast(`🛒 ${n-knownPending} new order${n-knownPending>1?"s":""} received`);
    if(view==="orders"&&!$("drawer").classList.contains("open"))loadOrders();if(view==="dashboard")vDashboard()}
-  knownPending=n}catch(e){if(e.auth)handleErr(e)}}
+  knownPending=n}catch(e){if(e.auth)handleErr(e);else setSync(false)}}
 
 /* ---------- events ---------- */
 document.addEventListener("click",e=>{
@@ -390,7 +453,9 @@ document.addEventListener("click",e=>{
  if(p){const[fn,d]=p.dataset.pg.split(":");({orders:()=>{st.orders.page+=+d;loadOrders()},products:()=>{st.products.page+=+d;loadProducts()},customers:()=>{st.customers.page+=+d;loadCustomers()}})[fn]();return}
  const a=e.target.closest("[data-act]");
  if(a){if(a.tagName==="A"&&(a.getAttribute("href")||"").startsWith("#"))e.preventDefault();act(a.dataset.act,a)}
- if(!e.target.closest(".gsearch"))$("gsRes").hidden=true});
+ if(!e.target.closest(".gsearch"))$("gsRes").hidden=true;
+ if(!e.target.closest(".qa"))$("qaMenu").hidden=true;
+ if($("side").classList.contains("open")&&!e.target.closest(".side,#burger,[data-act=menu]"))$("side").classList.remove("open")});
 document.addEventListener("error",e=>{const t=e.target;if(t&&t.tagName==="IMG"&&t.dataset.fb!==undefined){t.replaceWith(document.createTextNode(t.dataset.fb||"📦"))}},true);
 function act(name,el){
  const d=el.dataset;
@@ -406,12 +471,23 @@ function act(name,el){
   newCoupon:()=>couponForm(),editCoupon:()=>couponForm(+d.id),delCoupon:()=>delCoupon(+d.id,d.code),
   goOrders:()=>{st.orders.status=d.status||"";st.orders.page=1;go("orders")},
   goProducts:()=>{st.products.state=d.state||"";st.products.page=1;go("products")},
-  goView:()=>go(d.view),bulk:()=>bulkAct(d.do),clearSel:()=>{st.products.sel.clear();loadProducts()}};
+  goView:()=>{go(d.view);$("side").classList.remove("open")},collapse:()=>{prefs.collapsed=!prefs.collapsed;savePrefs()},qaToggle:()=>{const m=$("qaMenu");m.hidden=!m.hidden},bulk:()=>bulkAct(d.do),clearSel:()=>{st.products.sel.clear();loadProducts()}};
+ if(name!=="qaToggle")$("qaMenu").hidden=true;
  if(m[name])m[name]()}
-function closeAll(){closeDrawer();closeEditor();closeModal();$("side").classList.remove("open");$("gsRes").hidden=true}
+function closeAll(){$("qaMenu").hidden=true;closeDrawer();closeEditor();closeModal();$("side").classList.remove("open");$("gsRes").hidden=true}
 addEventListener("keydown",e=>{
  if(e.key==="Escape"){if($("modalRoot").firstChild)closeModal();else if($("editor").classList.contains("open"))tryCloseEditor();else{closeDrawer();$("gsRes").hidden=true;$("side").classList.remove("open")}}
- if(e.key==="/"&&!/INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName)&&!$("appView").hidden){e.preventDefault();$("gs").focus()}});
+ const typing=/INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName)||(document.activeElement||{}).isContentEditable;
+ if($("appView").hidden)return;
+ if((e.key==="k"||e.key==="K")&&(e.ctrlKey||e.metaKey)){e.preventDefault();$("gs").focus();$("gs").select();return}
+ if(typing||e.ctrlKey||e.metaKey||e.altKey)return;
+ if(e.key==="/"){e.preventDefault();$("gs").focus();return}
+ if(e.key==="["){act("collapse",{dataset:{}});return}
+ if(goKey){clearTimeout(goKey);goKey=0;const hit=NAV.flatMap(x=>x[1]).find(x=>x[3]===e.key.toLowerCase());if(hit){e.preventDefault();go(hit[0])}return}
+ if(e.key==="g"){goKey=setTimeout(()=>goKey=0,900)}});
+let goKey=0;
+function gsHint(){$("gs").placeholder=matchMedia("(max-width:900px)").matches?"Search…":"Search or jump to…"}
+gsHint();addEventListener("resize",gsHint);
 $("scrim").addEventListener("click",()=>{if($("editor").classList.contains("open"))tryCloseEditor();else closeDrawer()});
 
 /* ---------- shared pieces ---------- */
@@ -437,17 +513,49 @@ $("modalRoot").addEventListener("mousedown",e=>{if(e.target.classList.contains("
 function openDrawer(){$("drawer").classList.add("open");$("scrim").classList.add("open");$("drawer").setAttribute("aria-hidden","false")}
 function closeDrawer(){$("drawer").classList.remove("open");if(!$("editor").classList.contains("open"))$("scrim").classList.remove("open");$("drawer").setAttribute("aria-hidden","true")}
 
-/* ---------- global search ---------- */
+/* ---------- search + command palette ---------- */
+const CMDS=[
+ ...NAV.flatMap(([,items])=>items.map(([v,ic,l,k])=>({g:"Go to",ic,l,hint:"g "+k,act:"goView",data:{view:v}}))),
+ {g:"Actions",ic:"➕",l:"New product",act:"newProduct"},
+ {g:"Actions",ic:"➕",l:"New category",act:"newCategory"},
+ {g:"Actions",ic:"➕",l:"New coupon",act:"newCoupon"},
+ {g:"Actions",ic:"🧾",l:"Pending orders",act:"goOrders",data:{status:"pending"}},
+ {g:"Actions",ic:"⚠️",l:"Low-stock products",act:"goProducts",data:{state:"low"}},
+ {g:"Actions",ic:"🚫",l:"Out-of-stock products",act:"goProducts",data:{state:"out"}},
+ {g:"Actions",ic:"🌓",l:"Switch dark / light",act:"toggleTheme"},
+ {g:"Actions",ic:"↔️",l:"Collapse or expand sidebar",act:"collapse",hint:"["},
+ {g:"Actions",ic:"⟳",l:"Refresh this page",act:"refresh"},
+ {g:"Actions",ic:"🛍️",l:"View shop",href:"../"},
+ {g:"Actions",ic:"🚪",l:"Log out",act:"logout"}];
+function cmdHtml(q){
+ const w=q.toLowerCase().split(/\s+/).filter(Boolean);
+ let list=CMDS.filter(c=>w.every(x=>(c.l+" "+c.g).toLowerCase().includes(x)));
+ if(w.length)list=list.slice(0,4);
+ let g="",h="";
+ list.forEach(c=>{
+  if(c.g!==g){g=c.g;h+=`<h4>${g}</h4>`}
+  const k=c.hint?`<small class="k">${esc(c.hint)}</small>`:"";
+  const inner=`<span><span class="ci">${c.ic}</span>${esc(c.l)}</span>${k}`;
+  h+=c.href?`<a href="${c.href}" target="_blank" rel="noopener">${inner}</a>`:`<button data-act="${c.act}"${Object.entries(c.data||{}).map(([a,b])=>` data-${a}="${esc(b)}"`).join("")}>${inner}</button>`});
+ return h}
+function showPalette(html){const box=$("gsRes");box.innerHTML=html;box.hidden=false;$("gs").setAttribute("aria-expanded","true")}
+function selMove(d){const items=[...$("gsRes").querySelectorAll("button,a")];if(!items.length)return;let i=items.findIndex(x=>x.classList.contains("sel"));items.forEach(x=>x.classList.remove("sel"));i=i+d;if(i<0)i=items.length-1;if(i>=items.length)i=0;items[i].classList.add("sel");items[i].scrollIntoView({block:"nearest"})}
+$("gs").addEventListener("focus",()=>{if($("gsRes").hidden)showPalette(cmdHtml($("gs").value.trim()))});
+$("gs").addEventListener("keydown",e=>{
+ if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();if($("gsRes").hidden)showPalette(cmdHtml($("gs").value.trim()));selMove(e.key==="ArrowDown"?1:-1)}
+ else if(e.key==="Enter"){const items=[...$("gsRes").querySelectorAll("button,a")];const t=items.find(x=>x.classList.contains("sel"))||items[0];if(t){e.preventDefault();t.click();$("gs").blur()}}});
 $("gs").addEventListener("input",debounce(async()=>{
- const q=$("gs").value.trim(),box=$("gsRes");
- if(q.length<2){box.hidden=true;return}
+ const q=$("gs").value.trim();
+ const local=cmdHtml(q);
+ showPalette(local);
+ if(q.length<2)return;
  try{
   const[o,p,c]=await Promise.all([api("/orders"+qs({q,pageSize:5})),api("/products"+qs({q,pageSize:5})),api("/customers"+qs({q,pageSize:3}))]);
-  box.innerHTML=(o.orders.length?`<h4>Orders</h4>`+o.orders.map(x=>`<button data-act="openOrder" data-code="${esc(x.order_code)}"><span><b>${esc(x.order_code)}</b> · ${esc(x.customer_name)}</span><small>${kes(x.total)} · ${esc(x.status)}</small></button>`).join(""):"")
+  if($("gs").value.trim()!==q)return;
+  const remote=(o.orders.length?`<h4>Orders</h4>`+o.orders.map(x=>`<button data-act="openOrder" data-code="${esc(x.order_code)}"><span><b>${esc(x.order_code)}</b> · ${esc(x.customer_name)}</span><small>${kes(x.total)} · ${esc(x.status)}</small></button>`).join(""):"")
   +(p.products.length?`<h4>Products</h4>`+p.products.map(x=>`<button data-act="editProduct" data-id="${x.id}"><span>${esc(x.emoji)} ${esc(x.name)}</span><small>${kes(x.price)} · ${x.stock} in stock</small></button>`).join(""):"")
   +(c.customers.length?`<h4>Customers</h4>`+c.customers.map(x=>`<button data-act="gsCustomer" data-q="${esc(x.phone)}"><span>${esc(x.name)}</span><small>${esc(x.phone)} · ${x.orders} order${x.orders>1?"s":""}</small></button>`).join(""):"");
-  if(!box.innerHTML)box.innerHTML=`<p class="muted" style="padding:12px">No matches for “${esc(q)}”.</p>`;
-  box.hidden=false}catch(e){handleErr(e)}}));
+  showPalette(local+remote||`<p class="muted" style="padding:12px">No matches for “${esc(q)}”.</p>`)}catch(e){handleErr(e)}}));
 $("gsRes").addEventListener("click",e=>{const b=e.target.closest("[data-act=gsCustomer]");if(b){st.customers.q=b.dataset.q;st.customers.page=1;go("customers")}$("gsRes").hidden=true;$("gs").value=""});
 
 /* ---------- dashboard ---------- */
