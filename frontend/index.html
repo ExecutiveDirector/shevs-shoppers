@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <title>Shevs — Your shop online in Kenya</title>
-<meta name="description" content="Shevs is an independent shop in Kenya. Phones, electronics, fashion, home and groceries, delivered countrywide. Order online, confirm on WhatsApp, pay on delivery or M-Pesa.">
+<meta name="description" content="Shevs is an independent shop in Kenya. Order online, confirm on WhatsApp, pay on delivery or M-Pesa. Delivered countrywide.">
 <meta property="og:title" content="Shevs — Your shop online in Kenya">
-<meta property="og:description" content="Phones, electronics, fashion, home and groceries, delivered countrywide. Confirm on WhatsApp, pay on delivery or M-Pesa.">
+<meta property="og:description" content="Delivered countrywide. Confirm on WhatsApp, pay on delivery or M-Pesa.">
 <meta property="og:type" content="website">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0B4A3A">
@@ -171,8 +171,8 @@ background-image:radial-gradient(circle at 20% 30%,rgba(255,255,255,.05) 0 2px,t
 .sh h2{font-size:clamp(24px,3vw,32px)}
 .sh p{color:var(--mute);margin-top:4px}
 .ctl{display:flex;align-items:center;gap:8px}
-.aisles{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
-.aisle{border:0;border-radius:18px;padding:16px;text-align:left;display:flex;flex-direction:column;gap:14px;background:hsl(var(--t) var(--sat) var(--lit));transition:transform .15s;min-height:118px}
+.aisles{gap:12px}
+.aisle{flex:0 0 164px;scroll-snap-align:start;border:0;border-radius:18px;padding:16px;text-align:left;display:flex;flex-direction:column;gap:14px;background:hsl(var(--t) var(--sat) var(--lit));transition:transform .15s;min-height:118px}
 .aisle:hover{transform:translateY(-3px)}
 .aisle .e{font-size:34px;line-height:1}
 .aisle b{font:800 16px/1.15 "Bricolage Grotesque",sans-serif;letter-spacing:-.01em;margin-top:auto}
@@ -328,7 +328,7 @@ footer .logo{display:inline-block;margin-bottom:8px}
 .stickybuy{display:none}
 .bnav{display:none}
 
-@media (max-width:1100px){.slider>.p{flex-basis:calc((100% - 42px)/4)}.aisles{grid-template-columns:repeat(4,1fr)}.skrow{grid-template-columns:repeat(4,1fr)}}
+@media (max-width:1100px){.slider>.p{flex-basis:calc((100% - 42px)/4)}.skrow{grid-template-columns:repeat(4,1fr)}}
 @media (max-width:900px){
 .ib{display:grid}
 .hero-in{grid-template-columns:1fr;gap:34px;padding-top:56px}
@@ -341,7 +341,7 @@ footer .logo{display:inline-block;margin-bottom:8px}
 .fg{grid-template-columns:1fr 1fr}
 .slider>.p{flex-basis:calc((100% - 28px)/3.3)}
 .how{grid-template-columns:1fr}.how li+li{border-left:0;border-top:1px solid rgba(255,255,255,.16)}
-.aisles{grid-template-columns:repeat(3,1fr)}
+
 .stickybuy:not([hidden]){display:block;position:fixed;left:0;right:0;bottom:64px;background:var(--card);border-top:1px solid var(--line);z-index:50;padding:10px 16px;box-shadow:0 -8px 24px rgba(0,0,0,.1)}
 .stickybuy .sbrow{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .stickybuy .sbprice{font:800 20px "Bricolage Grotesque",sans-serif}
@@ -358,7 +358,14 @@ footer .logo{display:inline-block;margin-bottom:8px}
 .search{height:46px}
 .go{display:none}
 .stripbar{display:none}
+header{top:calc(-1 * var(--r1,54px))}
 .wrap{padding:0 16px}
+.search input,.fld input,.fld select,.trk input,.fsel select{font-size:16px}
+.top .wrap{padding-top:6px;padding-bottom:6px;font-size:12.5px}
+.lbtn,.ib{min-height:44px}
+.sec{margin-top:34px}
+.sh h2{font-size:22px}
+.sh p{font-size:14px}
 .bnav{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);z-index:45;padding-bottom:env(safe-area-inset-bottom,0px)}
 .bnav button{border:0;background:none;color:var(--mute);display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0 7px;font-size:12px;font-weight:500;position:relative}
 .bnav button:hover,.bnav button:focus-visible{color:var(--accent)}
@@ -369,7 +376,21 @@ body{padding-bottom:64px}
 }
 @media (max-width:600px){
 .slider{gap:10px}
-.slider>.p{flex-basis:44%}
+.slider>.p{flex-basis:43%}
+.slider{margin:0 -16px;padding:2px 16px 8px;scroll-padding-left:16px}
+.p{border-radius:16px}
+.add{padding:11px}
+.crumbs{margin:14px 0 10px}
+.dwrap{gap:20px}
+.dgal{margin:0 -16px}
+.dgal .ph.big{border-radius:0;aspect-ratio:1/1}
+.dinfo h1{font-size:27px}
+.dcta .slot{flex:1 1 100%}
+.dfav{flex:1;justify-content:center}
+.osum{padding:16px}
+.band{margin-top:34px}
+.conf h1{font-size:30px}
+.drawer.right{width:100vw}
 .ph{font-size:46px}
 .p h3{font-size:13.5px;min-height:36px}
 .pr b{font-size:17px}
@@ -381,7 +402,9 @@ body{padding-bottom:64px}
 .hero p.lead{font-size:15.5px;margin:12px 0 18px}
 .hero h1{font-size:34px}
 .hero .btn{padding:12px 18px;font-size:15px}
-.hero .now{margin-top:16px}
+.hero .now{display:none}
+.hero .row{flex-wrap:nowrap}
+.hero .row .btn{flex:1;text-align:center;padding:13px 10px}
 .hero-in{gap:26px}
 .window{padding:40px 10px 0;gap:8px}
 .shelf{margin:0 -10px}
@@ -389,9 +412,8 @@ body{padding-bottom:64px}
 .wi .wn{font-size:12px}
 .facts .wrap{padding:0}
 .fact{padding:13px 16px}
-.aisles{grid-template-columns:repeat(2,1fr)}
-.aisle{min-height:96px;flex-direction:row;align-items:center;gap:10px;padding:12px}
-.aisle b{margin:0;font-size:14.5px}
+.aisle{flex-basis:132px;min-height:104px;padding:12px}
+.aisle b{font-size:14.5px}
 .aisle .e{font-size:28px}
 .band{padding:24px}
 .how li{padding:20px}
@@ -413,7 +435,7 @@ body{padding-bottom:64px}
 <div class="sbox" id="sbox">
 <form class="search" id="sform" role="search" autocomplete="off">
 <span class="si" data-ico="search"></span>
-<input id="q" type="search" placeholder="Search phones, shoes, rice and more" aria-label="Search products" role="combobox" aria-expanded="false" aria-controls="sug" aria-autocomplete="list" enterkeyhint="search" autocapitalize="off" spellcheck="false">
+<input id="q" type="search" placeholder="Search products and brands" aria-label="Search products" role="combobox" aria-expanded="false" aria-controls="sug" aria-autocomplete="list" enterkeyhint="search" autocapitalize="off" spellcheck="false">
 <button class="clr" id="clr" type="button" aria-label="Clear search" hidden data-ico="x"></button>
 <button class="go" type="submit">Search</button>
 </form>
@@ -450,7 +472,7 @@ body{padding-bottom:64px}
 <div class="wrap hero-in">
 <div>
 <h1>Your everyday shop, now at your door.</h1>
-<p class="lead">Phones, kitchen, fashion, groceries and more, picked and packed by us. Choose what you like, confirm on WhatsApp, pay on delivery or M-Pesa.</p>
+<p class="lead">Everyday essentials, picked and packed by us. Choose what you like, confirm on WhatsApp, pay on delivery or M-Pesa.</p>
 <div class="row"><a class="btn" href="#shelves" onclick="go(-2);return false">Start shopping</a><a class="btn ghost" id="heroWa" href="https://wa.me/254102327600" target="_blank" rel="noopener">Chat on WhatsApp</a></div>
 <p class="now"><i aria-hidden="true"></i><span id="nowTxt">We reply the same day</span></p>
 </div>
@@ -459,7 +481,7 @@ body{padding-bottom:64px}
 </section>
 <div class="facts"><div class="wrap" id="facts"></div></div>
 <div class="wrap">
-<section class="sec" id="aisles"><div class="sh"><div><h2>Browse the aisles</h2></div></div><div class="aisles" id="aisleGrid"></div></section>
+<section class="sec" id="aisles"><div class="sh"><div><h2>Browse the aisles</h2></div><div class="ctl"><button class="arr" type="button" aria-label="Scroll left" onclick="slide(this,-1)">‹</button><button class="arr" type="button" aria-label="Scroll right" onclick="slide(this,1)">›</button></div></div><div class="slider aisles" id="aisleGrid"></div></section>
 <div id="shelves"><div class="skrow"><div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div></div></div>
 <section class="sec" id="how"><div class="sh"><div><h2>How ordering works</h2><p>No account, no card details. Three steps.</p></div></div>
 <ol class="how" style="padding:0">
@@ -505,7 +527,7 @@ body{padding-bottom:64px}
 <script>
 /* ---------- config ---------- */
 // Set at deploy time (the Vercel build rewrites the next line with the Railway API URL).
-// Left empty, the page runs on a built-in demo catalog and no orders are saved.
+// If it is empty the shop shows a 'could not load' message instead of products.
 const API_BASE="";
 const DEF={shopName:"Shevs",whatsappNumber:"254102327600",deliveryFee:250,freeDeliveryThreshold:3000};
 let CFG={...DEF};
@@ -537,22 +559,6 @@ const G=id=>PM.get(+id);
 
 /* ---------- catalog ---------- */
 let CATS=[],P=[],PM=new Map(),CC=[],VOC=[],CATIDS=[];
-const DEMO=[
-["Phones & Tablets","📱",[["📱","Smartphone 6.7\" 128GB",18999],["📲","Tablet 10\" 64GB",14500],["🔋","Power bank 20000mAh",2400],["📞","Dual SIM feature phone",1799],["🎧","Wired earphones",450],["🔌","Fast charger 20W",990]]],
-["Electronics","🎧",[["🎧","Wireless earbuds",1899],["🔊","Bluetooth speaker",2450],["📺","Smart TV 43\"",32500],["📻","Home theatre system",8900],["📷","Action camera",6400],["💡","Smart LED bulb",750]]],
-["Computing","💻",[["💻","Laptop 15.6\" Core i5",56500],["🖱️","Wireless mouse",790],["⌨️","Keyboard",1450],["🖨️","Printer",14800],["💾","Flash disk 64GB",850],["🖥️","Monitor 24\"",16500]]],
-["Home & Kitchen","🍳",[["🍲","Non-stick pot set",3299],["🍟","Air fryer 4L",6999],["☕","Electric kettle 1.8L",1499],["🛏️","Bedsheet set",1800],["🧺","Laundry basket",650],["🔪","Kitchen knife set",1200]]],
-["Fashion","👕",[["👕","Men's cotton T-shirt",699],["👜","Women's handbag",1899],["👟","Sneakers",2799],["👗","Summer dress",1950],["🕶️","Sunglasses",799],["⌚","Wrist watch",2300]]],
-["Beauty & Health","💄",[["🧴","Face moisturiser 200ml",850],["💧","Vitamin C serum",1200],["💄","Lipstick",550],["🪥","Electric toothbrush",1900],["🧼","Body wash 500ml",480],["💆","Handheld massager",2700]]],
-["Groceries","🛒",[["🍚","Basmati rice 5kg",1050],["🫒","Cooking oil 3L",980],["🥛","Milk pack of 6",420],["☕","Tea leaves 500g",360],["🍞","Wheat flour 2kg",190],["🍬","Sugar 2kg",320]]],
-["Baby & Kids","🧸",[["👶","Baby stroller",9500],["🧱","Building blocks",1350],["🍼","Feeding bottle set",900],["🧸","Teddy bear",750],["🎒","School bag",1400],["🚲","Kids bike",6500]]],
-["Sports & Fitness","🏋️",[["🧘","Yoga mat",1299],["🏋️","Dumbbells 10kg",2999],["⚽","Football",1200],["🏃","Running shoes",3800],["🪢","Skipping rope",350],["🥤","Water bottle",600]]],
-["Gaming","🎮",[["🎮","Game controller",3499],["🎧","Gaming headset",2799],["🕹️","Game console",45000],["🖱️","Gaming mouse",1900],["⌨️","Gaming keyboard",3200],["💿","Game disc",4500]]],
-["Automotive","🚗",[["🚗","Car dash camera",4200],["📍","Car phone holder",550],["🔧","Tool kit",3400],["🧽","Car wash kit",1800],["🔦","LED headlights",2600],["🛞","Tyre inflator",2900]]],
-["Books & Office","📚",[["📓","Notebook pack of 5",450],["📚","Bestselling novel",900],["🖊️","Pen box",300],["📎","Stapler set",480],["💼","Laptop bag",1700],["🗂️","File folder set",620]]]];
-function demoCatalog(){const cats=DEMO.map(([n,e])=>({id:0,n,e})),prods=[];
-DEMO.forEach(([c,ce,its],ci)=>its.forEach(([e,n,p],i)=>{const id=prods.length+1;prods.push({id,n,c,ci,e,p,o:Math.round(p*(1.12+((i*7+ci*3)%6)*.06)/10)*10,r:4+((i*3+ci)%9)/10,rc:20+((i*37+ci*11)%380),st:(id*13+7)%23,eta:["1–3 days","2–4 days","3–5 days"][ci%3],img:"",d:"",br:"",tg:[],f:i===0})}));
-return{cats,prods}}
 const parseTags=t=>Array.isArray(t)?t.map(String):String(t||"").split(",").map(s=>s.trim()).filter(Boolean).slice(0,8);
 async function apiCatalog(){
 const [cr,...pages]=await Promise.all([apiGet("/api/categories"),apiGet("/api/products?pageSize=100&page=1")]);
@@ -566,8 +572,9 @@ return{cats,prods}}
 function setCatalog({cats,prods}){
 CATS=cats.map(c=>[c.n,c.e]);P=prods;PM=new Map(P.map(x=>[x.id,x]));CC=CATS.map((_,i)=>P.filter(x=>x.ci===i).length);
 P.forEach(x=>{x.nn=norm(x.n);x.w=norm(x.n+" "+x.c+" "+x.br+" "+x.tg.join(" ")).split(" ")});
+POP=CATS.map((_,i)=>P.find(x=>x.ci===i&&x.st>0)).filter(Boolean).map(x=>x.n).slice(0,6);
 VOC=[...new Set(P.flatMap(x=>x.w).filter(w=>w.length>=4&&!/\d/.test(w)))]}
-const POP=["smartphone","air fryer","sneakers","basmati rice","wireless earbuds","laptop"];
+let POP=[];
 
 /* ---------- state ---------- */
 let act=-1,openP=null,lastFocus=null,io;
@@ -667,7 +674,7 @@ if(by[S.sort])list=[...list].sort(by[S.sort]);
 $("rt").textContent=all.length?`${list.length} result${list.length===1?"":"s"} for “${S.q}”`:`No results for “${S.q}”`;
 $("rs").textContent=all.length&&list.length!==all.length?`Showing ${list.length} of ${all.length} matches`:"";
 if(!all.length){const dm=didYouMean(S.q);
-$("rgrid").innerHTML=`<div class="empty"><span class="eb" aria-hidden="true">🔍</span><h3>We couldn’t find “${esc(S.q)}”</h3><p>Check the spelling or try a simpler word, like “phone” or “shoes”. Or ask us on WhatsApp, we may be able to get it.</p>${dm?`<button class="btn" type="button" onclick="runSearch('${esc(dm)}')">Search for “${esc(dm)}”</button>`:`<a class="btn" href="${esc(waLink("Hi Shevs, do you have "+S.q+"?"))}" target="_blank" rel="noopener">Ask on WhatsApp</a>`}<div class="cp">${CATS.map(([n,e],i)=>`<button type="button" onclick="go(${i})">${e} ${esc(n)}</button>`).join("")}</div></div>`;return}
+$("rgrid").innerHTML=`<div class="empty"><span class="eb" aria-hidden="true">🔍</span><h3>We couldn’t find “${esc(S.q)}”</h3><p>Check the spelling or try a simpler word. Or ask us on WhatsApp, we may be able to get it.</p>${dm?`<button class="btn" type="button" onclick="runSearch('${esc(dm)}')">Search for “${esc(dm)}”</button>`:`<a class="btn" href="${esc(waLink("Hi Shevs, do you have "+S.q+"?"))}" target="_blank" rel="noopener">Ask on WhatsApp</a>`}<div class="cp">${CATS.map(([n,e],i)=>`<button type="button" onclick="go(${i})">${e} ${esc(n)}</button>`).join("")}</div></div>`;return}
 if(!list.length){$("rgrid").innerHTML=`<div class="empty"><span class="eb" aria-hidden="true">🧺</span><h3>Nothing matches these filters</h3><p>Try a wider price range, rating or category.</p><button class="btn" type="button" onclick="S.cat=-1;S.rating=0;S.sale=false;drawTools();drawGrid()">Reset filters</button></div>`;return}
 $("rgrid").innerHTML=list.map(card).join("")}
 
@@ -722,7 +729,6 @@ function openCOD(){openInfo("Cash on delivery",`<p>Pay in cash when your order a
 const STAGES=[["pending","Order received"],["confirmed","Confirmed by us"],["dispatched","On its way"],["delivered","Delivered"]];
 function openTrack(){openInfo("Track your order",`<p>Enter the order number from your confirmation, like SHV-ABC234.</p><form class="trk" onsubmit="trackOrder(event)"><input id="trkq" placeholder="SHV-XXXXXX" aria-label="Order number" autocomplete="off" required><button class="btn" type="submit">Track</button></form><div id="trkOut" aria-live="polite"></div>`)}
 async function trackOrder(e){e.preventDefault();const code=$("trkq").value.trim().toUpperCase(),out=$("trkOut");if(!code)return;
-if(!API_BASE){out.innerHTML=`<p>Tracking isn't available in the demo. Message us on WhatsApp with your order number.</p>`;return}
 out.innerHTML="<p>Looking it up…</p>";
 try{const o=await apiGet("/api/orders/"+encodeURIComponent(code));
 if(o.status==="cancelled"){out.innerHTML=`<p><b>${esc(o.orderCode)}</b> was cancelled. Message us on WhatsApp if that's unexpected.</p>`;return}
@@ -773,12 +779,11 @@ if(res.data.valid){ckDiscount=res.data.discountAmount;ckCode=v;msg.textContent=r
 else{ckDiscount=0;ckCode="";msg.textContent=res.data.message;msg.style.color="var(--pink)"}
 updateCkTotals();return}
 if(res&&!res.ok){ckDiscount=0;ckCode="";msg.textContent=res.error;msg.style.color="var(--pink)";updateCkTotals();return}
-if(!API_BASE&&v==="WELCOME200"&&ckSubtotal()>=1000){ckDiscount=200;ckCode=v;msg.textContent="Applied — KES 200 off (demo)";msg.style.color="var(--accent)"}
-else{ckDiscount=0;ckCode="";msg.textContent=API_BASE?"We couldn't check that code right now. Try again.":"That code isn't valid";msg.style.color="var(--pink)"}
+ckDiscount=0;ckCode="";msg.textContent="We couldn't check that code right now. Try again.";msg.style.color="var(--pink)"
 updateCkTotals()}
 function updateCkTotals(){$("ckTotals").innerHTML=`<div class="oi"><span>Subtotal</span><span>${kes(ckSubtotal())}</span></div>${ckDiscount?`<div class="oi"><span>Coupon (${esc(ckCode)})</span><span>−${kes(ckDiscount)}</span></div>`:""}<div class="oi"><span>Delivery</span><span>${ckShip()?kes(ckShip()):"Free"}</span></div><div class="oi tot"><span>Total</span><span>${kes(ckTotal())}</span></div>`}
 function renderCheckout(){const ids=cartIds();
-$("checkoutBody").innerHTML=`<div class="ckwrap"><form id="ckform" novalidate><h1 style="font-size:30px;margin-bottom:18px">Delivery details</h1><div class="fld"><label for="ckn">Full name</label><input id="ckn" required autocomplete="name"></div><div class="fld"><label for="ckp">Phone number</label><input id="ckp" type="tel" required placeholder="07XX XXX XXX" autocomplete="tel"></div><div class="fld"><label for="ckc">County</label><select id="ckc" required><option value="">Select county</option>${["Nairobi","Mombasa","Kisumu","Nakuru","Uasin Gishu","Kiambu","Machakos","Other"].map(c=>`<option>${c}</option>`).join("")}</select></div><div class="fld"><label for="cka">Estate / street address</label><input id="cka" required autocomplete="street-address"></div><h2 style="font-size:18px;margin:20px 0 10px">How will you pay?</h2><label class="pm"><input type="radio" name="pay" value="mpesa" checked><span>M-Pesa<small>We share payment details on WhatsApp</small></span></label><label class="pm"><input type="radio" name="pay" value="cod"><span>Cash on delivery<small>Pay the rider when it arrives</small></span></label><button class="btn" type="submit" style="margin-top:18px;width:100%;text-align:center;padding:15px;font-size:16px">Send order</button><p class="note">${API_BASE?"You won't be charged on this website. We confirm your order on WhatsApp first.":"This is a demo. No real order is saved."}</p></form><div class="osum"><h2 style="font-size:19px;margin-bottom:10px">Order summary</h2>${ids.map(id=>`<div class="oi"><span>${cart[id]} × ${esc(G(id).n)}</span><span>${kes(G(id).p*cart[id])}</span></div>`).join("")}<div class="fld" style="margin:14px 0"><label for="ckq">Coupon code</label><div style="display:flex;gap:8px"><input id="ckq" placeholder="Enter code" style="flex:1"><button type="button" class="see" onclick="applyCoupon()">Apply</button></div><div id="ckqMsg" class="note" aria-live="polite" style="margin-top:4px"></div></div><div id="ckTotals"></div></div></div>`;
+$("checkoutBody").innerHTML=`<div class="ckwrap"><form id="ckform" novalidate><h1 style="font-size:30px;margin-bottom:18px">Delivery details</h1><div class="fld"><label for="ckn">Full name</label><input id="ckn" required autocomplete="name"></div><div class="fld"><label for="ckp">Phone number</label><input id="ckp" type="tel" required placeholder="07XX XXX XXX" autocomplete="tel"></div><div class="fld"><label for="ckc">County</label><select id="ckc" required><option value="">Select county</option>${["Nairobi","Mombasa","Kisumu","Nakuru","Uasin Gishu","Kiambu","Machakos","Other"].map(c=>`<option>${c}</option>`).join("")}</select></div><div class="fld"><label for="cka">Estate / street address</label><input id="cka" required autocomplete="street-address"></div><h2 style="font-size:18px;margin:20px 0 10px">How will you pay?</h2><label class="pm"><input type="radio" name="pay" value="mpesa" checked><span>M-Pesa<small>We share payment details on WhatsApp</small></span></label><label class="pm"><input type="radio" name="pay" value="cod"><span>Cash on delivery<small>Pay the rider when it arrives</small></span></label><button class="btn" type="submit" style="margin-top:18px;width:100%;text-align:center;padding:15px;font-size:16px">Send order</button><p class="note">You won't be charged on this website. We confirm your order on WhatsApp first.</p></form><div class="osum"><h2 style="font-size:19px;margin-bottom:10px">Order summary</h2>${ids.map(id=>`<div class="oi"><span>${cart[id]} × ${esc(G(id).n)}</span><span>${kes(G(id).p*cart[id])}</span></div>`).join("")}<div class="fld" style="margin:14px 0"><label for="ckq">Coupon code</label><div style="display:flex;gap:8px"><input id="ckq" placeholder="Enter code" style="flex:1"><button type="button" class="see" onclick="applyCoupon()">Apply</button></div><div id="ckqMsg" class="note" aria-live="polite" style="margin-top:4px"></div></div><div id="ckTotals"></div></div></div>`;
 updateCkTotals();
 $("ckform").onsubmit=async e=>{e.preventDefault();
 const btn=$("ckform").querySelector('button[type="submit"]'),label=btn.textContent;
@@ -790,16 +795,15 @@ if(!address){toast("Please enter your delivery address");$("cka").focus();return
 btn.disabled=true;btn.textContent="Sending…";
 const payload={customerName:name,phone,county,address,paymentMethod:document.querySelector('input[name="pay"]:checked').value,couponCode:ckDiscount?ckCode:null,items:cartIds().map(id=>({productId:id,qty:cart[id]}))};
 const res=await apiPost("/api/orders",payload);
-if(res===null){if(API_BASE){btn.disabled=false;btn.textContent=label;toast("We couldn't reach the shop. Check your connection and try again.");return}placeOrder(ckTotal());return}
+if(res===null){btn.disabled=false;btn.textContent=label;toast("We couldn't reach the shop. Check your connection and try again.");return}
 if(res.ok){placeOrder(res.data.total,res.data.orderCode,res.data.whatsappUrl);return}
 btn.disabled=false;btn.textContent=label;toast(res.error)}}
-function buildClientWhatsAppLink(oid,total){const lines=[`Hi Shevs, I'd like to confirm order ${oid}.`,"",...cartIds().map(id=>`${cart[id]} x ${G(id).n} — ${kes(G(id).p*cart[id])}`),"",`Total: ${kes(total)}`];return waLink(lines.join("\n"))}
-function placeOrder(total,orderCode,whatsappUrl){const oid=orderCode||("SHV-"+Date.now().toString().slice(-6));
-const wa=whatsappUrl||buildClientWhatsAppLink(oid,total);
+function placeOrder(total,orderCode,whatsappUrl){const oid=orderCode;
+const wa=whatsappUrl||waLink("Hi Shevs, I'd like to confirm order "+oid);
 const d=new Date(Date.now()+3*86400000),eta=d.toLocaleDateString("en-KE",{weekday:"long",day:"numeric",month:"short"});
 cart={};syncCart();
-$("checkoutBody").innerHTML=`<div class="conf"><span class="cb-ic" aria-hidden="true">✅</span><h1>Order ${esc(oid)} is in</h1><p>${kes(total)} · expect delivery around <b>${eta}</b>.</p><ol><li><b>Send it on WhatsApp.</b> Tap the button so we get your order.</li><li><b>We confirm.</b> We reply to check stock and arrange delivery.</li><li><b>You pay.</b> ${orderCode?"By M-Pesa or cash, as you chose.":"This is a demo, so nothing was saved."}</li></ol><a class="btn" href="${esc(wa)}" target="_blank" rel="noopener">Send order on WhatsApp</a><br><button class="see" type="button" onclick="go(-1)">Continue shopping</button></div>`;
-if(orderCode)loadCatalog(true)}
+$("checkoutBody").innerHTML=`<div class="conf"><span class="cb-ic" aria-hidden="true">✅</span><h1>Order ${esc(oid)} is in</h1><p>${kes(total)} · expect delivery around <b>${eta}</b>.</p><ol><li><b>Send it on WhatsApp.</b> Tap the button so we get your order.</li><li><b>We confirm.</b> We reply to check stock and arrange delivery.</li><li><b>You pay.</b> By M-Pesa or cash, as you chose.</li></ol><a class="btn" href="${esc(wa)}" target="_blank" rel="noopener">Send order on WhatsApp</a><br><button class="see" type="button" onclick="go(-1)">Continue shopping</button></div>`;
+loadCatalog(true)}
 
 /* ---------- home rendering ---------- */
 function slide(b,d){const s=b.closest("section").querySelector(".slider");s.scrollBy({left:d*s.clientWidth*.8,behavior:smooth()})}
@@ -840,10 +844,10 @@ if(API_BASE){
 const [s,c]=await Promise.all([apiGet("/api/settings").catch(()=>null),apiCatalog()]);
 if(s)CFG={...DEF,...s};
 setCatalog(c)}
-else setCatalog(demoCatalog());
+else throw new Error("API_BASE is not set");
 }catch(e){if(!quiet)showError();return}
 applyConfig();pruneState();build();renderHome();nav();syncCart();syncWishBadge();metrics()}
-function metrics(){const h=$("hdr").offsetHeight,r=document.documentElement.style;r.setProperty("--hh",h+"px");r.setProperty("--off",(h+12)+"px")}
+function metrics(){const h=$("hdr").offsetHeight,m=matchMedia("(max-width:700px)").matches,r1=m?Math.max(0,$("sbox").offsetTop-10):0,r=document.documentElement.style;r.setProperty("--r1",r1+"px");r.setProperty("--hh",h+"px");r.setProperty("--off",(h-r1+12)+"px")}
 
 /* ---------- init ---------- */
 addEventListener("resize",metrics);
