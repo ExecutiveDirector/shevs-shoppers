@@ -10,6 +10,11 @@ const { notFoundHandler, errorHandler } = require("./middleware/errorHandler");
 function createApp() {
   const app = express();
 
+  // Railway (and most hosts) put a reverse proxy in front of the app. Without
+  // this, every visitor looks like the same IP and shares one rate-limit bucket.
+  app.set("trust proxy", 1);
+  app.disable("x-powered-by");
+
   const allowedOrigins = (process.env.CORS_ORIGIN || "")
     .split(",")
     .map((o) => o.trim())

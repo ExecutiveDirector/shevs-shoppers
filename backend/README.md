@@ -19,10 +19,14 @@ npm run migrate           # applies migrations/001_init.sql and 002_seed.sql
 npm run dev                # starts on http://localhost:4000
 ```
 
-`npm run migrate` is safe to re-run for the schema file, but **not** for
-`002_seed.sql` — it will insert duplicate categories/products if run twice
-against a database that already has them. Only run migrations against a
-fresh database, or remove `002_seed.sql` after the first run.
+`npm run migrate` is safe to re-run: applied migrations are recorded in a
+`schema_migrations` table and skipped next time. A database that was set up
+by hand before this tracker existed is detected and adopted automatically.
+On Railway it runs as the **pre-deploy command**, so every deploy applies any
+new migration before the new code starts (a failed migration aborts the deploy
+and the old version keeps serving).
+
+Run the API tests (no database needed — MySQL is stubbed) with `npm test`.
 
 ## Environment variables
 
@@ -32,8 +36,8 @@ See `.env.example` for the full list. The two easiest to get wrong:
   678` or a placeholder with letters) — anything non-numeric gets silently
   stripped and breaks the WhatsApp link. The server warns on startup if this
   looks wrong.
-- `ADMIN_API_KEY` protects the two admin routes (list orders, update order
-  status). Generate one with:
+- `ADMIN_API_KEY` protects every `/api/admin/*` route. It is compared in
+  constant time, and repeated wrong guesses are rate-limited. Generate one with:
   ```bash
   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
   ```
@@ -50,11 +54,36 @@ come back as `{ "error": { "message": "...", "details": [...] } }`.
 | GET    | `/api/categories`             | List categories with live product counts      |
 | POST   | `/api/coupons/validate`       | Check a coupon code against a subtotal        |
 | POST   | `/api/orders`                 | Create an order. See below.                   |
-| GET    | `/api/orders/:code`           | Look up an order by its code (e.g. `SHV-123456`) |
-| GET    | `/api/admin/orders`           | **Admin.** List orders — `?status=`, `?page=` |
-| PATCH  | `/api/admin/orders/:code/status` | **Admin.** Update status (`pending`/`confirmed`/`dispatched`/`delivered`/`cancelled`) |
+| GET    | `/api/orders/:code`           | Look up an order by its code (e.g. `SHV-K7M2QX`) |
+| GET    | `/api/settings`               | Public shop settings (name, WhatsApp number, delivery fee, free-delivery threshold) |
+| GET    | `/api/health`                 | Liveness; add `?deep=1` to also check the database |
 
-Admin routes require an `x-admin-key: <ADMIN_API_KEY>` header.
+Shevs is a single shop, not a marketplace: there are no sellers or vendor
+accounts, and one shared admin key manages everything.
+
+### Admin API
+
+All admin routes need an `x-admin-key: <ADMIN_API_KEY>` header.
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/api/admin/stats` | Dashboard numbers: sales by period, status counts, 14-day series, best sellers, stock alerts, inventory value |
+| GET | `/api/admin/orders` | List orders — `?status=`, `?q=` (code/name/phone), `?from=&to=` (YYYY-MM-DD), `?page=`, `?pageSize=`; returns `total` |
+| GET | `/api/admin/orders/:code` | Full order with customer details and items |
+| PATCH | `/api/admin/orders/:code/status` | Change status. Cancelling returns stock; re-opening takes it out again |
+| PATCH | `/api/admin/orders/:code/note` | Save a private note on an order |
+| GET | `/api/admin/products` | List all products (incl. hidden) — `?q=`, `?category=`, `?state=active\|hidden\|featured\|low\|out\|noimage\|nocost`, `?sort=`, `?page=` |
+| GET | `/api/admin/products/:id` | Product + sales performance + stock history |
+| POST | `/api/admin/products` | Create (name, categoryId, price, optional SKU/brand/description/imageUrl/costPrice/tags/…) |
+| PATCH | `/api/admin/products/:id` | Update any product field |
+| POST | `/api/admin/products/:id/stock` | Adjust stock: `{mode: "add"\|"set", qty, reason, note}` — every change is logged |
+| POST | `/api/admin/products/:id/duplicate` | Copy a product (hidden, no stock) |
+| POST | `/api/admin/products/bulk` | `{ids, action: show\|hide\|feature\|unfeature\|category\|delete, categoryId?}` |
+| DELETE | `/api/admin/products/:id` | Delete a product (past orders keep their snapshots) |
+| GET/POST/PATCH/DELETE | `/api/admin/categories[/:id]` | Manage categories (can't delete one that still has products) |
+| GET/POST/PATCH/DELETE | `/api/admin/coupons[/:id]` | Manage coupons |
+| GET | `/api/admin/customers` | Customers grouped by phone — orders, total spent |
+| GET/PATCH | `/api/admin/settings` | Shop name, WhatsApp number, delivery fee, free-delivery threshold, low-stock default |
 
 ### `POST /api/orders`
 

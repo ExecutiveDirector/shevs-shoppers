@@ -18,4 +18,15 @@ const couponLimiter = rateLimit({
   message: { error: { message: "Too many attempts. Please wait a moment and try again." } },
 });
 
-module.exports = { orderLimiter, couponLimiter };
+// Only failed admin-key attempts count, so normal use is never throttled but
+// guessing the key is.
+const adminAuthLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  skipSuccessfulRequests: true,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: { message: "Too many failed attempts. Try again in a few minutes." } },
+});
+
+module.exports = { orderLimiter, couponLimiter, adminAuthLimiter };

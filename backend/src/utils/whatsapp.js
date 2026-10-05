@@ -3,10 +3,10 @@
  * customer's next tap after checkout opens WhatsApp with everything
  * the shop owner needs to confirm and arrange payment.
  */
-function buildOrderWhatsAppLink(order, items) {
-  const number = (process.env.WHATSAPP_NUMBER || "").replace(/[^0-9]/g, "");
+function buildOrderWhatsAppLink(order, items, whatsappNumber, shopName) {
+  const number = String(whatsappNumber || process.env.WHATSAPP_NUMBER || "").replace(/[^0-9]/g, "");
   const lines = [
-    `Hi Shevs, I'd like to confirm order ${order.order_code}.`,
+    `Hi ${shopName || "Shevs"}, I'd like to confirm order ${order.order_code}.`,
     "",
     ...items.map((it) => `${it.qty} x ${it.name_snapshot} — KES ${Number(it.line_total).toLocaleString("en-KE")}`),
     "",

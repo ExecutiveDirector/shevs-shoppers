@@ -3,7 +3,7 @@ const { pool } = require("../config/db");
 const BASE_SELECT = `
   SELECT p.id, p.category_id, c.name AS category_name, p.name, p.emoji,
          p.price, p.compare_at_price, p.stock, p.rating, p.rating_count,
-         p.eta_label, p.active
+         p.eta_label, p.active, p.brand, p.description, p.image_url, p.featured, p.tags
   FROM products p
   JOIN categories c ON c.id = p.category_id
 `;
@@ -17,8 +17,8 @@ async function findAll({ categoryId, search, minPrice, maxPrice, minRating, onSa
     params.push(categoryId);
   }
   if (search) {
-    where.push("(p.name LIKE ? OR c.name LIKE ?)");
-    params.push(`%${search}%`, `%${search}%`);
+    where.push("(p.name LIKE ? OR c.name LIKE ? OR p.brand LIKE ? OR p.tags LIKE ?)");
+    params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
   }
   if (minPrice != null) {
     where.push("p.price >= ?");

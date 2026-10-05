@@ -1,8 +1,17 @@
+const crypto = require("crypto");
 const ApiError = require("../utils/ApiError");
 
+// Compares in constant time so response timing can't be used to guess the key
+// one character at a time. Hashing first makes both buffers equal length.
+function safeEqual(a, b) {
+  const ha = crypto.createHash("sha256").update(String(a)).digest();
+  const hb = crypto.createHash("sha256").update(String(b)).digest();
+  return crypto.timingSafeEqual(ha, hb);
+}
+
 /**
- * Protects admin-only routes (viewing all orders, updating order status)
- * with a single shared secret sent as the `x-admin-key` header.
+ * Protects admin-only routes with a single shared secret sent as the
+ * `x-admin-key` header.
  *
  * This is intentionally simple: Shevs has one shop owner, not a team of
  * staff accounts, so a long random shared key is enough and avoids the
@@ -18,7 +27,7 @@ function adminAuth(req, res, next) {
     // Fail closed: a missing server-side key must never mean "let everyone in".
     return next(new ApiError(500, "Admin access is not configured on the server."));
   }
-  if (!key || key !== expected) {
+  if (!key || !safeEqual(key, expected)) {
     return next(ApiError.unauthorized("Invalid or missing admin key."));
   }
   next();

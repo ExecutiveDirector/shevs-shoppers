@@ -11,6 +11,14 @@ const productRules = (isUpdate) => [
   body("stock").optional().isInt({ min: 0, max: 1000000 }).withMessage("Stock must be 0 or more.").toInt(),
   body("etaLabel").optional({ values: "falsy" }).trim().isLength({ max: 40 }).withMessage("Delivery estimate is too long."),
   body("active").optional().isBoolean().withMessage("Invalid visibility value.").toBoolean(),
+  body("sku").optional({ values: "falsy" }).trim().matches(/^[A-Za-z0-9._\- ]{1,40}$/).withMessage("SKU can use letters, numbers, spaces, . _ - (max 40)."),
+  body("brand").optional({ values: "falsy" }).trim().isLength({ max: 80 }).withMessage("Brand is too long (max 80)."),
+  body("description").optional({ values: "falsy" }).trim().isLength({ max: 2000 }).withMessage("Description is too long (max 2000 characters)."),
+  body("imageUrl").optional({ values: "falsy" }).trim().isURL({ protocols: ["http", "https"], require_protocol: true }).withMessage("Image link must start with http:// or https://.").isLength({ max: 500 }).withMessage("Image link is too long."),
+  body("costPrice").optional({ values: "null" }).isFloat({ min: 0, max: 10000000 }).withMessage("Enter a valid cost price.").toFloat(),
+  body("lowStockThreshold").optional({ values: "null" }).isInt({ min: 0, max: 100000 }).withMessage("Low-stock alert must be 0 or more.").toInt(),
+  body("featured").optional().isBoolean().withMessage("Invalid featured value.").toBoolean(),
+  body("tags").optional({ values: "falsy" }).trim().isLength({ max: 255 }).withMessage("Tags are too long (max 255)."),
   body().custom((v) => {
     if (v.price != null && v.compareAtPrice != null && Number(v.compareAtPrice) < Number(v.price)) {
       throw new Error("The 'was' price can't be lower than the selling price.");
@@ -36,4 +44,28 @@ const couponRules = (isUpdate) => [
   body("expiresAt").optional({ values: "falsy" }).isISO8601().withMessage("Enter a valid expiry date."),
 ];
 
-module.exports = { productRules, categoryRules, couponRules };
+const stockRules = [
+  body("mode").isIn(["add", "set"]).withMessage("Choose add or set."),
+  body("qty").isInt({ min: -1000000, max: 1000000 }).withMessage("Enter a whole number.").toInt(),
+  body("reason").optional().isIn(["restock", "correction", "damaged", "return", "other"]).withMessage("Invalid reason."),
+  body("note").optional({ values: "falsy" }).trim().isLength({ max: 200 }).withMessage("Note is too long (max 200)."),
+];
+
+const bulkRules = [
+  body("ids").isArray({ min: 1, max: 200 }).withMessage("Select at least one product."),
+  body("ids.*").isInt({ min: 1 }).withMessage("Invalid product id.").toInt(),
+  body("action").isIn(["show", "hide", "feature", "unfeature", "category", "delete"]).withMessage("Unknown bulk action."),
+  body("categoryId").if(body("action").equals("category")).isInt({ min: 1 }).withMessage("Choose a category.").toInt(),
+];
+
+const noteRules = [body("note").optional({ values: "falsy" }).trim().isLength({ max: 500 }).withMessage("Note is too long (max 500).")];
+
+const settingsRules = [
+  body("shop_name").optional().trim().isLength({ min: 1, max: 60 }).withMessage("Shop name must be 1–60 characters."),
+  body("whatsapp_number").optional().trim().matches(/^\d{10,15}$/).withMessage("WhatsApp number: digits only with country code, e.g. 254712345678."),
+  body("delivery_fee").optional().isFloat({ min: 0, max: 100000 }).withMessage("Delivery fee must be 0 or more.").toFloat(),
+  body("free_delivery_threshold").optional().isFloat({ min: 0, max: 10000000 }).withMessage("Free-delivery amount must be 0 or more.").toFloat(),
+  body("low_stock_threshold").optional().isInt({ min: 0, max: 100000 }).withMessage("Low-stock alert must be 0 or more.").toInt(),
+];
+
+module.exports = { productRules, categoryRules, couponRules, stockRules, bulkRules, noteRules, settingsRules };

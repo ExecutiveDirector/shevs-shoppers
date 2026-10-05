@@ -1,30 +1,48 @@
+const crypto = require("crypto");
 const { pool } = require("../config/db");
 const productModel = require("./productModel");
 const couponModel = require("./couponModel");
+const settingsModel = require("./settingsModel");
 const ApiError = require("../utils/ApiError");
 
-const FREE_DELIVERY_THRESHOLD = Number(process.env.FREE_DELIVERY_THRESHOLD) || 3000;
-const DEFAULT_DELIVERY_FEE = Number(process.env.DEFAULT_DELIVERY_FEE) || 250;
+// No 0/O/1/I so codes are easy to read out over the phone or WhatsApp.
+const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
 function generateOrderCode() {
-  const stamp = Date.now().toString().slice(-6);
-  return `SHV-${stamp}`;
+  const bytes = crypto.randomBytes(6);
+  let code = "";
+  for (const b of bytes) code += CODE_ALPHABET[b % CODE_ALPHABET.length];
+  return `SHV-${code}`;
 }
+
+const round2 = (n) => Math.round(n * 100) / 100;
 
 /**
  * Creates an order inside a single DB transaction:
- *  1. Locks every product row involved (SELECT ... FOR UPDATE) so two
- *     concurrent orders can't both oversell the last unit of stock.
+ *  1. Merges repeated products and locks the rows in a fixed (id) order, so two
+ *     concurrent orders can never deadlock or both oversell the last unit.
  *  2. Re-derives every price from the database — the client's cart is
  *     never trusted for money, only for which product IDs and quantities
  *     were chosen. This is the exact class of bug that cost real time on
  *     AquaGas (client-supplied unit_price), so it's closed off here from
  *     the start rather than patched in later.
  *  3. Re-validates any coupon server-side against the recomputed subtotal.
- *  4. Writes the order, its line items, and decrements stock atomically —
- *     either all of it commits, or none of it does.
+ *  4. Writes the order, its line items and the stock history, and decrements
+ *     stock atomically — either all of it commits, or none of it does.
  */
 async function createOrder(input) {
+  const settings = await settingsModel.getAll();
+
+  // Same product twice in a cart → one line; fixed order → no lock-order deadlocks.
+  const wanted = new Map();
+  for (const { productId, qty } of input.items) {
+    wanted.set(productId, (wanted.get(productId) || 0) + qty);
+  }
+  const lines = [...wanted.entries()].sort((a, b) => a[0] - b[0]);
+  for (const [, qty] of lines) {
+    if (qty > 20) throw ApiError.badRequest("You can order at most 20 of one item at a time.");
+  }
+
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
@@ -32,7 +50,7 @@ async function createOrder(input) {
     const lineItems = [];
     let subtotal = 0;
 
-    for (const { productId, qty } of input.items) {
+    for (const [productId, qty] of lines) {
       const product = await productModel.lockForUpdate(conn, productId);
       if (!product || !product.active) {
         throw ApiError.badRequest(`One of the items in your cart is no longer available.`, {
@@ -47,8 +65,8 @@ async function createOrder(input) {
         );
       }
       const unitPrice = Number(product.price);
-      const lineTotal = unitPrice * qty;
-      subtotal += lineTotal;
+      const lineTotal = round2(unitPrice * qty);
+      subtotal = round2(subtotal + lineTotal);
 
       lineItems.push({
         productId: product.id,
@@ -56,6 +74,7 @@ async function createOrder(input) {
         unitPrice,
         qty,
         lineTotal,
+        stockAfter: product.stock - qty,
       });
 
       await productModel.decrementStock(conn, product.id, qty);
@@ -74,36 +93,52 @@ async function createOrder(input) {
       // customer whether it applied before they reached this point.
     }
 
-    const deliveryFee = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DEFAULT_DELIVERY_FEE;
-    const total = Math.max(0, subtotal + deliveryFee - discount);
-    const orderCode = generateOrderCode();
+    const deliveryFee = subtotal >= settings.free_delivery_threshold ? 0 : settings.delivery_fee;
+    const total = Math.max(0, round2(subtotal + deliveryFee - discount));
 
-    const [orderResult] = await conn.query(
-      `INSERT INTO orders
-        (order_code, customer_name, phone, county, address, payment_method,
-         status, subtotal, delivery_fee, discount, coupon_code, total)
-       VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?)`,
-      [
-        orderCode,
-        input.customerName,
-        input.phone,
-        input.county,
-        input.address,
-        input.paymentMethod,
-        subtotal,
-        deliveryFee,
-        discount,
-        couponCode,
-        total,
-      ]
-    );
-    const orderId = orderResult.insertId;
+    // Random codes can (very rarely) collide; retry with a fresh one.
+    let orderCode;
+    let orderId;
+    for (let attempt = 0; ; attempt++) {
+      orderCode = generateOrderCode();
+      try {
+        const [orderResult] = await conn.query(
+          `INSERT INTO orders
+            (order_code, customer_name, phone, county, address, payment_method,
+             status, subtotal, delivery_fee, discount, coupon_code, total)
+           VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?)`,
+          [
+            orderCode,
+            input.customerName,
+            input.phone,
+            input.county,
+            input.address,
+            input.paymentMethod,
+            subtotal,
+            deliveryFee,
+            discount,
+            couponCode,
+            total,
+          ]
+        );
+        orderId = orderResult.insertId;
+        break;
+      } catch (err) {
+        if (err.code === "ER_DUP_ENTRY" && attempt < 5) continue;
+        throw err;
+      }
+    }
 
     for (const li of lineItems) {
       await conn.query(
         `INSERT INTO order_items (order_id, product_id, name_snapshot, unit_price_snapshot, qty, line_total)
          VALUES (?, ?, ?, ?, ?, ?)`,
         [orderId, li.productId, li.name, li.unitPrice, li.qty, li.lineTotal]
+      );
+      await conn.query(
+        `INSERT INTO stock_log (product_id, change_qty, stock_after, reason, order_code)
+         VALUES (?, ?, ?, 'sale', ?)`,
+        [li.productId, -li.qty, li.stockAfter, orderCode]
       );
     }
 
@@ -152,31 +187,4 @@ async function findByCode(orderCode) {
   return { order, items };
 }
 
-async function listForAdmin({ status, limit, offset }) {
-  const where = [];
-  const params = [];
-  if (status) {
-    where.push("status = ?");
-    params.push(status);
-  }
-  const sql = `
-    SELECT id, order_code, customer_name, phone, county, status, total, created_at
-    FROM orders
-    ${where.length ? "WHERE " + where.join(" AND ") : ""}
-    ORDER BY created_at DESC
-    LIMIT ? OFFSET ?`;
-  params.push(Number(limit) || 50, Number(offset) || 0);
-
-  const [rows] = await pool.query(sql, params);
-  return rows;
-}
-
-async function updateStatus(orderCode, status) {
-  const [result] = await pool.query("UPDATE orders SET status = ? WHERE order_code = ?", [
-    status,
-    orderCode,
-  ]);
-  return result.affectedRows > 0;
-}
-
-module.exports = { createOrder, findByCode, listForAdmin, updateStatus };
+module.exports = { createOrder, findByCode, generateOrderCode };

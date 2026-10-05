@@ -1,8 +1,9 @@
 const { pool } = require("../config/db");
 const ApiError = require("../utils/ApiError");
+const settingsModel = require("./settingsModel");
 
 const STATUSES = ["pending", "confirmed", "dispatched", "delivered", "cancelled"];
-const LOW_STOCK = 5;
+const STOCK_REASONS = ["restock", "correction", "damaged", "return", "other"];
 
 const money = (n) => Number(n) || 0;
 
@@ -12,6 +13,7 @@ const toSqlDate = (v) => (v ? new Date(v).toISOString().slice(0, 19).replace("T"
 /* ------------------------------------------------------------------ stats */
 
 async function getStats() {
+  const LOW_STOCK = (await settingsModel.getAll()).low_stock_threshold;
   // Dates are bucketed in Kenya time (UTC+3, no DST). Pin the session to UTC
   // so the +3h shift below is correct no matter where the DB server runs.
   const conn = await pool.getConnection();
@@ -53,16 +55,23 @@ async function getStats() {
     );
 
     const [lowStock] = await conn.query(
-      `SELECT id, name, emoji, stock FROM products WHERE active = 1 AND stock <= ? ORDER BY stock ASC, name ASC LIMIT 10`,
+      `SELECT id, name, emoji, image_url, stock, low_stock_threshold FROM products
+       WHERE active = 1 AND stock <= COALESCE(low_stock_threshold, ?) ORDER BY stock ASC, name ASC LIMIT 10`,
       [LOW_STOCK]
     );
     const [[{ low_count }]] = await conn.query(
-      "SELECT COUNT(*) AS low_count FROM products WHERE active = 1 AND stock <= ?",
+      "SELECT COUNT(*) AS low_count FROM products WHERE active = 1 AND stock <= COALESCE(low_stock_threshold, ?)",
       [LOW_STOCK]
     );
 
     const [[prodCounts]] = await conn.query(
-      "SELECT COUNT(*) AS total, SUM(active = 1) AS active FROM products"
+      `SELECT COUNT(*) AS total, SUM(active = 1) AS active,
+              COALESCE(SUM(stock), 0) AS units,
+              COALESCE(SUM(stock * price), 0) AS retail_value,
+              COALESCE(SUM(stock * cost_price), 0) AS cost_value,
+              SUM(cost_price IS NULL) AS missing_cost,
+              SUM(image_url IS NULL OR image_url = '') AS missing_image
+       FROM products`
     );
     const [[{ customers }]] = await conn.query("SELECT COUNT(DISTINCT phone) AS customers FROM orders");
 
@@ -91,7 +100,15 @@ async function getStats() {
       all: { revenue: money(periods.all_revenue), orders: Number(periods.all_orders) || 0 },
       averageOrder: Number(periods.all_orders) ? money(periods.all_revenue) / Number(periods.all_orders) : 0,
       customers: Number(customers) || 0,
-      products: { total: Number(prodCounts.total) || 0, active: Number(prodCounts.active) || 0 },
+      products: {
+        total: Number(prodCounts.total) || 0,
+        active: Number(prodCounts.active) || 0,
+        units: Number(prodCounts.units) || 0,
+        retailValue: money(prodCounts.retail_value),
+        costValue: money(prodCounts.cost_value),
+        missingCost: Number(prodCounts.missing_cost) || 0,
+        missingImage: Number(prodCounts.missing_image) || 0,
+      },
       lowStockThreshold: LOW_STOCK,
       lowStockCount: Number(low_count) || 0,
       lowStock,
@@ -102,6 +119,18 @@ async function getStats() {
   } finally {
     conn.release();
   }
+}
+
+/* ------------------------------------------------------------ stock log */
+
+// Records a change that has already been applied to products.stock (reads the
+// resulting level back so the history always shows the real number).
+async function logStock(conn, productId, change, reason, note, orderCode) {
+  const [[p]] = await conn.query("SELECT stock FROM products WHERE id = ?", [productId]);
+  await conn.query(
+    "INSERT INTO stock_log (product_id, change_qty, stock_after, reason, note, order_code) VALUES (?, ?, ?, ?, ?, ?)",
+    [productId, change, p ? p.stock : 0, reason, note || null, orderCode || null]
+  );
 }
 
 /* ----------------------------------------------------------------- orders */
@@ -151,6 +180,11 @@ async function getOrder(code) {
   return { order: orders[0], items };
 }
 
+async function setOrderNote(code, note) {
+  const [r] = await pool.query("UPDATE orders SET admin_note = ? WHERE order_code = ?", [note || null, code]);
+  return r.affectedRows > 0;
+}
+
 /**
  * Changes an order's status. Stock is decremented when an order is placed, so
  * cancelling returns the units to stock, and re-opening a cancelled order
@@ -177,6 +211,7 @@ async function setOrderStatus(code, status) {
       for (const it of items) {
         if (status === "cancelled") {
           await conn.query("UPDATE products SET stock = stock + ? WHERE id = ?", [it.qty, it.product_id]);
+          await logStock(conn, it.product_id, it.qty, "cancel", null, code);
           restocked += it.qty;
         } else {
           const [[p]] = await conn.query("SELECT stock FROM products WHERE id = ? FOR UPDATE", [it.product_id]);
@@ -186,6 +221,7 @@ async function setOrderStatus(code, status) {
             );
           }
           await conn.query("UPDATE products SET stock = stock - ? WHERE id = ?", [it.qty, it.product_id]);
+          await logStock(conn, it.product_id, -it.qty, "reopen", null, code);
         }
       }
     }
@@ -203,12 +239,30 @@ async function setOrderStatus(code, status) {
 
 /* --------------------------------------------------------------- products */
 
-async function listProducts({ q, categoryId, state, limit, offset }) {
+const PRODUCT_SELECT = `
+  SELECT p.id, p.category_id, c.name AS category_name, p.name, p.sku, p.brand, p.description,
+         p.image_url, p.emoji, p.price, p.compare_at_price, p.cost_price, p.stock,
+         p.low_stock_threshold, p.featured, p.tags, p.eta_label, p.rating, p.rating_count,
+         p.active, p.created_at, p.updated_at
+  FROM products p JOIN categories c ON c.id = p.category_id`;
+
+const SORTS = {
+  updated: "p.updated_at DESC, p.id DESC",
+  newest: "p.id DESC",
+  name: "p.name ASC",
+  price_asc: "p.price ASC",
+  price_desc: "p.price DESC",
+  stock_asc: "p.stock ASC, p.name ASC",
+  stock_desc: "p.stock DESC, p.name ASC",
+};
+
+async function listProducts({ q, categoryId, state, sort, limit, offset }) {
+  const low = (await settingsModel.getAll()).low_stock_threshold;
   const where = [];
   const params = [];
   if (q) {
-    where.push("(p.name LIKE ? OR c.name LIKE ?)");
-    params.push(`%${q}%`, `%${q}%`);
+    where.push("(p.name LIKE ? OR p.sku LIKE ? OR p.brand LIKE ? OR p.tags LIKE ? OR c.name LIKE ?)");
+    params.push(`%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`);
   }
   if (categoryId) {
     where.push("p.category_id = ?");
@@ -216,35 +270,59 @@ async function listProducts({ q, categoryId, state, limit, offset }) {
   }
   if (state === "active") where.push("p.active = 1");
   if (state === "hidden") where.push("p.active = 0");
+  if (state === "featured") where.push("p.featured = 1");
   if (state === "low") {
-    where.push("p.stock > 0 AND p.stock <= ?");
-    params.push(LOW_STOCK);
+    where.push("p.stock > 0 AND p.stock <= COALESCE(p.low_stock_threshold, ?)");
+    params.push(low);
   }
   if (state === "out") where.push("p.stock <= 0");
+  if (state === "noimage") where.push("(p.image_url IS NULL OR p.image_url = '')");
+  if (state === "nocost") where.push("p.cost_price IS NULL");
   const w = where.length ? "WHERE " + where.join(" AND ") : "";
 
   const [rows] = await pool.query(
-    `SELECT p.id, p.category_id, c.name AS category_name, p.name, p.emoji, p.price, p.compare_at_price,
-            p.stock, p.eta_label, p.active, p.updated_at
-     FROM products p JOIN categories c ON c.id = p.category_id
-     ${w} ORDER BY p.updated_at DESC, p.id DESC LIMIT ? OFFSET ?`,
+    `${PRODUCT_SELECT} ${w} ORDER BY ${SORTS[sort] || SORTS.updated} LIMIT ? OFFSET ?`,
     [...params, limit, offset]
   );
   const [[{ total }]] = await pool.query(
     `SELECT COUNT(*) AS total FROM products p JOIN categories c ON c.id = p.category_id ${w}`,
     params
   );
-  return { products: rows, total: Number(total) };
+  return { products: rows, total: Number(total), lowStockThreshold: low };
 }
 
 async function getProduct(id) {
-  const [rows] = await pool.query(
-    `SELECT p.id, p.category_id, c.name AS category_name, p.name, p.emoji, p.price, p.compare_at_price,
-            p.stock, p.eta_label, p.active, p.updated_at
-     FROM products p JOIN categories c ON c.id = p.category_id WHERE p.id = ?`,
+  const [rows] = await pool.query(`${PRODUCT_SELECT} WHERE p.id = ?`, [id]);
+  return rows[0] || null;
+}
+
+// Everything the product editor shows: the record, sales performance and stock history.
+async function getProductDetail(id) {
+  const product = await getProduct(id);
+  if (!product) return null;
+  const [[sales]] = await pool.query(
+    `SELECT COALESCE(SUM(oi.qty),0) AS units, COALESCE(SUM(oi.line_total),0) AS revenue,
+            COALESCE(SUM(CASE WHEN o.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN oi.qty END),0) AS units30,
+            COALESCE(SUM(CASE WHEN o.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN oi.line_total END),0) AS revenue30
+     FROM order_items oi JOIN orders o ON o.id = oi.order_id
+     WHERE oi.product_id = ? AND o.status <> 'cancelled'`,
     [id]
   );
-  return rows[0] || null;
+  const [history] = await pool.query(
+    `SELECT id, change_qty, stock_after, reason, note, order_code, created_at
+     FROM stock_log WHERE product_id = ? ORDER BY id DESC LIMIT 25`,
+    [id]
+  );
+  return {
+    product,
+    sales: {
+      units: Number(sales.units),
+      revenue: money(sales.revenue),
+      units30: Number(sales.units30),
+      revenue30: money(sales.revenue30),
+    },
+    history,
+  };
 }
 
 async function assertCategory(categoryId) {
@@ -252,27 +330,73 @@ async function assertCategory(categoryId) {
   if (!rows[0]) throw ApiError.badRequest("That category doesn't exist.");
 }
 
+// "" and whitespace-only text become NULL so optional columns stay clean (and SKU uniqueness works).
+const clean = (v) => {
+  if (v === undefined) return undefined;
+  if (v === null) return null;
+  const t = String(v).trim();
+  return t === "" ? null : t;
+};
+const normaliseTags = (v) => {
+  const t = clean(v);
+  if (!t) return t;
+  return [...new Set(t.split(",").map((x) => x.trim().toLowerCase()).filter(Boolean))].join(", ").slice(0, 255) || null;
+};
+
+async function guardSku(fn) {
+  try {
+    return await fn();
+  } catch (err) {
+    if (err && err.code === "ER_DUP_ENTRY") throw ApiError.conflict("Another product already uses that SKU.");
+    throw err;
+  }
+}
+
 async function createProduct(d) {
   await assertCategory(d.categoryId);
   const compareAt = d.compareAtPrice != null ? d.compareAtPrice : d.price;
-  const [r] = await pool.query(
-    `INSERT INTO products (category_id, name, emoji, price, compare_at_price, stock, eta_label, active)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [d.categoryId, d.name, d.emoji || "", d.price, compareAt, d.stock ?? 0, d.etaLabel || "2–4 days", d.active === false ? 0 : 1]
-  );
-  return getProduct(r.insertId);
+  if (compareAt < d.price) throw ApiError.badRequest("The 'was' price can't be lower than the selling price.");
+  const id = await guardSku(async () => {
+    const [r] = await pool.query(
+      `INSERT INTO products (category_id, name, sku, brand, description, image_url, emoji, price,
+                             compare_at_price, cost_price, stock, low_stock_threshold, featured, tags, eta_label, active)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        d.categoryId, d.name, clean(d.sku) ?? null, clean(d.brand) ?? null, clean(d.description) ?? null,
+        clean(d.imageUrl) ?? null, d.emoji || "", d.price, compareAt, d.costPrice ?? null, d.stock ?? 0,
+        d.lowStockThreshold ?? null, d.featured ? 1 : 0, normaliseTags(d.tags) ?? null,
+        d.etaLabel || "2–4 days", d.active === false ? 0 : 1,
+      ]
+    );
+    return r.insertId;
+  });
+  if ((d.stock ?? 0) > 0) {
+    await pool.query(
+      "INSERT INTO stock_log (product_id, change_qty, stock_after, reason, note) VALUES (?, ?, ?, 'restock', 'Opening stock')",
+      [id, d.stock, d.stock]
+    );
+  }
+  return getProduct(id);
 }
 
 const PRODUCT_COLUMNS = {
   categoryId: "category_id",
   name: "name",
+  sku: "sku",
+  brand: "brand",
+  description: "description",
+  imageUrl: "image_url",
   emoji: "emoji",
   price: "price",
   compareAtPrice: "compare_at_price",
-  stock: "stock",
+  costPrice: "cost_price",
+  lowStockThreshold: "low_stock_threshold",
+  featured: "featured",
+  tags: "tags",
   etaLabel: "eta_label",
   active: "active",
 };
+const TEXT_FIELDS = ["sku", "brand", "description", "imageUrl"];
 
 async function updateProduct(id, d) {
   const existing = await getProduct(id);
@@ -289,13 +413,90 @@ async function updateProduct(id, d) {
   const params = [];
   for (const [key, col] of Object.entries(PRODUCT_COLUMNS)) {
     if (d[key] === undefined) continue;
+    let v = d[key];
+    if (TEXT_FIELDS.includes(key)) v = clean(v);
+    else if (key === "tags") v = normaliseTags(v);
+    else if (key === "active" || key === "featured") v = v ? 1 : 0;
     sets.push(`${col} = ?`);
-    params.push(key === "active" ? (d[key] ? 1 : 0) : d[key]);
+    params.push(v);
   }
   if (sets.length) {
-    await pool.query(`UPDATE products SET ${sets.join(", ")} WHERE id = ?`, [...params, id]);
+    await guardSku(() => pool.query(`UPDATE products SET ${sets.join(", ")} WHERE id = ?`, [...params, id]));
+  }
+  if (d.stock !== undefined && Number(d.stock) !== existing.stock) {
+    await adjustStock(id, { mode: "set", qty: d.stock, reason: "correction", note: "Edited in product form" });
   }
   return getProduct(id);
+}
+
+/**
+ * Changes stock and records why. mode "add" applies a +/- difference,
+ * "set" counts to an exact figure. Runs under a row lock so it can't race a sale.
+ */
+async function adjustStock(id, { mode, qty, reason, note }) {
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const [[p]] = await conn.query("SELECT id, stock FROM products WHERE id = ? FOR UPDATE", [id]);
+    if (!p) {
+      await conn.rollback();
+      return null;
+    }
+    const next = mode === "set" ? Number(qty) : p.stock + Number(qty);
+    if (next < 0) throw ApiError.badRequest(`That would take stock below zero (currently ${p.stock}).`);
+    const change = next - p.stock;
+    if (change !== 0) {
+      await conn.query("UPDATE products SET stock = ? WHERE id = ?", [next, id]);
+      await conn.query(
+        "INSERT INTO stock_log (product_id, change_qty, stock_after, reason, note) VALUES (?, ?, ?, ?, ?)",
+        [id, change, next, STOCK_REASONS.includes(reason) ? reason : "other", note ? String(note).slice(0, 200) : null]
+      );
+    }
+    await conn.commit();
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
+  return getProduct(id);
+}
+
+async function duplicateProduct(id) {
+  const p = await getProduct(id);
+  if (!p) return null;
+  // The copy starts hidden with no stock and no SKU so it can't clash or sell by accident.
+  const [r] = await pool.query(
+    `INSERT INTO products (category_id, name, brand, description, image_url, emoji, price, compare_at_price,
+                           cost_price, stock, low_stock_threshold, featured, tags, eta_label, active)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, 0, ?, ?, 0)`,
+    [p.category_id, `${p.name} (copy)`.slice(0, 160), p.brand, p.description, p.image_url, p.emoji, p.price,
+     p.compare_at_price, p.cost_price, p.low_stock_threshold, p.tags, p.eta_label]
+  );
+  return getProduct(r.insertId);
+}
+
+async function bulkProducts(ids, action, categoryId) {
+  if (!ids.length) return 0;
+  const marks = ids.map(() => "?").join(",");
+  if (action === "delete") {
+    const [r] = await pool.query(`DELETE FROM products WHERE id IN (${marks})`, ids);
+    return r.affectedRows;
+  }
+  const sets = {
+    show: ["active = 1"],
+    hide: ["active = 0"],
+    feature: ["featured = 1"],
+    unfeature: ["featured = 0"],
+  }[action];
+  if (action === "category") {
+    await assertCategory(categoryId);
+    const [r] = await pool.query(`UPDATE products SET category_id = ? WHERE id IN (${marks})`, [categoryId, ...ids]);
+    return r.affectedRows;
+  }
+  if (!sets) throw ApiError.badRequest("Unknown bulk action.");
+  const [r] = await pool.query(`UPDATE products SET ${sets[0]} WHERE id IN (${marks})`, ids);
+  return r.affectedRows;
 }
 
 async function deleteProduct(id) {
@@ -443,10 +644,15 @@ module.exports = {
   listOrders,
   getOrder,
   setOrderStatus,
+  setOrderNote,
   listProducts,
   getProduct,
+  getProductDetail,
   createProduct,
   updateProduct,
+  adjustStock,
+  duplicateProduct,
+  bulkProducts,
   deleteProduct,
   listCategories,
   createCategory,
