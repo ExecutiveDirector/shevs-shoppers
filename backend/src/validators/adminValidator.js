@@ -61,6 +61,7 @@ const bulkRules = [
 const noteRules = [body("note").optional({ values: "falsy" }).trim().isLength({ max: 500 }).withMessage("Note is too long (max 500).")];
 
 const settingsRules = [
+  body("owner_email").optional({ values: "falsy" }).trim().isEmail().withMessage("Enter a valid email address for order alerts.").isLength({ max: 120 }),
   body("shop_name").optional().trim().isLength({ min: 1, max: 60 }).withMessage("Shop name must be 1–60 characters."),
   body("whatsapp_number").optional().trim().matches(/^\d{10,15}$/).withMessage("WhatsApp number: digits only with country code, e.g. 254712345678."),
   body("delivery_fee").optional().isFloat({ min: 0, max: 100000 }).withMessage("Delivery fee must be 0 or more.").toFloat(),

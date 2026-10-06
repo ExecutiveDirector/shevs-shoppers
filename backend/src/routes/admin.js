@@ -10,6 +10,9 @@ router.use(adminAuthLimiter, adminAuth);
 
 router.get("/stats", c.stats);
 
+// Raw image bytes (not JSON) so the admin can upload a photo straight from the file picker.
+router.post("/uploads", require("express").raw({ type: ["image/*"], limit: "8mb" }), c.uploadImage);
+
 router.get("/orders", c.listOrders);
 router.get("/orders/:code", c.getOrder);
 router.patch("/orders/:code/status", updateOrderStatusRules, validate, c.setOrderStatus);
@@ -37,6 +40,7 @@ router.delete("/coupons/:id", c.deleteCoupon);
 router.get("/customers", c.listCustomers);
 
 router.get("/settings", c.getSettings);
+router.post("/settings/test-email", c.testEmail);
 router.patch("/settings", settingsRules, validate, c.updateSettings);
 
 module.exports = router;

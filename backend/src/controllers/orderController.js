@@ -1,6 +1,7 @@
 const orderModel = require("../models/orderModel");
 const settingsModel = require("../models/settingsModel");
 const { buildOrderWhatsAppLink } = require("../utils/whatsapp");
+const mailer = require("../utils/mailer");
 const asyncHandler = require("../utils/asyncHandler");
 const ApiError = require("../utils/ApiError");
 
@@ -19,6 +20,12 @@ const create = asyncHandler(async (req, res) => {
 
   const settings = await settingsModel.getAll();
   const whatsappUrl = buildOrderWhatsAppLink(order, lineItems, settings.whatsapp_number, settings.shop_name);
+
+  // Fire-and-forget: the order is already saved, so a mail hiccup must never fail checkout.
+  if (settings.owner_email) {
+    const m = mailer.orderEmail(order, lineItems, settings.shop_name, process.env.ADMIN_URL || "");
+    mailer.send({ to: settings.owner_email, ...m }).catch(() => {});
+  }
 
   res.status(201).json({
     orderCode: order.order_code,

@@ -14,6 +14,8 @@ const queries = [];
 const fakePool = {
   query: async (sql, params) => {
     queries.push({ sql, params });
+    if (/INSERT INTO product_images/.test(sql)) return [{ insertId: 7 }];
+    if (/FROM product_images/.test(sql)) return [[]];
     if (/FROM settings/.test(sql)) return [[]];
     if (/COUNT\(\*\)/.test(sql)) return [[{ total: 0, n: 0 }]];
     return [[]];
@@ -136,4 +138,34 @@ test("order codes are random, readable and well-formed", () => {
   const codes = new Set(Array.from({ length: 500 }, generateOrderCode));
   assert.equal(codes.size, 500);
   for (const c of codes) assert.match(c, /^SHV-[A-HJ-NP-Z2-9]{6}$/);
+});
+
+test("photo upload: needs the admin key, accepts a real image, rejects junk", async () => {
+  const sharp = require("sharp");
+  const png = await sharp({ create: { width: 2400, height: 1800, channels: 3, background: "#c33" } }).png().toBuffer();
+  const post = (body, key) => fetch(`${base}/api/admin/uploads`, { method: "POST", headers: { "Content-Type": "image/png", ...(key ? { "x-admin-key": key } : {}) }, body });
+
+  assert.equal((await post(png)).status, 401);
+  const ok = await post(png, process.env.ADMIN_API_KEY);
+  assert.equal(ok.status, 201);
+  const j = await ok.json();
+  assert.match(j.url, /\/api\/images\/7\.webp$/);
+  assert.equal(j.width, 1200); // shrunk from 2400
+  assert.equal((await post(Buffer.from("not an image at all"), process.env.ADMIN_API_KEY)).status, 400);
+});
+
+test("product photos are 404 when missing", async () => {
+  assert.equal((await fetch(`${base}/api/images/999.webp`)).status, 404);
+});
+
+test("order alert email: skipped quietly with no key, HTML-escapes customer text", () => {
+  const mailer = require("../src/utils/mailer");
+  const { subject, html } = mailer.orderEmail(
+    { order_code: "SHV-ABC234", total: 1500, delivery_fee: 250, discount: 0, customer_name: "<b>Eve</b>", phone: "0712", address: "x", county: "Nairobi", payment_method: "mpesa" },
+    [{ qty: 2, name_snapshot: "Mug", line_total: 1250 }], "Shevs", ""
+  );
+  assert.match(subject, /SHV-ABC234/);
+  assert.ok(!html.includes("<b>Eve</b>"));
+  delete process.env.RESEND_API_KEY;
+  return mailer.send({ to: "o@x.com", subject, html }).then((r) => assert.equal(r.ok, false));
 });

@@ -9,6 +9,7 @@ function defaults() {
     delivery_fee: Number(process.env.DEFAULT_DELIVERY_FEE) || 250,
     free_delivery_threshold: Number(process.env.FREE_DELIVERY_THRESHOLD) || 3000,
     low_stock_threshold: 5,
+    owner_email: process.env.OWNER_EMAIL || "",
   };
 }
 

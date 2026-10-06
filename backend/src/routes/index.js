@@ -12,6 +12,7 @@ router.get("/settings", async (req, res, next) => {
     res.json({ shopName: s.shop_name, whatsappNumber: s.whatsapp_number, deliveryFee: s.delivery_fee, freeDeliveryThreshold: s.free_delivery_threshold });
   } catch (e) { next(e); }
 });
+router.use("/images", require("./images"));
 router.use("/admin", require("./admin"));
 
 // Liveness by default; add ?deep=1 to also confirm the database answers.

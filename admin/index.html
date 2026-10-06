@@ -191,6 +191,11 @@ td.w{white-space:normal;min-width:240px}
 .pname{display:flex;align-items:center;gap:10px}
 .thumb{width:44px;height:44px;border-radius:10px;background:var(--bg);border:1px solid var(--line);display:grid;place-items:center;font-size:22px;overflow:hidden;flex:none}
 .thumb img{width:100%;height:100%;object-fit:cover}
+.upl{display:flex;gap:14px;align-items:center;margin-bottom:12px}
+.upl .thumb{width:96px;height:96px;font-size:40px;border-radius:14px}
+.uplb{display:flex;flex-direction:column;gap:6px;min-width:0}.uplbtns{display:flex;gap:8px;flex-wrap:wrap}
+label.btn{cursor:pointer;display:inline-flex;align-items:center}.upl.busy{opacity:.6;pointer-events:none}
+
 .stock{display:inline-flex;align-items:center;gap:4px}
 .stock button{border:1px solid var(--line);background:var(--card);border-radius:7px;width:26px;height:26px;line-height:1;font-weight:700}
 .stock button:hover{background:var(--tint)}
@@ -804,7 +809,8 @@ async function productEditor(id){
   <div class="fld"><label for="eTags">Tags</label><input id="eTags" name="tags" maxlength="255" value="${esc(p.tags||"")}" placeholder="audio, wireless, gift (separate with commas)"><div class="tagrow" id="tagPrev"></div><span class="hint">Tags help customers find this product when they search.</span></div>
  </div>
  <div class="sect"><h3>Photo</h3>
-  <div class="fld"><label for="eImg">Image link</label><input id="eImg" name="imageUrl" maxlength="500" value="${esc(p.image_url||"")}" placeholder="https://…/photo.jpg"><span class="hint">Paste a link to the photo (from your website, Google Drive public link, Imgur, etc.). Leave blank to show the emoji instead.</span></div>
+  <div class="upl" id="upl"><span class="thumb" id="uplPrev"></span><div class="uplb"><div class="uplbtns"><label class="btn sm" for="eFile" id="uplPick">📷 Upload photo</label><button type="button" class="btn sec sm" id="uplClear">Remove</button></div><input id="eFile" type="file" accept="image/*" hidden><span class="hint" id="uplMsg">JPG, PNG or WebP. Photos are resized automatically, so phone pictures are fine.</span></div></div>
+  <div class="fld"><label for="eImg">Or paste an image link</label><input id="eImg" name="imageUrl" maxlength="500" value="${esc(p.image_url||"")}" placeholder="https://…/photo.jpg"><span class="hint">Optional. Leave both empty to show the emoji instead.</span></div>
   <div class="fld" style="max-width:160px"><label for="eEmoji">Fallback emoji</label><input id="eEmoji" name="emoji" maxlength="8" value="${esc(p.emoji||"")}" placeholder="🎧"></div>
  </div>
  <div class="sect"><h3>Pricing</h3>
@@ -844,6 +850,18 @@ async function productEditor(id){
   $("descCount").textContent=`${val("description").length} / 2000`;
   $("tagPrev").innerHTML=val("tags").split(",").map(t=>t.trim()).filter(Boolean).map(t=>`<span class="tag">${esc(t)}</span>`).join("")};
  f.addEventListener("input",()=>{edDirty=true;updatePreview()});updatePreview();
+ const syncUpl=()=>{const u=safeUrl(val("imageUrl"));$("uplPrev").innerHTML=u?`<img src="${esc(u)}" alt="" referrerpolicy="no-referrer">`:esc(val("emoji")||"📦");$("uplClear").style.display=u?"":"none"};
+ const shrink=async file=>{try{const bm=await createImageBitmap(file),m=1600,k=Math.min(1,m/Math.max(bm.width,bm.height)),c=document.createElement("canvas");c.width=Math.round(bm.width*k);c.height=Math.round(bm.height*k);c.getContext("2d").drawImage(bm,0,0,c.width,c.height);const b=await new Promise(r=>c.toBlob(r,"image/jpeg",.88));return b&&b.size<file.size?b:file}catch{return file}};
+ $("eFile").addEventListener("change",async()=>{const file=$("eFile").files[0];if(!file)return;const box=$("upl"),msg=$("uplMsg");
+  if(!/^image\//.test(file.type)){msg.textContent="Please choose an image file.";return}
+  box.classList.add("busy");msg.textContent="Uploading…";
+  try{const blob=await shrink(file);const d=await api("/uploads",{method:"POST",body:blob,headers:{"Content-Type":blob.type||"image/jpeg"}});
+   el("imageUrl").value=d.url;edDirty=true;updatePreview();syncUpl();msg.textContent="Photo uploaded. Save the product to publish it."}
+  catch(e){msg.textContent="Upload failed: "+e.message;handleErr(e)}
+  finally{box.classList.remove("busy");$("eFile").value=""}});
+ $("uplClear").addEventListener("click",()=>{el("imageUrl").value="";edDirty=true;updatePreview();syncUpl()});
+ f.addEventListener("input",syncUpl);syncUpl();
+
  $("skuGen").onclick=()=>{el("sku").value="SHV-"+Math.random().toString(36).slice(2,7).toUpperCase();edDirty=true};
  const histHtml=h=>h.length?`<table class="hist"><thead><tr><th>When</th><th>Change</th><th>Stock after</th><th>Why</th></tr></thead><tbody>${h.map(x=>`<tr><td>${fdate(x.created_at)}</td><td class="${x.change_qty>0?"pos":"neg"}">${x.change_qty>0?"+":""}${x.change_qty}</td><td>${x.stock_after}</td><td>${esc(REASONS[x.reason]||x.reason)}${x.order_code?` · ${esc(x.order_code)}`:""}${x.note?`<br><small class="muted">${esc(x.note)}</small>`:""}</td></tr>`).join("")}</tbody></table>`:`<p class="muted">No stock changes recorded yet.</p>`;
  if(id){
@@ -972,8 +990,9 @@ async function vSettings(){
   <div class="frow"><div class="fld"><label for="sFee">Delivery fee (KES)</label><input id="sFee" name="delivery_fee" type="number" min="0" step="1" value="${esc(S.delivery_fee)}"></div>
    <div class="fld"><label for="sFree">Free delivery from (KES)</label><input id="sFree" name="free_delivery_threshold" type="number" min="0" step="1" value="${esc(S.free_delivery_threshold)}"><span class="hint">Orders at or above this get free delivery. Use 0 to always charge.</span></div></div>
   <div class="fld" style="max-width:240px"><label for="sLow">Default low-stock alert</label><input id="sLow" name="low_stock_threshold" type="number" min="0" step="1" value="${esc(S.low_stock_threshold)}"><span class="hint">Products can override this individually.</span></div>
+  <div class="fld"><label for="sMail">Email me new orders at</label><input id="sMail" name="owner_email" type="email" maxlength="120" autocomplete="email" placeholder="you@example.com" value="${esc(S.owner_email||"")}"><span class="hint">You get an email the moment a customer places an order. Leave blank to turn alerts off.</span></div>
   <div class="err" id="sErr" aria-live="polite"></div>
-  <div class="actions"><button class="btn" type="submit">Save shop settings</button>${S.whatsapp_number?`<a class="btn sec" target="_blank" rel="noopener" href="https://wa.me/${esc(S.whatsapp_number)}">Test WhatsApp link</a>`:""}</div>
+  <div class="actions"><button class="btn" type="submit">Save shop settings</button>${S.owner_email?`<button class="btn sec" type="button" id="testMail">Send test email</button>`:""}${S.whatsapp_number?`<a class="btn sec" target="_blank" rel="noopener" href="https://wa.me/${esc(S.whatsapp_number)}">Test WhatsApp link</a>`:""}</div>
  </form>
  <div class="sect"><h3>🎨 Make it yours <small>saved in this browser only</small></h3>
   <div><div class="lbl" style="margin-bottom:6px">Colour theme</div><div class="swatches">${Object.entries(ACCENTS).map(([k,[hex,name]])=>`<button type="button" class="sw ${prefs.accent===k?"on":""}" data-accent="${k}" style="background:${hex}" title="${name}" aria-label="${name}"></button>`).join("")}</div></div>
@@ -993,8 +1012,11 @@ async function vSettings(){
   if(wa&&(wa.length<10||wa.length>15)){err.textContent="WhatsApp number should be 10–15 digits including the country code, e.g. 254712345678.";return}
   const body={shop_name:f.elements.shop_name.value.trim(),delivery_fee:Number(f.elements.delivery_fee.value)||0,free_delivery_threshold:Number(f.elements.free_delivery_threshold.value)||0,low_stock_threshold:Math.floor(Number(f.elements.low_stock_threshold.value)||0)};
   if(wa)body.whatsapp_number=wa;
+  body.owner_email=f.elements.owner_email.value.trim();
+  if(body.owner_email&&!/^\S+@\S+\.\S+$/.test(body.owner_email)){err.textContent="Enter a valid email address for order alerts.";return}
   const btn=f.querySelector("[type=submit]");btn.disabled=true;
   try{S={...S,...(await api("/settings",send("PATCH",body))).settings};brand();toast("Settings saved");vSettings()}catch(ex){err.textContent=ex.message;handleErr(ex)}finally{btn.disabled=false}});
+ const tm=$("testMail");if(tm)tm.onclick=async()=>{tm.disabled=true;try{const d=await api("/settings/test-email",send("POST"));toast("Test email sent to "+d.to)}catch(ex){$("sErr").textContent=ex.message;handleErr(ex)}finally{tm.disabled=false}};
  c.querySelectorAll("[data-accent]").forEach(b=>b.onclick=()=>{prefs.accent=b.dataset.accent;savePrefs();c.querySelectorAll("[data-accent]").forEach(x=>x.classList.toggle("on",x===b))});
  for(const[id,k]of[["segTheme","theme"],["segDensity","density"]])$(id).onclick=e=>{const b=e.target.closest("[data-v]");if(!b)return;prefs[k]=b.dataset.v;savePrefs();$(id).querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b))};
  $("pHome").onchange=()=>{prefs.home=$("pHome").value;savePrefs();toast("Saved")}}

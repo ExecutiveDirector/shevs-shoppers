@@ -1,5 +1,7 @@
 const adminModel = require("../models/adminModel");
 const settingsModel = require("../models/settingsModel");
+const imageModel = require("../models/imageModel");
+const mailer = require("../utils/mailer");
 const asyncHandler = require("../utils/asyncHandler");
 const ApiError = require("../utils/ApiError");
 
@@ -101,6 +103,24 @@ const setOrderNote = asyncHandler(async (req, res) => {
   res.json({ saved: true });
 });
 
+const uploadImage = asyncHandler(async (req, res) => {
+  if (!Buffer.isBuffer(req.body) || !req.body.length) throw ApiError.badRequest("Choose an image file to upload.");
+  let img;
+  try { img = await imageModel.create(req.body); }
+  catch { throw ApiError.badRequest("That file isn't a usable image. Use a JPG, PNG or WebP photo."); }
+  // Absolute URL so the storefront (a different domain) can load it directly.
+  const origin = process.env.PUBLIC_API_URL || `${req.protocol}://${req.get("host")}`;
+  res.status(201).json({ id: img.id, url: `${origin.replace(/\/$/, "")}/api/images/${img.id}.webp`, width: img.width, height: img.height });
+});
+
+const testEmail = asyncHandler(async (req, res) => {
+  const s = await settingsModel.getAll();
+  if (!s.owner_email) throw ApiError.badRequest("Save an order-alert email address first.");
+  const r = await mailer.send({ to: s.owner_email, subject: `Test alert from ${s.shop_name}`, text: "Order alerts are working. You'll get an email like this for every new order.", html: `<p>✅ Order alerts are working for <b>${s.shop_name.replace(/[<>&]/g, "")}</b>. You'll get an email like this for every new order.</p>` });
+  if (!r.ok) throw ApiError.badRequest(`Couldn't send: ${r.reason}.`);
+  res.json({ ok: true, to: s.owner_email });
+});
+
 const getSettings = asyncHandler(async (req, res) => res.json({ settings: await settingsModel.getAll() }));
 
 const updateSettings = asyncHandler(async (req, res) => {
@@ -177,7 +197,7 @@ module.exports = {
   stats, listOrders, getOrder, setOrderStatus, setOrderNote,
   listProducts, getProduct, createProduct, updateProduct, deleteProduct,
   adjustStock, duplicateProduct, bulkProducts,
-  getSettings, updateSettings,
+  uploadImage, testEmail, getSettings, updateSettings,
   listCategories, createCategory, updateCategory, deleteCategory,
   listCoupons, createCoupon, updateCoupon, deleteCoupon,
   listCustomers,
