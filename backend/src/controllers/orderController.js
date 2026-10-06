@@ -6,11 +6,12 @@ const asyncHandler = require("../utils/asyncHandler");
 const ApiError = require("../utils/ApiError");
 
 const create = asyncHandler(async (req, res) => {
-  const { customerName, phone, county, address, paymentMethod, couponCode, items } = req.body;
+  const { customerName, phone, customerEmail, county, address, paymentMethod, couponCode, items } = req.body;
 
   const { order, items: lineItems } = await orderModel.createOrder({
     customerName,
     phone,
+    customerEmail: customerEmail || null,
     county,
     address,
     paymentMethod,
@@ -25,6 +26,10 @@ const create = asyncHandler(async (req, res) => {
   if (settings.owner_email) {
     const m = mailer.orderEmail(order, lineItems, settings.shop_name, process.env.ADMIN_URL || "");
     mailer.send({ to: settings.owner_email, ...m }).catch(() => {});
+  }
+
+  if (order.customer_email) {
+    mailer.send({ to: order.customer_email, ...mailer.receiptEmail(order, lineItems, settings.shop_name) }).catch(() => {});
   }
 
   res.status(201).json({

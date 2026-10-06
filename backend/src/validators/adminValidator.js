@@ -69,4 +69,26 @@ const settingsRules = [
   body("low_stock_threshold").optional().isInt({ min: 0, max: 100000 }).withMessage("Low-stock alert must be 0 or more.").toInt(),
 ];
 
-module.exports = { productRules, categoryRules, couponRules, stockRules, bulkRules, noteRules, settingsRules };
+const dateField = (n) => body(n).optional({ values: "falsy" }).isISO8601().withMessage("Use a valid date and time.");
+const bannerRules = [
+  body("title").trim().isLength({ min: 2, max: 80 }).withMessage("Give the banner a title (2–80 characters)."),
+  body("subtitle").optional({ values: "falsy" }).trim().isLength({ max: 160 }).withMessage("Subtitle is too long (max 160)."),
+  body("imageUrl").optional({ values: "falsy" }).trim().isURL({ protocols: ["http", "https"], require_protocol: true }).withMessage("Image link must start with http:// or https://.").isLength({ max: 500 }),
+  body("linkType").optional().isIn(["none", "category", "product"]).withMessage("Invalid link type."),
+  body("linkId").optional({ values: "falsy" }).isInt({ min: 1 }).toInt(),
+  dateField("startsAt"), dateField("endsAt"),
+  body("active").optional().isBoolean().toBoolean(),
+  body("sortOrder").optional().isInt({ min: -1000, max: 1000 }).toInt(),
+];
+const promoRules = [
+  body("name").trim().isLength({ min: 2, max: 80 }).withMessage("Give the promotion a name."),
+  body("percentOff").isInt({ min: 1, max: 90 }).withMessage("Discount must be between 1% and 90%.").toInt(),
+  body("scope").isIn(["all", "category", "product"]).withMessage("Choose what the promotion applies to."),
+  body("scopeId").optional({ values: "falsy" }).isInt({ min: 1 }).toInt(),
+  body("minQty").optional().isInt({ min: 1, max: 100 }).withMessage("Minimum quantity must be 1–100.").toInt(),
+  dateField("startsAt"), dateField("endsAt"),
+  body("active").optional().isBoolean().toBoolean(),
+  body().custom((v) => { if (v.startsAt && v.endsAt && new Date(v.endsAt) <= new Date(v.startsAt)) throw new Error("The end must be after the start."); return true; }),
+];
+
+module.exports = { bannerRules, promoRules, productRules, categoryRules, couponRules, stockRules, bulkRules, noteRules, settingsRules };

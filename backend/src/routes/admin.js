@@ -4,7 +4,8 @@ const adminAuth = require("../middleware/adminAuth");
 const validate = require("../middleware/validate");
 const { adminAuthLimiter } = require("../middleware/rateLimiters");
 const { updateOrderStatusRules } = require("../validators/couponValidator");
-const { productRules, categoryRules, couponRules, stockRules, bulkRules, noteRules, settingsRules } = require("../validators/adminValidator");
+const e = require("../controllers/engagementController");
+const { bannerRules, promoRules, productRules, categoryRules, couponRules, stockRules, bulkRules, noteRules, settingsRules } = require("../validators/adminValidator");
 
 router.use(adminAuthLimiter, adminAuth);
 
@@ -36,6 +37,24 @@ router.get("/coupons", c.listCoupons);
 router.post("/coupons", couponRules(false), validate, c.createCoupon);
 router.patch("/coupons/:id", couponRules(true), validate, c.updateCoupon);
 router.delete("/coupons/:id", c.deleteCoupon);
+
+router.get("/reports/sales", c.salesReport);
+router.get("/reports/export", c.exportCsv);
+router.get("/badges", e.badges);
+router.get("/alerts", e.adminAlerts);
+router.post("/alerts/:id/done", e.alertDone);
+router.delete("/alerts/:id", e.alertDelete);
+router.get("/reviews", e.adminReviews);
+router.patch("/reviews/:id", e.reviewStatus);
+router.delete("/reviews/:id", e.reviewDelete);
+router.get("/banners", e.adminBanners);
+router.post("/banners", bannerRules, validate, e.bannerCreate);
+router.patch("/banners/:id", bannerRules, validate, e.bannerUpdate);
+router.delete("/banners/:id", e.bannerDelete);
+router.get("/promotions", e.adminPromos);
+router.post("/promotions", promoRules, validate, e.promoCreate);
+router.patch("/promotions/:id", promoRules, validate, e.promoUpdate);
+router.delete("/promotions/:id", e.promoDelete);
 
 router.get("/customers", c.listCustomers);
 

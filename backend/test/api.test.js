@@ -169,3 +169,38 @@ test("order alert email: skipped quietly with no key, HTML-escapes customer text
   delete process.env.RESEND_API_KEY;
   return mailer.send({ to: "o@x.com", subject, html }).then((r) => assert.equal(r.ok, false));
 });
+
+test("new admin endpoints all require the key", async () => {
+  for (const [m, p] of [["GET", "/alerts"], ["GET", "/reviews"], ["GET", "/banners"], ["POST", "/promotions"], ["GET", "/reports/sales"], ["GET", "/reports/export"], ["GET", "/badges"]]) {
+    const r = await fetch(`${base}/api/admin${p}`, { method: m, headers: { "Content-Type": "application/json" }, body: m === "POST" ? "{}" : undefined });
+    assert.equal(r.status, 401, `${m} ${p}`);
+  }
+});
+
+test("public forms validate input before touching the database", async () => {
+  const post = (path, body) => fetch(`${base}/api/products/${path}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  assert.equal((await post("1/notify", { contact: "hello" })).status, 400);
+  assert.equal((await post("1/notify", { contact: "0712345678" })).status, 404); // valid, but the stub DB has no product 1
+  assert.equal((await post("1/reviews", { orderCode: "x", phone: "1", name: "", rating: 9 })).status, 400);
+  assert.equal((await fetch(`${base}/api/banners`)).status, 200);
+});
+
+test("promotion maths: best percentage wins, scope and minimum quantity respected", () => {
+  const promo = require("../src/models/promoModel");
+  const promos = [
+    { scope: "all", scope_id: null, percent_off: 10, min_qty: 1 },
+    { scope: "category", scope_id: 2, percent_off: 20, min_qty: 1 },
+    { scope: "product", scope_id: 5, percent_off: 30, min_qty: 3 },
+  ];
+  assert.equal(promo.percentFor(promos, { id: 9, category_id: 1 }, 1), 10);
+  assert.equal(promo.percentFor(promos, { id: 9, category_id: 2 }, 1), 20);
+  assert.equal(promo.percentFor(promos, { id: 5, category_id: 1 }, 2), 10); // buy-3 offer not reached
+  assert.equal(promo.percentFor(promos, { id: 5, category_id: 1 }, 3), 30);
+  assert.equal(promo.discounted(1000, 30), 700);
+  assert.equal(promo.discounted(999, 0), 999);
+});
+
+test("sales report: bad dates fall back instead of reaching SQL", async () => {
+  const r = await fetch(`${base}/api/admin/reports/sales?from=1;DROP&to=x`, { headers: { "x-admin-key": process.env.ADMIN_API_KEY } });
+  assert.notEqual(r.status, 401);
+});

@@ -12,6 +12,12 @@ router.get("/settings", async (req, res, next) => {
     res.json({ shopName: s.shop_name, whatsappNumber: s.whatsapp_number, deliveryFee: s.delivery_fee, freeDeliveryThreshold: s.free_delivery_threshold });
   } catch (e) { next(e); }
 });
+router.get("/banners", async (req, res, next) => {
+  try {
+    res.set("Cache-Control", "public, max-age=60");
+    res.json({ banners: await require("../models/engagementModel").publicBanners() });
+  } catch (e) { next(e); }
+});
 router.use("/images", require("./images"));
 router.use("/admin", require("./admin"));
 

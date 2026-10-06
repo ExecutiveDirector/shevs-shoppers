@@ -3,6 +3,7 @@ const { pool } = require("../config/db");
 const productModel = require("./productModel");
 const couponModel = require("./couponModel");
 const settingsModel = require("./settingsModel");
+const promoModel = require("./promoModel");
 const ApiError = require("../utils/ApiError");
 
 // No 0/O/1/I so codes are easy to read out over the phone or WhatsApp.
@@ -43,6 +44,7 @@ async function createOrder(input) {
     if (qty > 20) throw ApiError.badRequest("You can order at most 20 of one item at a time.");
   }
 
+  const promos = await promoModel.active();
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
@@ -64,7 +66,8 @@ async function createOrder(input) {
             : `"${product.name}" just sold out.`
         );
       }
-      const unitPrice = Number(product.price);
+      // Same promotion rules the storefront shows, re-applied here so the price is never taken from the client.
+      const unitPrice = promoModel.discounted(product.price, promoModel.percentFor(promos, product, qty));
       const lineTotal = round2(unitPrice * qty);
       subtotal = round2(subtotal + lineTotal);
 
@@ -104,13 +107,14 @@ async function createOrder(input) {
       try {
         const [orderResult] = await conn.query(
           `INSERT INTO orders
-            (order_code, customer_name, phone, county, address, payment_method,
+            (order_code, customer_name, phone, customer_email, county, address, payment_method,
              status, subtotal, delivery_fee, discount, coupon_code, total)
-           VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?)`,
+           VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?)`,
           [
             orderCode,
             input.customerName,
             input.phone,
+            input.customerEmail || null,
             input.county,
             input.address,
             input.paymentMethod,
@@ -150,6 +154,7 @@ async function createOrder(input) {
         order_code: orderCode,
         customer_name: input.customerName,
         phone: input.phone,
+        customer_email: input.customerEmail || null,
         county: input.county,
         address: input.address,
         payment_method: input.paymentMethod,

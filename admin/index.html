@@ -153,6 +153,8 @@ body[data-density=compact] .card{padding:12px}
 .chart .bar{fill:var(--brand)}
 .chart .bar:hover{opacity:.8}
 .chart .today{fill:var(--gold)}
+.grid.two{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.rvt{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-bottom:4px}.rvc{margin-bottom:12px}
 .bars .brow{display:grid;grid-template-columns:90px 1fr 34px;gap:8px;align-items:center;margin:6px 0;font-size:13px}
 .bars .track{background:var(--bg);border-radius:99px;height:10px;overflow:hidden}
 .bars .fill{height:100%;background:var(--brand);border-radius:99px}
@@ -346,11 +348,11 @@ const fday=d=>new Date(d).toLocaleDateString("en-KE",{timeZone:TZ,day:"numeric",
 const waNumber=p=>{let d=String(p||"").replace(/\D/g,"");if(d.startsWith("0"))d="254"+d.slice(1);return d};
 const STATUSES=["pending","confirmed","dispatched","delivered","cancelled"];
 const DEFAULT_API="https://shevs-api-production.up.railway.app";
-const VIEWS=["dashboard","orders","customers","coupons","products","categories","settings"];
+const VIEWS=["dashboard","orders","customers","coupons","products","categories","settings","reports","reviews","waitlist","promotions"];
 const NAV=[
  ["Overview",[["dashboard","🏠","Dashboard","d"]]],
- ["Sales",[["orders","🧾","Orders","o"],["customers","👥","Customers","u"],["coupons","🏷️","Coupons","c"]]],
- ["Catalogue",[["products","📦","Products","p"],["categories","🗂️","Categories","a"]]],
+ ["Sales",[["orders","🧾","Orders","o"],["customers","👥","Customers","u"],["coupons","🏷️","Coupons","c"],["reports","📈","Reports","r"]]],
+ ["Catalogue",[["products","📦","Products","p"],["categories","🗂️","Categories","a"],["promotions","🎁","Promotions","m"],["reviews","⭐","Reviews","v"],["waitlist","🔔","Waiting list","w"]]],
  ["Store",[["settings","⚙️","Settings","s"]]]];
 const TABS=[["dashboard","🏠","Home"],["orders","🧾","Orders"],["products","📦","Products"],["customers","👥","Customers"]];
 const ACCENTS={green:["#0F5B4A","Forest"],blue:["#1D4ED8","Ocean"],purple:["#6D28D9","Plum"],orange:["#C2410C","Sunset"],rose:["#BE123C","Rose"],slate:["#334155","Slate"]};
@@ -428,7 +430,7 @@ function brand(){$("brandName").innerHTML=esc(S.shop_name)+" <b>Admin</b>";$("br
 
 /* ---------- navigation ---------- */
 function buildNav(){
- $("nav").innerHTML=NAV.map(([sec,items])=>`<div class="nsec">${sec}</div>`+items.map(([v,ic,l,k])=>`<button class="nlink" data-view="${v}" title="${l}  ( g then ${k} )"><span class="ic">${ic}</span><span class="nl">${l}</span>${v==="orders"?`<span class="dot" id="pendDot" hidden></span>`:v==="products"?`<span class="dot warn" id="lowDot" hidden title="Low or out of stock"></span>`:""}</button>`).join("")).join("");
+ $("nav").innerHTML=NAV.map(([sec,items])=>`<div class="nsec">${sec}</div>`+items.map(([v,ic,l,k])=>`<button class="nlink" data-view="${v}" title="${l}  ( g then ${k} )"><span class="ic">${ic}</span><span class="nl">${l}</span>${v==="orders"?`<span class="dot" id="pendDot" hidden></span>`:v==="reviews"?`<span class="dot" id="revDot" hidden title="Waiting for approval"></span>`:v==="waitlist"?`<span class="dot warn" id="waitDot" hidden title="Waiting to be told"></span>`:v==="products"?`<span class="dot warn" id="lowDot" hidden title="Low or out of stock"></span>`:""}</button>`).join("")).join("");
  $("tabs").innerHTML=TABS.map(([v,ic,l])=>`<button data-act="goView" data-view="${v}"><span class="ic">${ic}</span>${l}${v==="orders"?`<span class="dot" id="pendTab" hidden></span>`:v==="products"?`<span class="dot warn" id="lowTab" hidden></span>`:""}</button>`).join("")+`<button data-act="menu"><span class="ic">☰</span>More</button>`}
 $("nav").addEventListener("click",e=>{const b=e.target.closest(".nlink");if(b){go(b.dataset.view);$("side").classList.remove("open")}});
 function setBadges(pend,low){
@@ -441,12 +443,13 @@ function go(v){
  const sec=NAV.find(([,it])=>it.some(x=>x[0]===v));const item=sec&&sec[1].find(x=>x[0]===v);
  $("crumb").innerHTML=item?`${esc(sec[0])} › <b>${item[2]}</b>`:"";
  window.scrollTo(0,0);
- ({dashboard:vDashboard,orders:vOrders,products:vProducts,categories:vCategories,coupons:vCoupons,customers:vCustomers,settings:vSettings})[v]()}
+ ({dashboard:vDashboard,orders:vOrders,products:vProducts,categories:vCategories,coupons:vCoupons,customers:vCustomers,settings:vSettings,reports:vReports,reviews:vReviews,waitlist:vWaitlist,promotions:vPromotions})[v]()}
 async function poll(){
  try{
   const d=await api("/stats");
   const n=(d.statusCounts&&d.statusCounts.pending)||0,low=d.lowStockCount||0;
   setBadges(n,low);setSync(true);
+  api("/badges").then(b=>{[["revDot",b.reviews],["waitDot",b.alerts]].forEach(([id,k])=>{const el=$(id);if(el){el.hidden=!k;el.textContent=k>99?"99+":k}})}).catch(()=>{});
   document.title=(n?`(${n}) `:"")+S.shop_name+" Admin";
   if(knownPending!=null&&n>knownPending){toast(`🛒 ${n-knownPending} new order${n-knownPending>1?"s":""} received`);
    if(view==="orders"&&!$("drawer").classList.contains("open"))loadOrders();if(view==="dashboard")vDashboard()}
@@ -473,6 +476,8 @@ function act(name,el){
   newProduct:()=>productEditor(),editProduct:()=>productEditor(+d.id),exportProducts:()=>exportProducts(el),
   stockStep:()=>stockStep(+d.id,+d.d,el),
   newCategory:()=>categoryForm(),editCategory:()=>categoryForm(+d.id),delCategory:()=>delCategory(+d.id,d.name),
+  newPromo:()=>promoForm(),editPromo:()=>promoForm(+d.id),delPromo:()=>delPromo(+d.id,d.name),newBanner:()=>bannerForm(),editBanner:()=>bannerForm(+d.id),delBanner:()=>delBanner(+d.id,d.name),
+  revSet:()=>revSet(+d.id,d.status),revDel:()=>revDel(+d.id),alertDone:()=>alertDone(+d.id),alertDel:()=>alertDel(+d.id),repRange:()=>repRange(d.r),repExport:()=>repExport(el),
   newCoupon:()=>couponForm(),editCoupon:()=>couponForm(+d.id),delCoupon:()=>delCoupon(+d.id,d.code),
   goOrders:()=>{st.orders.status=d.status||"";st.orders.page=1;go("orders")},
   goProducts:()=>{st.products.state=d.state||"";st.products.page=1;go("products")},
@@ -524,6 +529,8 @@ const CMDS=[
  {g:"Actions",ic:"➕",l:"New product",act:"newProduct"},
  {g:"Actions",ic:"➕",l:"New category",act:"newCategory"},
  {g:"Actions",ic:"➕",l:"New coupon",act:"newCoupon"},
+ {g:"Actions",ic:"🎁",l:"New promotion",act:"newPromo"},
+ {g:"Actions",ic:"🖼️",l:"New banner",act:"newBanner"},
  {g:"Actions",ic:"🧾",l:"Pending orders",act:"goOrders",data:{status:"pending"}},
  {g:"Actions",ic:"⚠️",l:"Low-stock products",act:"goProducts",data:{state:"low"}},
  {g:"Actions",ic:"🚫",l:"Out-of-stock products",act:"goProducts",data:{state:"out"}},
@@ -650,6 +657,12 @@ async function openOrder(code){
  $("drawerTitle").textContent=code;$("drawerBody").innerHTML=`<p class="muted">Loading…</p>`;openDrawer();
  try{const d=await api("/orders/"+encodeURIComponent(code));curOrder=d;drawerOrder(d)}
  catch(e){$("drawerBody").innerHTML=`<p style="color:var(--sale)">Couldn't load this order: ${esc(e.message)}</p>`;handleErr(e)}}
+const WA_UPDATES=[["confirmed","✅","Confirmed"],["dispatched","🚚","On its way"],["delivered","📦","Delivered"],["cancelled","✖️","Cancelled"]];
+function waUpdate(st,o){const hi=`Hello ${o.customer_name}, `,ref=`order ${o.order_code} (${kes(o.total)})`,sign=`\n\n— ${S.shop_name}`;
+ return {confirmed:`${hi}your ${ref} is confirmed. We'll deliver to ${o.address}, ${o.county}. Thank you for shopping with ${S.shop_name}!${sign}`,
+  dispatched:`${hi}your ${ref} is on its way to ${o.address}. Our rider will call you on arrival.${o.payment_method==="cod"?` Please have ${kes(o.total)} ready.`:""}${sign}`,
+  delivered:`${hi}your ${ref} has been delivered. Thank you! If you enjoyed it, we'd love a review: ${location.origin}/${sign}`,
+  cancelled:`${hi}your ${ref} has been cancelled. Message us here if that's unexpected.${sign}`}[st]}
 function drawerOrder({order:o,items}){
  const wa=waNumber(o.phone),msg=encodeURIComponent(`Hello ${o.customer_name}, this is ${S.shop_name} about your order ${o.order_code} (${kes(o.total)}).`);
  const next={pending:"confirmed",confirmed:"dispatched",dispatched:"delivered"}[o.status];
@@ -662,7 +675,11 @@ function drawerOrder({order:o,items}){
  <div class="drow"><span>Phone</span><b>${esc(o.phone)}</b></div>
  <div class="drow"><span>County</span><b>${esc(o.county)}</b></div>
  <div class="drow"><span>Address</span><b>${esc(o.address)}</b></div>
+ ${o.customer_email?`<div class="drow"><span>Email</span><b>${esc(o.customer_email)}</b></div>`:""}
  <div class="actions"><a class="btn sec sm" href="tel:${esc(o.phone)}">📞 Call</a><a class="btn sec sm" target="_blank" rel="noopener" href="https://wa.me/${wa}?text=${msg}">💬 WhatsApp</a></div>
+ <div class="dsec">Message the customer on WhatsApp</div>
+ <div class="actions wrapx">${WA_UPDATES.map(([st,ic,l])=>`<a class="btn ${st===o.status?"":"sec"} sm" target="_blank" rel="noopener" href="https://wa.me/${wa}?text=${encodeURIComponent(waUpdate(st,o))}">${ic} ${l}</a>`).join("")}</div>
+ <p class="hint">Opens WhatsApp with the message ready to send — nothing is sent until you tap send.${o.customer_email?" Customers with an email also get status updates by email automatically.":""}</p>
  <div class="dsec">Items</div>
  ${items.map(it=>`<div class="ditem"><span>${it.qty} × ${esc(it.name_snapshot)}<br><small class="muted">${kes(it.unit_price_snapshot)} each</small></span><b>${kes(it.line_total)}</b></div>`).join("")}
  <div class="dsec">Payment</div>
@@ -1020,6 +1037,157 @@ async function vSettings(){
  c.querySelectorAll("[data-accent]").forEach(b=>b.onclick=()=>{prefs.accent=b.dataset.accent;savePrefs();c.querySelectorAll("[data-accent]").forEach(x=>x.classList.toggle("on",x===b))});
  for(const[id,k]of[["segTheme","theme"],["segDensity","density"]])$(id).onclick=e=>{const b=e.target.closest("[data-v]");if(!b)return;prefs[k]=b.dataset.v;savePrefs();$(id).querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b))};
  $("pHome").onchange=()=>{prefs.home=$("pHome").value;savePrefs();toast("Saved")}}
+
+
+/* ---------- reports ---------- */
+const rep={from:"",to:"",preset:"30"};
+const ymd=d=>new Date(d.getTime()+3*3600000).toISOString().slice(0,10);
+function repRange(r){const now=new Date();rep.preset=r;
+ if(r==="7"||r==="30"||r==="90"){rep.to=ymd(now);rep.from=ymd(new Date(now.getTime()-(+r-1)*86400000))}
+ else if(r==="month"){const t=ymd(now);rep.to=t;rep.from=t.slice(0,8)+"01"}
+ else if(r==="lastmonth"){const t=ymd(now),first=new Date(t.slice(0,8)+"01T00:00:00Z"),end=new Date(first.getTime()-86400000);rep.to=ymd(new Date(end.getTime()-3*3600000));rep.from=rep.to.slice(0,8)+"01"}
+ vReports()}
+async function vReports(){
+ const c=$("content");if(!rep.from)repRange("30");
+ c.innerHTML=`<div class="loading">Loading…</div>`;
+ try{
+  const d=await api("/reports/sales"+qs({from:rep.from,to:rep.to}));
+  const m=d.summary,max=Math.max(1,...d.daily.map(x=>x.revenue));
+  const presets=[["7","7 days"],["30","30 days"],["90","90 days"],["month","This month"],["lastmonth","Last month"]];
+  const W=Math.max(520,d.daily.length*26),H=170,bw=Math.min(28,(W/Math.max(1,d.daily.length))-4);
+  const bars=d.daily.map((x,i)=>{const h=Math.max(2,Math.round(x.revenue/max*(H-40))),X=i*(W/d.daily.length)+2;return `<g><title>${fday(x.day+"T12:00:00+03:00")}: ${kes(x.revenue)} · ${x.orders} order${x.orders===1?"":"s"}</title><rect x="${X}" y="${H-26-h}" width="${bw}" height="${h}" rx="3" fill="var(--brand)"/>${d.daily.length<=16||i%Math.ceil(d.daily.length/12)===0?`<text x="${X+bw/2}" y="${H-10}" text-anchor="middle" font-size="10" fill="var(--mute)">${x.day.slice(8)}</text>`:""}</g>`}).join("");
+  const pct=m.profitCoverage;
+  c.innerHTML=`<div class="pagehead"><h2>Reports</h2><span class="sub">${fday(d.from+"T12:00:00+03:00")} – ${fday(d.to+"T12:00:00+03:00")}</span><span class="sp"></span><button class="btn sec" data-act="repExport">⬇ Export orders (CSV)</button></div>
+  <div class="bar"><div class="seg">${presets.map(([k,l])=>`<button type="button" data-act="repRange" data-r="${k}" class="${rep.preset===k?"on":""}">${l}</button>`).join("")}</div>
+   <label class="muted" style="display:flex;gap:6px;align-items:center">From <input type="date" id="rFrom" value="${esc(d.from)}"></label><label class="muted" style="display:flex;gap:6px;align-items:center">To <input type="date" id="rTo" value="${esc(d.to)}"></label></div>
+  <div class="grid kpis">
+   <div class="card kpi"><div class="lbl muted">Sales</div><div class="val">${kes(m.revenue)}</div><div class="sub muted">${num(m.orders)} order${m.orders===1?"":"s"} · avg ${kes(m.avgOrder)}</div></div>
+   <div class="card kpi"><div class="lbl muted">Profit</div><div class="val">${pct>0?kes(m.profit):"—"}</div><div class="sub muted">${pct>0?`on ${Math.round(pct*100)}% of sales with a cost price`:"Add cost prices to products to see profit"}</div></div>
+   <div class="card kpi"><div class="lbl muted">Items sold</div><div class="val">${num(m.units)}</div><div class="sub muted">${num(m.cancelled)} cancelled order${m.cancelled===1?"":"s"}</div></div>
+   <div class="card kpi"><div class="lbl muted">Customers</div><div class="val">${num(m.customers)}</div><div class="sub muted">${num(m.repeatCustomers)} ordered more than once</div></div>
+  </div>
+  <div class="card" style="margin-bottom:14px"><h3>Sales per day</h3>${d.daily.length?`<div style="overflow-x:auto"><svg class="chart" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="max-width:none;height:${H}px" role="img" aria-label="Sales per day"><line x1="0" x2="${W}" y1="${H-26}" y2="${H-26}" stroke="var(--line)"/>${bars}</svg></div>`:`<p class="muted">No orders in this period.</p>`}
+   ${m.discounts?`<p class="hint">${kes(m.discounts)} given away in coupons.</p>`:""}</div>
+  <div class="grid two">
+   <div class="card"><h3>Best sellers</h3>${d.top.length?`<div class="tablewrap" style="border:0"><table><thead><tr><th>Product</th><th class="r">Sold</th><th class="r">Sales</th><th class="r">Profit</th></tr></thead><tbody>${d.top.map(t=>`<tr><td>${esc(t.name)}</td><td class="r">${num(t.units)}</td><td class="r">${kes(t.revenue)}</td><td class="r">${t.profit==null?"—":kes(t.profit)}</td></tr>`).join("")}</tbody></table></div>`:`<p class="muted">Nothing sold yet in this period.</p>`}</div>
+   <div class="card"><h3>Where orders go</h3>${d.counties.length?`<div class="bars">${d.counties.map(x=>`<div class="brow"><span>${esc(x.county)}</span><div class="track"><div class="fill" style="width:${Math.round(x.revenue/d.counties[0].revenue*100)}%"></div></div><b>${x.orders}</b></div>`).join("")}</div>`:`<p class="muted">No data.</p>`}
+    <h3 style="margin-top:16px">Payment method</h3>${d.payments.map(x=>`<div class="drow"><span>${x.method==="mpesa"?"M-Pesa":"Cash on delivery"}</span><b>${x.orders} · ${kes(x.revenue)}</b></div>`).join("")||`<p class="muted">No data.</p>`}</div>
+  </div>
+  <p class="hint">Cancelled orders are left out of sales and profit. Profit uses each product's current cost price.</p>`;
+  const go2=()=>{rep.from=$("rFrom").value||rep.from;rep.to=$("rTo").value||rep.to;rep.preset="custom";vReports()};
+  $("rFrom").onchange=go2;$("rTo").onchange=go2;
+ }catch(e){c.innerHTML=`<div class="empty">Couldn't load: ${esc(e.message)}</div>`;handleErr(e)}}
+async function repExport(btn){btn.disabled=true;
+ try{const r=await fetch(API.replace(/\/$/,"")+"/api/admin/reports/export"+qs({from:rep.from,to:rep.to}),{headers:{"x-admin-key":KEY}});
+  if(r.status===401){const e=new Error("Invalid admin key.");e.auth=true;throw e}if(!r.ok)throw new Error("Export failed ("+r.status+")");
+  const a=document.createElement("a");a.href=URL.createObjectURL(await r.blob());a.download=`shevs-orders-${rep.from}-to-${rep.to}.csv`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);toast("Export downloaded")}
+ catch(e){toast(e.message);handleErr(e)}finally{btn.disabled=false}}
+
+/* ---------- reviews ---------- */
+let revFilter="pending";
+async function vReviews(){
+ const c=$("content");c.innerHTML=`<div class="loading">Loading…</div>`;
+ try{
+  const d=await api("/reviews"+qs({status:revFilter}));
+  const tabs=[["pending","Waiting"],["approved","Approved"],["rejected","Hidden"],["","All"]];
+  c.innerHTML=`<div class="pagehead"><h2>Reviews</h2><span class="sub">Only customers whose order was delivered can leave one</span></div>
+  <div class="bar"><div class="seg">${tabs.map(([k,l])=>`<button type="button" data-rf="${k}" class="${revFilter===k?"on":""}">${l}</button>`).join("")}</div></div>
+  ${d.reviews.length?d.reviews.map(r=>`<div class="card rvc"><div class="rvt"><span class="stars" style="color:#e8a200;letter-spacing:1px">${"★".repeat(r.rating)}${"☆".repeat(5-r.rating)}</span> <b>${esc(r.name)}</b> ${badge(r.status==="approved"?"ok":r.status==="pending"?"pending":"hidden",r.status==="rejected"?"hidden":r.status==="pending"?"waiting":"showing")}<span class="sp"></span><small class="muted">${fday(r.created_at)}</small></div>
+   <div class="muted" style="margin:2px 0 6px">${esc(r.product_name)} · order <span class="code">${esc(r.order_code)}</span></div>${r.comment?`<p style="margin:0 0 10px">${esc(r.comment)}</p>`:`<p class="muted" style="margin:0 0 10px">No written comment.</p>`}
+   <div class="actions">${r.status!=="approved"?`<button class="btn sm" data-act="revSet" data-id="${r.id}" data-status="approved">Approve</button>`:""}${r.status!=="rejected"?`<button class="btn sec sm" data-act="revSet" data-id="${r.id}" data-status="rejected">Hide</button>`:""}<button class="btn sec sm" data-act="revDel" data-id="${r.id}" aria-label="Delete review">🗑</button></div></div>`).join(""):`<div class="empty"><b>${revFilter==="pending"?"Nothing waiting":"No reviews here"}</b>${revFilter==="pending"?"New reviews from customers appear here for you to approve before anyone sees them.":""}</div>`}`;
+  c.querySelector(".seg").onclick=e=>{const b=e.target.closest("[data-rf]");if(b){revFilter=b.dataset.rf;vReviews()}}
+ }catch(e){c.innerHTML=`<div class="empty">Couldn't load: ${esc(e.message)}</div>`;handleErr(e)}}
+async function revSet(id,status){try{await api("/reviews/"+id,send("PATCH",{status}));toast(status==="approved"?"Review is now showing":"Review hidden");vReviews();poll()}catch(e){toast(e.message);handleErr(e)}}
+async function revDel(id){if(!(await confirmBox("Delete this review?","It is removed for good and the product's rating is recalculated.","Delete")))return;
+ try{await api("/reviews/"+id,{method:"DELETE"});toast("Review deleted");vReviews();poll()}catch(e){toast(e.message);handleErr(e)}}
+
+/* ---------- waiting list (back-in-stock signups) ---------- */
+async function vWaitlist(){
+ const c=$("content");c.innerHTML=`<div class="loading">Loading…</div>`;
+ try{
+  const d=await api("/alerts"),by=new Map();
+  d.alerts.forEach(a=>{if(!by.has(a.product_id))by.set(a.product_id,{name:a.product_name,stock:a.stock,id:a.product_id,rows:[]});by.get(a.product_id).rows.push(a)});
+  const groups=[...by.values()].sort((x,y)=>y.rows.filter(r=>!r.notified_at).length-x.rows.filter(r=>!r.notified_at).length);
+  c.innerHTML=`<div class="pagehead"><h2>Waiting list</h2><span class="sub">Customers who asked to be told when a sold-out product is back</span></div>
+  ${groups.length?groups.map(g=>{const waiting=g.rows.filter(r=>!r.notified_at).length;return `<div class="card" style="margin-bottom:12px"><div class="rvt"><b>${esc(g.name)}</b> ${g.stock>0?badge("ok","In stock · "+g.stock):badge("out","Sold out")}<span class="sp"></span><span class="muted">${waiting} waiting</span> <button class="btn sec sm" data-act="editProduct" data-id="${g.id}">Edit product</button></div>
+   ${g.rows.map(r=>{const phone=r.kind==="phone";const msg=encodeURIComponent(`Hello! ${g.name} is back in stock at ${d.shopName}. Reply here and we'll set one aside for you.`);
+    return `<div class="drow" style="align-items:center"><span>${phone?"📱":"✉️"} ${esc(phone?"+"+r.contact:r.contact)} <small class="muted">· ${fday(r.created_at)}</small></span><span class="actions" style="margin:0">${r.notified_at?badge("ok","Told"):(g.stock>0&&phone?`<a class="btn sm" target="_blank" rel="noopener" href="https://wa.me/${esc(r.contact)}?text=${msg}">💬 Tell on WhatsApp</a>`:badge("pending","Waiting"))}${!r.notified_at?`<button class="btn sec sm" data-act="alertDone" data-id="${r.id}">Mark told</button>`:""}<button class="btn sec sm" data-act="alertDel" data-id="${r.id}" aria-label="Remove">🗑</button></span></div>`}).join("")}</div>`}).join(""):`<div class="empty"><b>Nobody is waiting</b>When a product is sold out, customers can leave a phone number or email on its page. They'll show up here.</div>`}
+  <p class="hint">Customers who left an email are told automatically when you restock (if email is set up). Phone signups wait here so you can message them on WhatsApp.</p>`;
+ }catch(e){c.innerHTML=`<div class="empty">Couldn't load: ${esc(e.message)}</div>`;handleErr(e)}}
+async function alertDone(id){try{await api("/alerts/"+id+"/done",send("POST"));vWaitlist();poll()}catch(e){toast(e.message);handleErr(e)}}
+async function alertDel(id){try{await api("/alerts/"+id,{method:"DELETE"});vWaitlist();poll()}catch(e){toast(e.message);handleErr(e)}}
+
+/* ---------- promotions & banners ---------- */
+let promos=[],banners=[];
+// Date fields are typed in Nairobi time; the server stores UTC.
+const toLocalInput=v=>v?new Date(new Date(v).getTime()+3*3600000).toISOString().slice(0,16):"";
+const fromLocalInput=v=>v?new Date(v+":00+03:00").toISOString():null;
+const windowText=x=>x.starts_at||x.ends_at?`${x.starts_at?fday(x.starts_at):"now"} → ${x.ends_at?fday(x.ends_at):"no end"}`:"Always on";
+function promoState(x){if(!x.active)return badge("hidden","Off");const now=Date.now();if(x.starts_at&&new Date(x.starts_at)>now)return badge("pending","Scheduled");if(x.ends_at&&new Date(x.ends_at)<=now)return badge("out","Ended");return badge("ok","Live")}
+async function vPromotions(){
+ const c=$("content");c.innerHTML=`<div class="loading">Loading…</div>`;
+ try{
+  await ensureCats();
+  [promos,banners]=await Promise.all([api("/promotions").then(r=>r.promotions),api("/banners").then(r=>r.banners)]);
+  c.innerHTML=`<div class="pagehead"><h2>Promotions</h2><span class="sub">Sales and multi-buy offers, applied automatically at checkout</span><span class="sp"></span><button class="btn" data-act="newPromo">+ New promotion</button></div>
+  <div class="tablewrap"><table><thead><tr><th>Name</th><th class="r">Discount</th><th>Applies to</th><th>Needs</th><th>When</th><th>Status</th><th></th></tr></thead><tbody>
+  ${promos.length?promos.map(x=>`<tr><td><b>${esc(x.name)}</b></td><td class="r">${x.percent_off}% off</td><td>${x.scope==="all"?"Everything":esc((x.scope==="category"?"Category: ":"Product: ")+(x.scope_name||"(deleted)"))}</td><td>${x.min_qty>1?`Buy ${x.min_qty}+`:"Any quantity"}</td><td>${windowText(x)}</td><td>${promoState(x)}</td>
+   <td class="r"><button class="btn sec sm" data-act="editPromo" data-id="${x.id}">Edit</button> <button class="btn sec sm" data-act="delPromo" data-id="${x.id}" data-name="${esc(x.name)}" aria-label="Delete ${esc(x.name)}">🗑</button></td></tr>`).join(""):`<tr><td colspan="7" class="empty"><b>No promotions yet</b>Try "10% off everything this weekend" or "Buy 3 get 15% off".</td></tr>`}</tbody></table></div>
+  <p class="hint">Sales (any quantity) lower the price and show the old price crossed out. Multi-buy offers show a note on the product and apply once the customer reaches the quantity. If several apply, the customer gets the best one.</p>
+  <div class="pagehead" style="margin-top:26px"><h2 style="font-size:19px">Home page banners</h2><span class="sub">Shown at the top of your shop</span><span class="sp"></span><button class="btn" data-act="newBanner">+ New banner</button></div>
+  <div class="tablewrap"><table><thead><tr><th>Banner</th><th>Links to</th><th>When</th><th>Status</th><th></th></tr></thead><tbody>
+  ${banners.length?banners.map(x=>`<tr><td><b>${esc(x.title)}</b>${x.subtitle?`<br><small class="muted">${esc(x.subtitle)}</small>`:""}</td><td>${x.link_type==="none"?"—":esc(x.link_type)}</td><td>${windowText(x)}</td><td>${promoState(x)}</td>
+   <td class="r"><button class="btn sec sm" data-act="editBanner" data-id="${x.id}">Edit</button> <button class="btn sec sm" data-act="delBanner" data-id="${x.id}" data-name="${esc(x.title)}" aria-label="Delete ${esc(x.title)}">🗑</button></td></tr>`).join(""):`<tr><td colspan="5" class="empty"><b>No banners</b>Add one to announce a sale or a new arrival.</td></tr>`}</tbody></table></div>`;
+ }catch(e){c.innerHTML=`<div class="empty">Couldn't load: ${esc(e.message)}</div>`;handleErr(e)}}
+async function productOptions(sel){let rows=[];try{rows=(await api("/products"+qs({pageSize:200,sort:"name"}))).products}catch(e){}
+ return rows.map(p=>`<option value="${p.id}" ${+sel===p.id?"selected":""}>${esc(p.name)}</option>`).join("")}
+async function promoForm(id){
+ const x=id?promos.find(p=>p.id===id):{name:"",percent_off:10,scope:"all",scope_id:null,min_qty:1,starts_at:null,ends_at:null,active:1};if(!x)return;
+ const prodOpts=await productOptions(x.scope==="product"?x.scope_id:0);
+ modal(`<h3>${id?"Edit promotion":"New promotion"}</h3>
+ <div class="fld"><label for="pmN">Name</label><input id="pmN" name="name" maxlength="80" required placeholder="Weekend sale" value="${esc(x.name)}"></div>
+ <div class="frow"><div class="fld"><label for="pmP">Discount (%)</label><input id="pmP" name="percentOff" type="number" min="1" max="90" step="1" required value="${esc(x.percent_off)}"></div>
+  <div class="fld"><label for="pmQ">Customer must buy</label><input id="pmQ" name="minQty" type="number" min="1" max="100" step="1" value="${esc(x.min_qty)}"><span class="hint">1 = a normal sale. 3 = "buy 3 or more".</span></div></div>
+ <div class="fld"><label for="pmS">Applies to</label><select id="pmS" name="scope"><option value="all" ${x.scope==="all"?"selected":""}>Everything</option><option value="category" ${x.scope==="category"?"selected":""}>One category</option><option value="product" ${x.scope==="product"?"selected":""}>One product</option></select></div>
+ <div class="fld" id="pmCatW" ${x.scope==="category"?"":"hidden"}><label for="pmC">Category</label><select id="pmC" name="catId">${cats.map(k=>`<option value="${k.id}" ${+x.scope_id===k.id&&x.scope==="category"?"selected":""}>${esc(k.icon)} ${esc(k.name)}</option>`).join("")}</select></div>
+ <div class="fld" id="pmProdW" ${x.scope==="product"?"":"hidden"}><label for="pmR">Product</label><select id="pmR" name="prodId">${prodOpts}</select></div>
+ <div class="frow"><div class="fld"><label for="pmA">Starts (optional)</label><input id="pmA" name="startsAt" type="datetime-local" value="${esc(toLocalInput(x.starts_at))}"></div><div class="fld"><label for="pmB">Ends (optional)</label><input id="pmB" name="endsAt" type="datetime-local" value="${esc(toLocalInput(x.ends_at))}"></div></div><span class="hint">Times are Nairobi time. Leave blank to start now / run until you switch it off.</span>
+ <label class="tog"><span>Active</span><span class="switch"><input type="checkbox" name="active" ${x.active?"checked":""}><span></span></span></label>
+ <div class="err" aria-live="polite"></div>
+ <div class="mact"><button type="button" class="btn sec" data-act="closeModal">Cancel</button><button class="btn" type="submit">${id?"Save changes":"Create promotion"}</button></div>`,
+ async f=>{const e=f.elements;
+  const body={name:e.name.value.trim(),percentOff:Number(e.percentOff.value),minQty:Number(e.minQty.value)||1,scope:e.scope.value,startsAt:fromLocalInput(e.startsAt.value),endsAt:fromLocalInput(e.endsAt.value),active:e.active.checked};
+  body.scopeId=body.scope==="category"?Number(e.catId.value):body.scope==="product"?Number(e.prodId.value):null;
+  if(body.name.length<2)throw new Error("Give the promotion a name.");if(!(body.percentOff>=1&&body.percentOff<=90))throw new Error("Discount must be between 1% and 90%.");
+  await api(id?"/promotions/"+id:"/promotions",send(id?"PATCH":"POST",body));closeModal();toast(id?"Promotion updated":"Promotion created");vPromotions()});
+ const sc=document.getElementById("pmS");sc.onchange=()=>{document.getElementById("pmCatW").hidden=sc.value!=="category";document.getElementById("pmProdW").hidden=sc.value!=="product"}}
+async function delPromo(id,name){if(!(await confirmBox("Delete promotion?",`"${name}" stops applying immediately. Past orders keep their price.`,"Delete")))return;
+ try{await api("/promotions/"+id,{method:"DELETE"});toast("Promotion deleted");vPromotions()}catch(e){toast(e.message);handleErr(e)}}
+async function bannerForm(id){
+ const x=id?banners.find(b=>b.id===id):{title:"",subtitle:"",image_url:"",link_type:"none",link_id:null,starts_at:null,ends_at:null,active:1,sort_order:0};if(!x)return;
+ const prodOpts=await productOptions(x.link_type==="product"?x.link_id:0);
+ modal(`<h3>${id?"Edit banner":"New banner"}</h3>
+ <div class="fld"><label for="bnT">Headline</label><input id="bnT" name="title" maxlength="80" required placeholder="Weekend sale — 10% off" value="${esc(x.title)}"></div>
+ <div class="fld"><label for="bnS">Small text (optional)</label><input id="bnS" name="subtitle" maxlength="160" value="${esc(x.subtitle||"")}"></div>
+ <div class="fld"><label for="bnI">Picture link (optional)</label><div style="display:flex;gap:8px"><input id="bnI" name="imageUrl" maxlength="500" placeholder="https://…" value="${esc(x.image_url||"")}" style="flex:1"><label class="btn sec sm" for="bnF">Upload</label><input id="bnF" type="file" accept="image/*" hidden></div><span class="hint" id="bnM">A wide picture works best. Without one, the banner uses a colour.</span></div>
+ <div class="fld"><label for="bnL">When tapped, open</label><select id="bnL" name="linkType"><option value="none" ${x.link_type==="none"?"selected":""}>Nothing</option><option value="category" ${x.link_type==="category"?"selected":""}>A category</option><option value="product" ${x.link_type==="product"?"selected":""}>A product</option></select></div>
+ <div class="fld" id="bnCW" ${x.link_type==="category"?"":"hidden"}><label for="bnC">Category</label><select id="bnC" name="catId">${cats.map(k=>`<option value="${k.id}" ${+x.link_id===k.id&&x.link_type==="category"?"selected":""}>${esc(k.icon)} ${esc(k.name)}</option>`).join("")}</select></div>
+ <div class="fld" id="bnPW" ${x.link_type==="product"?"":"hidden"}><label for="bnP">Product</label><select id="bnP" name="prodId">${prodOpts}</select></div>
+ <div class="frow"><div class="fld"><label for="bnA">Shows from (optional)</label><input id="bnA" name="startsAt" type="datetime-local" value="${esc(toLocalInput(x.starts_at))}"></div><div class="fld"><label for="bnB">Until (optional)</label><input id="bnB" name="endsAt" type="datetime-local" value="${esc(toLocalInput(x.ends_at))}"></div></div>
+ <div class="fld" style="max-width:160px"><label for="bnO">Order</label><input id="bnO" name="sortOrder" type="number" step="1" value="${esc(x.sort_order||0)}"><span class="hint">Lower shows first.</span></div>
+ <label class="tog"><span>Active</span><span class="switch"><input type="checkbox" name="active" ${x.active?"checked":""}><span></span></span></label>
+ <div class="err" aria-live="polite"></div>
+ <div class="mact"><button type="button" class="btn sec" data-act="closeModal">Cancel</button><button class="btn" type="submit">${id?"Save changes":"Create banner"}</button></div>`,
+ async f=>{const e=f.elements;
+  const body={title:e.title.value.trim(),subtitle:e.subtitle.value.trim(),imageUrl:e.imageUrl.value.trim(),linkType:e.linkType.value,startsAt:fromLocalInput(e.startsAt.value),endsAt:fromLocalInput(e.endsAt.value),active:e.active.checked,sortOrder:Number(e.sortOrder.value)||0};
+  body.linkId=body.linkType==="category"?Number(e.catId.value):body.linkType==="product"?Number(e.prodId.value):null;
+  if(body.title.length<2)throw new Error("Give the banner a headline.");
+  await api(id?"/banners/"+id:"/banners",send(id?"PATCH":"POST",body));closeModal();toast(id?"Banner updated":"Banner created");vPromotions()});
+ const lt=document.getElementById("bnL");lt.onchange=()=>{document.getElementById("bnCW").hidden=lt.value!=="category";document.getElementById("bnPW").hidden=lt.value!=="product"};
+ document.getElementById("bnF").onchange=async ev=>{const file=ev.target.files[0];if(!file)return;const m=document.getElementById("bnM");m.textContent="Uploading…";
+  try{const d=await api("/uploads",{method:"POST",body:file,headers:{"Content-Type":file.type||"image/jpeg"}});document.getElementById("bnI").value=d.url;m.textContent="Uploaded."}catch(err){m.textContent="Upload failed: "+err.message}}}
+async function delBanner(id,name){if(!(await confirmBox("Delete banner?",`"${name}" disappears from the shop.`,"Delete")))return;
+ try{await api("/banners/"+id,{method:"DELETE"});toast("Banner deleted");vPromotions()}catch(e){toast(e.message);handleErr(e)}}
 
 /* ---------- boot ---------- */
 loadCreds();

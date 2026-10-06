@@ -5,9 +5,16 @@ const shortCache = (req, res, next) => {
   next();
 };
 
+const { formLimiter } = require("../middleware/rateLimiters");
+const validate = require("../middleware/validate");
+const { reviewRules, notifyRules } = require("../validators/orderValidator");
+const engagement = require("../controllers/engagementController");
 const productController = require("../controllers/productController");
 
 router.get("/", shortCache, productController.list);
+router.get("/:id/reviews", shortCache, engagement.listReviews);
+router.post("/:id/reviews", formLimiter, reviewRules, validate, engagement.submitReview);
+router.post("/:id/notify", formLimiter, notifyRules, validate, engagement.notify);
 router.get("/:id", shortCache, productController.getOne);
 
 module.exports = router;

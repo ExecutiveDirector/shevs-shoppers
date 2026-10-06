@@ -1,4 +1,5 @@
 const { pool } = require("../config/db");
+const promoModel = require("./promoModel");
 
 const BASE_SELECT = `
   SELECT p.id, p.category_id, c.name AS category_name, p.name, p.emoji,
@@ -49,12 +50,12 @@ async function findAll({ categoryId, search, minPrice, maxPrice, minRating, onSa
   params.push(Number(limit) || 40, Number(offset) || 0);
 
   const [rows] = await pool.query(sql, params);
-  return rows;
+  return promoModel.decorate(rows);
 }
 
 async function findById(id) {
   const [rows] = await pool.query(`${BASE_SELECT} WHERE p.id = ? AND p.active = 1`, [id]);
-  return rows[0] || null;
+  return (await promoModel.decorate(rows))[0] || null;
 }
 
 async function findRelated(categoryId, excludeId, limit = 6) {
@@ -62,7 +63,7 @@ async function findRelated(categoryId, excludeId, limit = 6) {
     `${BASE_SELECT} WHERE p.category_id = ? AND p.id != ? AND p.active = 1 ORDER BY p.rating DESC LIMIT ?`,
     [categoryId, excludeId, limit]
   );
-  return rows;
+  return promoModel.decorate(rows);
 }
 
 // Locks the row within an existing transaction (conn) so two simultaneous
@@ -70,7 +71,7 @@ async function findRelated(categoryId, excludeId, limit = 6) {
 // with a connection that already has a transaction open.
 async function lockForUpdate(conn, id) {
   const [rows] = await conn.query(
-    "SELECT id, name, price, stock, active FROM products WHERE id = ? FOR UPDATE",
+    "SELECT id, category_id, name, price, stock, active FROM products WHERE id = ? FOR UPDATE",
     [id]
   );
   return rows[0] || null;

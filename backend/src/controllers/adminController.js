@@ -2,6 +2,7 @@ const adminModel = require("../models/adminModel");
 const settingsModel = require("../models/settingsModel");
 const imageModel = require("../models/imageModel");
 const mailer = require("../utils/mailer");
+const reportModel = require("../models/reportModel");
 const asyncHandler = require("../utils/asyncHandler");
 const ApiError = require("../utils/ApiError");
 
@@ -56,6 +57,15 @@ const getOrder = asyncHandler(async (req, res) => {
 const setOrderStatus = asyncHandler(async (req, res) => {
   const result = await adminModel.setOrderStatus(req.params.code, req.body.status);
   if (!result) throw ApiError.notFound("Order not found.");
+  // Tell the customer by email too when they gave an address (WhatsApp is the owner's manual button).
+  if (result.previous !== result.status && mailer.configured()) {
+    const found = await adminModel.getOrder(req.params.code);
+    if (found && found.order.customer_email) {
+      const shop = (await settingsModel.getAll()).shop_name;
+      const m = mailer.statusEmail(found.order, result.status, shop);
+      if (m) mailer.send({ to: found.order.customer_email, ...m }).catch(() => {});
+    }
+  }
   res.json({ orderCode: req.params.code, ...result });
 });
 
@@ -119,6 +129,22 @@ const testEmail = asyncHandler(async (req, res) => {
   const r = await mailer.send({ to: s.owner_email, subject: `Test alert from ${s.shop_name}`, text: "Order alerts are working. You'll get an email like this for every new order.", html: `<p>✅ Order alerts are working for <b>${s.shop_name.replace(/[<>&]/g, "")}</b>. You'll get an email like this for every new order.</p>` });
   if (!r.ok) throw ApiError.badRequest(`Couldn't send: ${r.reason}.`);
   res.json({ ok: true, to: s.owner_email });
+});
+
+const salesReport = asyncHandler(async (req, res) => res.json(await reportModel.sales(req.query)));
+
+const csvCell = (v) => {
+  let t = v == null ? "" : String(v);
+  // Stop spreadsheet formula injection from customer-typed names/addresses.
+  if (/^[=+\-@\t\r]/.test(t)) t = "'" + t;
+  return /[",\n\r]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
+};
+const exportCsv = asyncHandler(async (req, res) => {
+  const { from, to, rows } = await reportModel.exportRows(req.query);
+  const cols = ["order_code", "placed", "status", "customer_name", "phone", "county", "payment_method", "product", "qty", "unit_price", "line_total", "delivery_fee", "discount", "total"];
+  const csv = "\ufeff" + [cols.join(","), ...rows.map((r) => cols.map((c) => csvCell(r[c])).join(","))].join("\r\n");
+  res.set({ "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="orders-${from}-to-${to}.csv"` });
+  res.send(csv);
 });
 
 const getSettings = asyncHandler(async (req, res) => res.json({ settings: await settingsModel.getAll() }));
@@ -197,7 +223,7 @@ module.exports = {
   stats, listOrders, getOrder, setOrderStatus, setOrderNote,
   listProducts, getProduct, createProduct, updateProduct, deleteProduct,
   adjustStock, duplicateProduct, bulkProducts,
-  uploadImage, testEmail, getSettings, updateSettings,
+  salesReport, exportCsv, uploadImage, testEmail, getSettings, updateSettings,
   listCategories, createCategory, updateCategory, deleteCategory,
   listCoupons, createCoupon, updateCoupon, deleteCoupon,
   listCustomers,

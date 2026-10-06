@@ -202,6 +202,7 @@ async function setOrderStatus(code, status) {
     }
     const prev = order.status;
     let restocked = 0;
+    const backInStock = [];
 
     if (prev !== status && (status === "cancelled" || prev === "cancelled")) {
       const [items] = await conn.query(
@@ -210,6 +211,8 @@ async function setOrderStatus(code, status) {
       );
       for (const it of items) {
         if (status === "cancelled") {
+          const [[before]] = await conn.query("SELECT stock FROM products WHERE id = ?", [it.product_id]);
+          if (before && before.stock <= 0) backInStock.push(it.product_id);
           await conn.query("UPDATE products SET stock = stock + ? WHERE id = ?", [it.qty, it.product_id]);
           await logStock(conn, it.product_id, it.qty, "cancel", null, code);
           restocked += it.qty;
@@ -228,6 +231,7 @@ async function setOrderStatus(code, status) {
 
     await conn.query("UPDATE orders SET status = ? WHERE id = ?", [status, order.id]);
     await conn.commit();
+    for (const pid of backInStock) require("../utils/restock").notifyRestock(pid);
     return { previous: prev, status, restocked };
   } catch (err) {
     await conn.rollback();
@@ -435,6 +439,7 @@ async function updateProduct(id, d) {
  */
 async function adjustStock(id, { mode, qty, reason, note }) {
   const conn = await pool.getConnection();
+  let wasSoldOut = false;
   try {
     await conn.beginTransaction();
     const [[p]] = await conn.query("SELECT id, stock FROM products WHERE id = ? FOR UPDATE", [id]);
@@ -445,6 +450,7 @@ async function adjustStock(id, { mode, qty, reason, note }) {
     const next = mode === "set" ? Number(qty) : p.stock + Number(qty);
     if (next < 0) throw ApiError.badRequest(`That would take stock below zero (currently ${p.stock}).`);
     const change = next - p.stock;
+    wasSoldOut = p.stock <= 0 && next > 0;
     if (change !== 0) {
       await conn.query("UPDATE products SET stock = ? WHERE id = ?", [next, id]);
       await conn.query(
@@ -459,6 +465,7 @@ async function adjustStock(id, { mode, qty, reason, note }) {
   } finally {
     conn.release();
   }
+  if (wasSoldOut) require("../utils/restock").notifyRestock(id);
   return getProduct(id);
 }
 

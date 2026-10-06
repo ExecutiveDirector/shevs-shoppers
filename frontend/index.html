@@ -281,6 +281,15 @@ background-image:radial-gradient(circle at 20% 30%,rgba(255,255,255,.05) 0 2px,t
 .dfav{display:inline-flex;align-items:center;gap:8px;border:1.5px solid var(--line);background:var(--card);border-radius:12px;padding:0 16px;height:50px;font-weight:500}
 .dfav[aria-pressed="true"]{border-color:var(--pink);color:var(--pink)}
 .dfav[aria-pressed="true"] svg{fill:currentColor}
+.bulk{background:#fff4d6;color:#7a5200;border-radius:10px;padding:9px 12px;font-weight:600;margin:12px 0}
+.nfy{display:grid;gap:8px;border:1.5px dashed var(--line);border-radius:14px;padding:14px;margin-top:14px}.nfy div{display:flex;gap:8px}.nfy input{flex:1;min-width:0}.nfy small{color:var(--mute)}
+.revs{margin-top:34px}.rf{display:grid;gap:10px;border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}.rf .frow{display:grid;grid-template-columns:1fr 1fr;gap:10px}.rf input,.rf select,.rf textarea,.nfy input{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:11px 12px;font-size:15px;width:100%}.rf textarea{min-height:80px;resize:vertical}.rf small{color:var(--mute)}
+@media(max-width:560px){.rf .frow{grid-template-columns:1fr}}
+.rv{border-top:1px solid var(--line);padding:14px 0}.rvh{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}.rvh .stars{color:#e8a200;letter-spacing:1px}.rvh small{color:var(--mute)}.rv p{margin:6px 0 0}
+.bnr{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:12px 0 2px;-webkit-overflow-scrolling:touch}.bnr[hidden]{display:none}
+.bn{position:relative;flex:0 0 min(86%,520px);scroll-snap-align:start;min-height:112px;border-radius:16px;overflow:hidden;border:0;text-align:left;color:#fff;background:linear-gradient(135deg,hsl(var(--t,160) 55% 30%),hsl(var(--t,160) 60% 18%));cursor:pointer;padding:0}
+.bn img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.bn:has(img)::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.6),rgba(0,0,0,.05))}
+.bt{position:relative;z-index:1;display:flex;flex-direction:column;gap:4px;padding:18px 20px;max-width:75%}.bt b{font-size:20px;line-height:1.2}.bt small{opacity:.9;font-size:14px}
 .ask{display:inline-flex;align-items:center;gap:8px;color:var(--accent);font-weight:700;width:fit-content}
 .ask:hover{text-decoration:underline}
 
@@ -467,6 +476,7 @@ body{padding-bottom:64px}
 
 <main id="main">
 <div id="home">
+<div class="wrap"><div id="bnr" class="bnr" hidden></div></div>
 <section class="hero" aria-label="Welcome to Shevs">
 <div class="awning" aria-hidden="true"></div>
 <div class="wrap hero-in">
@@ -567,14 +577,18 @@ for(let pg=2;rows.length===(pg-1)*100&&pg<=10;pg++){const r=await apiGet("/api/p
 const catList=Array.isArray(cr)?cr:(cr.categories||[]);
 const cats=catList.map(c=>({id:c.id,n:c.name,e:c.icon||"🛍️"})),cmap=new Map(cats.map((c,i)=>[c.id,i]));
 const prods=rows.filter(r=>cmap.has(r.category_id)).map(r=>{const p=+r.price,o=+r.compare_at_price||p;
-return{id:r.id,n:r.name,c:r.category_name,ci:cmap.get(r.category_id),e:r.emoji||"🛍️",p,o:o>p?o:p,r:+r.rating||0,rc:+r.rating_count||0,st:+r.stock||0,eta:r.eta_label||"",img:safeUrl(r.image_url),d:r.description||"",br:r.brand||"",tg:parseTags(r.tags),f:!!r.featured}});
+return{id:r.id,n:r.name,c:r.category_name,ci:cmap.get(r.category_id),e:r.emoji||"🛍️",p,o:o>p?o:p,r:+r.rating||0,rc:+r.rating_count||0,st:+r.stock||0,eta:r.eta_label||"",img:safeUrl(r.image_url),d:r.description||"",br:r.brand||"",tg:parseTags(r.tags),f:!!r.featured,bulk:Array.isArray(r.bulk)?r.bulk:null,bp:+r.base_price||p}});
 return{cats,prods}}
 function setCatalog({cats,prods}){
-CATS=cats.map(c=>[c.n,c.e]);P=prods;PM=new Map(P.map(x=>[x.id,x]));CC=CATS.map((_,i)=>P.filter(x=>x.ci===i).length);
+CATS=cats.map(c=>[c.n,c.e]);CATID=cats.map(c=>c.id);P=prods;PM=new Map(P.map(x=>[x.id,x]));CC=CATS.map((_,i)=>P.filter(x=>x.ci===i).length);
 P.forEach(x=>{x.nn=norm(x.n);x.w=norm(x.n+" "+x.c+" "+x.br+" "+x.tg.join(" ")).split(" ")});
 POP=CATS.map((_,i)=>P.find(x=>x.ci===i&&x.st>0)).filter(Boolean).map(x=>x.n).slice(0,6);
 VOC=[...new Set(P.flatMap(x=>x.w).filter(w=>w.length>=4&&!/\d/.test(w)))]}
-let POP=[];
+let POP=[],CATID=[],BANNERS=[];
+/* Price per unit at a given quantity: same promotion rule the server applies when the order is placed. */
+function unit(x,q){let u=x.p;if(x.bulk)for(const t of x.bulk)if(q>=t.minQty)u=Math.min(u,Math.round(x.bp*(100-t.percent)/100));return u}
+const line=id=>{const x=G(id);return Math.round(unit(x,cart[id])*cart[id]*100)/100};
+function bulkNote(x){if(!x.bulk||!x.bulk.length)return"";const t=[...x.bulk].sort((a,b)=>a.minQty-b.minQty)[0];return`Buy ${t.minQty} or more, get ${t.percent}% off`}
 
 /* ---------- state ---------- */
 let act=-1,openP=null,lastFocus=null,io;
@@ -694,10 +708,10 @@ document.querySelectorAll(".slot").forEach(s=>{s.innerHTML=slotHtml(+s.dataset.i
 if(slot){const id=+slot.dataset.id,k=cart[id]?(kind==="dec"?"dec":"inc"):"add";const t=slot.querySelector(`[data-k="${k}"]`);if(t)t.focus({preventScroll:true})}
 if(openP==="cart")drawCart()}
 function drawCart(){const a=document.activeElement,ci=a&&a.closest&&a.closest(".ci"),key=ci?ci.dataset.id+":"+a.dataset.k:"";
-const ids=cartIds(),total=ids.reduce((s,id)=>s+G(id).p*cart[id],0);
+const ids=cartIds(),total=ids.reduce((s,id)=>s+line(id),0);
 if(!ids.length){$("cbody").innerHTML=`<div class="cempty"><span class="big" aria-hidden="true">🛒</span><h3>Your cart is empty</h3><p>Add something you like and it will show up here.</p><button class="btn" type="button" onclick="panel(null)">Start shopping</button></div>`;$("cfoot").hidden=true;return}
 $("cfoot").hidden=false;
-$("cbody").innerHTML=ids.map(id=>{const x=G(id);return `<div class="ci" data-id="${id}"><div class="th" style="--t:${hue(x.ci)}" aria-hidden="true">${x.e}${x.img?`<img src="${esc(x.img)}" alt="" onerror="this.remove()">`:""}</div><div class="tx"><b>${esc(x.n)}</b><small>${kes(x.p)} each</small>${stepper(id)}</div><div class="ct"><b>${kes(x.p*cart[id])}</b><button class="rm" type="button" data-k="rm" onclick="removeItem(${id})" aria-label="Remove ${esc(x.n)}">Remove</button></div></div>`}).join("");
+$("cbody").innerHTML=ids.map(id=>{const x=G(id);return `<div class="ci" data-id="${id}"><div class="th" style="--t:${hue(x.ci)}" aria-hidden="true">${x.e}${x.img?`<img src="${esc(x.img)}" alt="" onerror="this.remove()">`:""}</div><div class="tx"><b>${esc(x.n)}</b><small>${kes(unit(x,cart[id]))} each${unit(x,cart[id])<x.p?" · multi-buy price":(bulkNote(x)?" · "+esc(bulkNote(x)):"")}</small>${stepper(id)}</div><div class="ct"><b>${kes(line(id))}</b><button class="rm" type="button" data-k="rm" onclick="removeItem(${id})" aria-label="Remove ${esc(x.n)}">Remove</button></div></div>`}).join("");
 const rem=free()-total;
 $("cfoot").innerHTML=`${free()?`<div class="ship">${rem>0?`Add <b>${kes(rem)}</b> more for free delivery`:`<b>You’ve unlocked free delivery</b>`}<div class="bar"><i style="width:${Math.min(100,total/free()*100)}%"></i></div></div>`:""}<div class="sub-r"><span>Subtotal</span><span>${kes(total)}</span></div><button class="btn" type="button" onclick="openCheckout()">Checkout</button>`;
 if(key){const [id,k]=key.split(":");const t=document.querySelector(`#cbody .ci[data-id="${id}"] [data-k="${k}"]`)||document.querySelector("#cartp .x");if(t)t.focus({preventScroll:true})}}
@@ -727,7 +741,7 @@ function openTerms(){openInfo("Terms &amp; privacy",`<p>By ordering from Shevs y
 function openMpesa(){openInfo("Paying with M-Pesa",`<p>Nothing is charged on this website. Once you send your order, we confirm it on WhatsApp and share our M-Pesa payment details there.</p><p>You can also choose cash on delivery.</p>`)}
 function openCOD(){openInfo("Cash on delivery",`<p>Pay in cash when your order arrives. Your rider will confirm the amount due, including the delivery fee if any.</p>`)}
 const STAGES=[["pending","Order received"],["confirmed","Confirmed by us"],["dispatched","On its way"],["delivered","Delivered"]];
-function openTrack(){openInfo("Track your order",`<p>Enter the order number from your confirmation, like SHV-ABC234.</p><form class="trk" onsubmit="trackOrder(event)"><input id="trkq" placeholder="SHV-XXXXXX" aria-label="Order number" autocomplete="off" required><button class="btn" type="submit">Track</button></form><div id="trkOut" aria-live="polite"></div>`)}
+function openTrack(code){openInfo("Track your order",`<p>Enter the order number from your confirmation, like SHV-ABC234.</p><form class="trk" onsubmit="trackOrder(event)"><input id="trkq" value="${esc(code||"")}" placeholder="SHV-XXXXXX" aria-label="Order number" autocomplete="off" required><button class="btn" type="submit">Track</button></form><div id="trkOut" aria-live="polite"></div>`);if(code)trackOrder({preventDefault(){}})}
 async function trackOrder(e){e.preventDefault();const code=$("trkq").value.trim().toUpperCase(),out=$("trkOut");if(!code)return;
 out.innerHTML="<p>Looking it up…</p>";
 try{const o=await apiGet("/api/orders/"+encodeURIComponent(code));
@@ -752,8 +766,8 @@ const f=fav.has(id),si=stockInfo(x),d=disc(x);
 crumbs("crumbsD",[{t:"Home",fn:"go(-1)"},{t:x.c,fn:`go(${x.ci})`},{t:x.n}]);
 const related=P.filter(p=>p.ci===x.ci&&p.id!==id).slice(0,6);
 const seen=viewed.filter(v=>v!==id).slice(0,6).map(G).filter(Boolean);
-$("detailBody").innerHTML=`<div class="dwrap"><div class="dgal">${tile(x,"big",x.n)}${d?`<span class="tag" style="font-size:14px;top:20px;left:20px;padding:6px 10px">-${d}%</span>`:""}</div><div class="dinfo">${x.br?`<span class="br">${esc(x.br)}</span>`:""}<h1>${esc(x.n)}</h1>${x.rc?`<div class="rate" aria-label="Rated ${x.r.toFixed(1)} out of 5 from ${x.rc} reviews"><span class="stars" aria-hidden="true">★</span><b>${x.r.toFixed(1)}</b><small>(${x.rc} reviews)</small></div>`:""}<div class="dprice ${d?"sale":""}"><b>${kes(x.p)}</b>${d?`<span class="old">${kes(x.o)}</span><span class="save">Save ${kes(x.o-x.p)}</span>`:""}</div><p class="ddesc">${esc(desc(x))}</p>${x.tg.length?`<div class="chips">${x.tg.map(t=>`<span>${esc(t)}</span>`).join("")}</div>`:""}<div class="dcta"><div class="slot" data-id="${id}">${slotHtml(id)}</div><button class="dfav" type="button" data-id="${id}" aria-pressed="${f}" onclick="toggleFav(${id})">${I("heart",18)}<span>${f?"Saved":"Save"}</span></button><button class="dfav" type="button" onclick="shareProduct(${id})" aria-label="Share ${esc(x.n)}">${I("share",18)}<span>Share</span></button></div><ul class="dmeta"><li class="stock ${si.cls}" style="padding:0">${si.txt}</li>${x.eta?`<li>Delivery in <b>${esc(x.eta)}</b></li>`:""}<li>${free()?`Free delivery on orders above ${kes(free())}`:`Delivery ${kes(fee())}`}</li><li>Returns within 7 days</li></ul><a class="ask" target="_blank" rel="noopener" href="${esc(waLink("Hi Shevs, I have a question about: "+x.n))}">${I("chat",18)}Ask about this on WhatsApp</a></div></div>${related.length?sliderSection("More from "+x.c,related):""}${seen.length?sliderSection("Recently viewed",seen):""}`;
-showView("detail");
+$("detailBody").innerHTML=`<div class="dwrap"><div class="dgal">${tile(x,"big",x.n)}${d?`<span class="tag" style="font-size:14px;top:20px;left:20px;padding:6px 10px">-${d}%</span>`:""}</div><div class="dinfo">${x.br?`<span class="br">${esc(x.br)}</span>`:""}<h1>${esc(x.n)}</h1>${x.rc?`<div class="rate" aria-label="Rated ${x.r.toFixed(1)} out of 5 from ${x.rc} reviews"><span class="stars" aria-hidden="true">★</span><b>${x.r.toFixed(1)}</b><small>(${x.rc} reviews)</small></div>`:""}<div class="dprice ${d?"sale":""}"><b>${kes(x.p)}</b>${d?`<span class="old">${kes(x.o)}</span><span class="save">Save ${kes(x.o-x.p)}</span>`:""}</div><p class="ddesc">${esc(desc(x))}</p>${x.tg.length?`<div class="chips">${x.tg.map(t=>`<span>${esc(t)}</span>`).join("")}</div>`:""}<div class="dcta"><div class="slot" data-id="${id}">${slotHtml(id)}</div><button class="dfav" type="button" data-id="${id}" aria-pressed="${f}" onclick="toggleFav(${id})">${I("heart",18)}<span>${f?"Saved":"Save"}</span></button><button class="dfav" type="button" onclick="shareProduct(${id})" aria-label="Share ${esc(x.n)}">${I("share",18)}<span>Share</span></button></div>${bulkNote(x)?`<p class="bulk">🏷️ ${esc(bulkNote(x))}</p>`:""}<ul class="dmeta"><li class="stock ${si.cls}" style="padding:0">${si.txt}</li>${x.eta?`<li>Delivery in <b>${esc(x.eta)}</b></li>`:""}<li>${free()?`Free delivery on orders above ${kes(free())}`:`Delivery ${kes(fee())}`}</li><li>Returns within 7 days</li></ul><a class="ask" target="_blank" rel="noopener" href="${esc(waLink("Hi Shevs, I have a question about: "+x.n))}">${I("chat",18)}Ask about this on WhatsApp</a>${x.st<=0?`<form class="nfy" onsubmit="notifyMe(event,${id})"><b>Tell me when it's back</b><div><input id="nfyc" required placeholder="Phone (07…) or email" aria-label="Phone number or email" autocomplete="tel"><button class="btn" type="submit">Notify me</button></div><small id="nfyMsg" aria-live="polite"></small></form>`:""}</div></div><section class="revs" id="revs" aria-label="Customer reviews"></section>${related.length?sliderSection("More from "+x.c,related):""}${seen.length?sliderSection("Recently viewed",seen):""}`;
+showView("detail");loadReviews(id);
 document.title=x.n+" — "+kes(x.p)+" | "+(CFG.shopName||"Shevs");
 if(location.hash!=="#p"+id)history.replaceState(null,"","#p"+id);
 $("stickybuy").innerHTML=`<div class="wrap sbrow"><div class="sbprice">${kes(x.p)}</div><div class="slot" data-id="${id}">${slotHtml(id)}</div></div>`;
@@ -763,8 +777,22 @@ window.buyObs.observe(document.querySelector(".dcta"))}
 function shareProduct(id){const x=G(id);if(!x)return;const url=location.origin+"/p/"+id,text=x.n+" — "+kes(x.p);
 if(navigator.share){navigator.share({title:x.n,text,url}).catch(()=>{});return}
 if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(url).then(()=>toast("Link copied"),()=>prompt("Copy this link",url));else prompt("Copy this link",url)}
+function trackLink(){const c=new URLSearchParams(location.search).get("track");if(c&&!window._trk){window._trk=1;openTrack(c.toUpperCase().slice(0,20))}}
 function deepLink(){const m=/^#p(\d+)$/.exec(location.hash);if(m&&G(+m[1]))openDetail(+m[1])}
 addEventListener("hashchange",deepLink);
+async function notifyMe(e,id){e.preventDefault();const m=$("nfyMsg"),v=$("nfyc").value.trim().replace(/[\s-]/g,"");m.textContent="Saving…";
+const r=await apiPost("/api/products/"+id+"/notify",{contact:v});
+m.textContent=r===null?"We couldn't reach the shop. Try again.":r.ok?r.data.message:r.error;if(r&&r.ok)$("nfyc").value=""}
+const stars=n=>"★★★★★".slice(0,Math.round(n))+"☆☆☆☆☆".slice(0,5-Math.round(n));
+async function loadReviews(id){const box=$("revs");if(!box)return;
+let list=[];try{list=(await apiGet("/api/products/"+id+"/reviews")).reviews||[]}catch{}
+if($("revs")!==box)return;
+box.innerHTML=`<div class="sh"><div><h2>Customer reviews</h2><p>${list.length?`${list.length} verified buyer${list.length===1?"":"s"}`:"No reviews yet"}</p></div><button class="see" type="button" onclick="$('revForm').hidden=!$('revForm').hidden">Write a review</button></div>
+<form id="revForm" class="rf" hidden onsubmit="sendReview(event,${id})"><p class="note">Only customers who received this product can review it. Use the order number and phone you ordered with.</p><div class="frow"><input id="rvo" required placeholder="Order number (SHV-…)" aria-label="Order number" autocomplete="off"><input id="rvp" required type="tel" placeholder="Phone number" aria-label="Phone number" autocomplete="tel"></div><div class="frow"><input id="rvn" required placeholder="Your name" aria-label="Your name" autocomplete="name"><select id="rvr" aria-label="Rating"><option value="5">★★★★★ Excellent</option><option value="4">★★★★ Good</option><option value="3">★★★ Okay</option><option value="2">★★ Poor</option><option value="1">★ Bad</option></select></div><textarea id="rvc" maxlength="1000" placeholder="What did you think? (optional)" aria-label="Your review"></textarea><button class="btn" type="submit">Send review</button><small id="rvMsg" aria-live="polite"></small></form>
+${list.map(r=>`<article class="rv"><div class="rvh"><span class="stars" aria-label="${r.rating} out of 5">${stars(r.rating)}</span><b>${esc(r.name)}</b><small>Verified buyer · ${new Date(r.created_at).toLocaleDateString("en-KE",{day:"numeric",month:"short",year:"numeric"})}</small></div>${r.comment?`<p>${esc(r.comment)}</p>`:""}</article>`).join("")}`}
+async function sendReview(e,id){e.preventDefault();const m=$("rvMsg"),btn=e.target.querySelector("button[type=submit]");m.textContent="Sending…";btn.disabled=true;
+const r=await apiPost("/api/products/"+id+"/reviews",{orderCode:$("rvo").value.trim().toUpperCase(),phone:$("rvp").value.replace(/[\s-]/g,""),name:$("rvn").value.trim(),rating:+$("rvr").value,comment:$("rvc").value.trim()});
+btn.disabled=false;m.textContent=r===null?"We couldn't reach the shop. Try again.":r.ok?r.data.message:r.error;if(r&&r.ok)e.target.reset()}
 function openWishlist(){if(openP)panel(null);crumbs("crumbsW",[{t:"Home",fn:"go(-1)"},{t:"Wishlist"}]);renderWishlist();showView("wishlist")}
 function renderWishlist(){const items=[...fav].map(G).filter(Boolean);
 if(!items.length){$("wgrid").innerHTML=`<div class="empty"><span class="eb" aria-hidden="true">🤍</span><h3>Your wishlist is empty</h3><p>Tap the heart on anything you like and it will be saved here.</p><button class="btn" type="button" onclick="go(-1)">Browse products</button></div>`;return}
@@ -775,7 +803,7 @@ function openCheckout(){if(!cartIds().length)return;if(openP)panel(null);
 ckDiscount=0;ckCode="";
 crumbs("crumbsK",[{t:"Home",fn:"go(-1)"},{t:"Cart",fn:"panel('cart')"},{t:"Checkout"}]);
 renderCheckout();showView("checkout")}
-const ckSubtotal=()=>cartIds().reduce((s,id)=>s+G(id).p*cart[id],0);
+const ckSubtotal=()=>cartIds().reduce((s,id)=>s+line(id),0);
 const ckShip=()=>free()&&ckSubtotal()>=free()?0:fee();
 const ckTotal=()=>Math.max(0,ckSubtotal()+ckShip()-ckDiscount);
 async function applyCoupon(){const v=$("ckq").value.trim().toUpperCase(),msg=$("ckqMsg");
@@ -790,26 +818,27 @@ ckDiscount=0;ckCode="";msg.textContent="We couldn't check that code right now. T
 updateCkTotals()}
 function updateCkTotals(){$("ckTotals").innerHTML=`<div class="oi"><span>Subtotal</span><span>${kes(ckSubtotal())}</span></div>${ckDiscount?`<div class="oi"><span>Coupon (${esc(ckCode)})</span><span>−${kes(ckDiscount)}</span></div>`:""}<div class="oi"><span>Delivery</span><span>${ckShip()?kes(ckShip()):"Free"}</span></div><div class="oi tot"><span>Total</span><span>${kes(ckTotal())}</span></div>`}
 function renderCheckout(){const ids=cartIds();
-$("checkoutBody").innerHTML=`<div class="ckwrap"><form id="ckform" novalidate><h1 style="font-size:30px;margin-bottom:18px">Delivery details</h1><div class="fld"><label for="ckn">Full name</label><input id="ckn" required autocomplete="name"></div><div class="fld"><label for="ckp">Phone number</label><input id="ckp" type="tel" required placeholder="07XX XXX XXX" autocomplete="tel"></div><div class="fld"><label for="ckc">County</label><select id="ckc" required><option value="">Select county</option>${["Nairobi","Mombasa","Kisumu","Nakuru","Uasin Gishu","Kiambu","Machakos","Other"].map(c=>`<option>${c}</option>`).join("")}</select></div><div class="fld"><label for="cka">Estate / street address</label><input id="cka" required autocomplete="street-address"></div><h2 style="font-size:18px;margin:20px 0 10px">How will you pay?</h2><label class="pm"><input type="radio" name="pay" value="mpesa" checked><span>M-Pesa<small>We share payment details on WhatsApp</small></span></label><label class="pm"><input type="radio" name="pay" value="cod"><span>Cash on delivery<small>Pay the rider when it arrives</small></span></label><button class="btn" type="submit" style="margin-top:18px;width:100%;text-align:center;padding:15px;font-size:16px">Send order</button><p class="note">You won't be charged on this website. We confirm your order on WhatsApp first.</p></form><div class="osum"><h2 style="font-size:19px;margin-bottom:10px">Order summary</h2>${ids.map(id=>`<div class="oi"><span>${cart[id]} × ${esc(G(id).n)}</span><span>${kes(G(id).p*cart[id])}</span></div>`).join("")}<div class="fld" style="margin:14px 0"><label for="ckq">Coupon code</label><div style="display:flex;gap:8px"><input id="ckq" placeholder="Enter code" style="flex:1"><button type="button" class="see" onclick="applyCoupon()">Apply</button></div><div id="ckqMsg" class="note" aria-live="polite" style="margin-top:4px"></div></div><div id="ckTotals"></div></div></div>`;
+$("checkoutBody").innerHTML=`<div class="ckwrap"><form id="ckform" novalidate><h1 style="font-size:30px;margin-bottom:18px">Delivery details</h1><div class="fld"><label for="ckn">Full name</label><input id="ckn" required autocomplete="name"></div><div class="fld"><label for="ckp">Phone number</label><input id="ckp" type="tel" required placeholder="07XX XXX XXX" autocomplete="tel"></div><div class="fld"><label for="cke">Email <small style="color:var(--mute)">(optional — for your receipt)</small></label><input id="cke" type="email" autocomplete="email" placeholder="you@example.com"></div><div class="fld"><label for="ckc">County</label><select id="ckc" required><option value="">Select county</option>${["Nairobi","Mombasa","Kisumu","Nakuru","Uasin Gishu","Kiambu","Machakos","Other"].map(c=>`<option>${c}</option>`).join("")}</select></div><div class="fld"><label for="cka">Estate / street address</label><input id="cka" required autocomplete="street-address"></div><h2 style="font-size:18px;margin:20px 0 10px">How will you pay?</h2><label class="pm"><input type="radio" name="pay" value="mpesa" checked><span>M-Pesa<small>We share payment details on WhatsApp</small></span></label><label class="pm"><input type="radio" name="pay" value="cod"><span>Cash on delivery<small>Pay the rider when it arrives</small></span></label><button class="btn" type="submit" style="margin-top:18px;width:100%;text-align:center;padding:15px;font-size:16px">Send order</button><p class="note">You won't be charged on this website. We confirm your order on WhatsApp first.</p></form><div class="osum"><h2 style="font-size:19px;margin-bottom:10px">Order summary</h2>${ids.map(id=>`<div class="oi"><span>${cart[id]} × ${esc(G(id).n)}</span><span>${kes(line(id))}</span></div>`).join("")}<div class="fld" style="margin:14px 0"><label for="ckq">Coupon code</label><div style="display:flex;gap:8px"><input id="ckq" placeholder="Enter code" style="flex:1"><button type="button" class="see" onclick="applyCoupon()">Apply</button></div><div id="ckqMsg" class="note" aria-live="polite" style="margin-top:4px"></div></div><div id="ckTotals"></div></div></div>`;
 updateCkTotals();
 $("ckform").onsubmit=async e=>{e.preventDefault();
 const btn=$("ckform").querySelector('button[type="submit"]'),label=btn.textContent;
-const name=$("ckn").value.trim(),phone=$("ckp").value.replace(/[\s-]/g,""),county=$("ckc").value,address=$("cka").value.trim();
+const email=$("cke").value.trim(),name=$("ckn").value.trim(),phone=$("ckp").value.replace(/[\s-]/g,""),county=$("ckc").value,address=$("cka").value.trim();
 if(!name){toast("Please enter your name");$("ckn").focus();return}
 if(!/^(?:\+254|254|0)[17]\d{8}$/.test(phone)){toast("Enter a valid phone number, e.g. 07XXXXXXXX");$("ckp").focus();return}
+if(email&&!/^\S+@\S+\.\S+$/.test(email)){toast("That email address doesn't look right");$("cke").focus();return}
 if(!county){toast("Please select a county");$("ckc").focus();return}
 if(!address){toast("Please enter your delivery address");$("cka").focus();return}
 btn.disabled=true;btn.textContent="Sending…";
-const payload={customerName:name,phone,county,address,paymentMethod:document.querySelector('input[name="pay"]:checked').value,couponCode:ckDiscount?ckCode:null,items:cartIds().map(id=>({productId:id,qty:cart[id]}))};
+const payload={customerName:name,phone,customerEmail:email||undefined,county,address,paymentMethod:document.querySelector('input[name="pay"]:checked').value,couponCode:ckDiscount?ckCode:null,items:cartIds().map(id=>({productId:id,qty:cart[id]}))};
 const res=await apiPost("/api/orders",payload);
 if(res===null){btn.disabled=false;btn.textContent=label;toast("We couldn't reach the shop. Check your connection and try again.");return}
-if(res.ok){placeOrder(res.data.total,res.data.orderCode,res.data.whatsappUrl);return}
+if(res.ok){placeOrder(res.data.total,res.data.orderCode,res.data.whatsappUrl,!!email);return}
 btn.disabled=false;btn.textContent=label;toast(res.error)}}
-function placeOrder(total,orderCode,whatsappUrl){const oid=orderCode;
+function placeOrder(total,orderCode,whatsappUrl,emailed){const oid=orderCode;
 const wa=whatsappUrl||waLink("Hi Shevs, I'd like to confirm order "+oid);
 const d=new Date(Date.now()+3*86400000),eta=d.toLocaleDateString("en-KE",{weekday:"long",day:"numeric",month:"short"});
 cart={};syncCart();
-$("checkoutBody").innerHTML=`<div class="conf"><span class="cb-ic" aria-hidden="true">✅</span><h1>Order ${esc(oid)} is in</h1><p>${kes(total)} · expect delivery around <b>${eta}</b>.</p><ol><li><b>Send it on WhatsApp.</b> Tap the button so we get your order.</li><li><b>We confirm.</b> We reply to check stock and arrange delivery.</li><li><b>You pay.</b> By M-Pesa or cash, as you chose.</li></ol><a class="btn" href="${esc(wa)}" target="_blank" rel="noopener">Send order on WhatsApp</a><br><button class="see" type="button" onclick="go(-1)">Continue shopping</button></div>`;
+$("checkoutBody").innerHTML=`<div class="conf"><span class="cb-ic" aria-hidden="true">✅</span><h1>Order ${esc(oid)} is in</h1><p>${kes(total)} · expect delivery around <b>${eta}</b>.</p><ol><li><b>Send it on WhatsApp.</b> Tap the button so we get your order.</li><li><b>We confirm.</b> We reply to check stock and arrange delivery.</li><li><b>You pay.</b> By M-Pesa or cash, as you chose.</li></ol><a class="btn" href="${esc(wa)}" target="_blank" rel="noopener">Send order on WhatsApp</a><br>${emailed?`<p class="note" style="margin-top:12px">A receipt is on its way to your email.</p>`:""}<button class="see" type="button" onclick="openTrack(${JSON.stringify(oid).replace(/"/g,'&quot;')})">Track this order</button> · <button class="see" type="button" onclick="go(-1)">Continue shopping</button></div>`;
 loadCatalog(true)}
 
 /* ---------- home rendering ---------- */
@@ -823,8 +852,11 @@ $("win").innerHTML=items.map(x=>`<button class="wi" type="button" onclick="openD
 $("win").hidden=!items.length}
 function renderFacts(){const f=(a,b,fn)=>`<button class="fact" type="button" onclick="${fn}()">${a}<small>${b}</small></button>`;
 $("facts").innerHTML=f(free()?`Free delivery over ${kes(free())}`:"Countrywide delivery",`${kes(fee())} below that`,"openDelivery")+f("Pay on delivery or M-Pesa","Nothing charged online","openMpesa")+f("Returns within 7 days","Faulty items on us","openReturns")+f("Confirmed on WhatsApp","Real people, same-day replies","openContact")}
+function renderBanners(){const el=$("bnr");if(!el)return;if(!BANNERS.length){el.hidden=true;return}el.hidden=false;
+el.innerHTML=BANNERS.map((b,i)=>`<button type="button" class="bn" style="--t:${hue(i)}" onclick="openBanner(${i})" ${b.link_type==="none"?"tabindex=\"-1\"":""}>${b.image_url&&safeUrl(b.image_url)?`<img src="${esc(safeUrl(b.image_url))}" alt="" loading="lazy">`:""}<span class="bt"><b>${esc(b.title)}</b>${b.subtitle?`<small>${esc(b.subtitle)}</small>`:""}</span></button>`).join("")}
+function openBanner(i){const b=BANNERS[i];if(!b)return;if(b.link_type==="product"&&G(b.link_id))openDetail(b.link_id);else if(b.link_type==="category"){const k=CATID.indexOf(b.link_id);if(k>=0)go(k)}}
 function renderHome(){
-renderWindow();renderFacts();
+renderWindow();renderBanners();renderFacts();
 $("aisleGrid").innerHTML=CATS.map(([n,e],i)=>`<button class="aisle" type="button" style="--t:${hue(i)}" onclick="go(${i})"><span class="e" aria-hidden="true">${e}</span><span><b>${esc(n)}</b><small>${CC[i]} item${CC[i]===1?"":"s"}</small></span></button>`).join("");
 let h="";
 const offers=P.filter(x=>disc(x)>=15&&x.st>0).sort((a,b)=>disc(b)-disc(a)).slice(0,12);
@@ -850,10 +882,10 @@ try{
 if(API_BASE){
 const [s,c]=await Promise.all([apiGet("/api/settings").catch(()=>null),apiCatalog()]);
 if(s)CFG={...DEF,...s};
-setCatalog(c)}
+setCatalog(c);BANNERS=((await apiGet("/api/banners").catch(()=>null))||{}).banners||[]}
 else throw new Error("API_BASE is not set");
 }catch(e){if(!quiet)showError();return}
-applyConfig();pruneState();build();renderHome();nav();syncCart();syncWishBadge();metrics();deepLink()}
+applyConfig();pruneState();build();renderHome();nav();syncCart();syncWishBadge();metrics();if(!window._dl){window._dl=1;deepLink()}trackLink()}
 function metrics(){const h=$("hdr").offsetHeight,m=matchMedia("(max-width:700px)").matches,r1=m?Math.max(0,$("sbox").offsetTop-10):0,r=document.documentElement.style;r.setProperty("--r1",r1+"px");r.setProperty("--hh",h+"px");r.setProperty("--off",(h-r1+12)+"px")}
 
 /* ---------- init ---------- */
