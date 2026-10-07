@@ -4,7 +4,7 @@ const ApiError = require("../utils/ApiError");
 const auth = require("../utils/auth");
 
 const PUBLIC = "id, name, phone, email, county, address, created_at";
-const publicUser = (u) => u && { id: u.id, name: u.name, phone: u.phone, email: u.email, county: u.county, address: u.address, createdAt: u.created_at };
+const publicUser = (u) => u && { id: u.id, name: u.name, phone: u.phone, email: u.email, county: u.county, address: u.address, createdAt: u.created_at, hasPassword: !!u.password_hash, google: !!u.google_id };
 
 async function findById(id) {
   const [rows] = await pool.query("SELECT * FROM users WHERE id = ?", [id]);
@@ -32,6 +32,33 @@ async function register({ name, phone, email, password }) {
   }
 }
 
+// Sign in or register with a verified Google profile.
+//  1. Known Google id            -> sign in.
+//  2. Same (Google-verified) email as an existing account -> link Google to it, so nobody ends up with two accounts.
+//  3. Otherwise                  -> create an account (phone can be added later, at checkout or in details).
+async function googleLogin({ sub, email, name }) {
+  let [rows] = await pool.query("SELECT * FROM users WHERE google_id = ?", [sub]);
+  let user = rows[0];
+  if (!user) {
+    [rows] = await pool.query("SELECT * FROM users WHERE email = ?", [email]);
+    user = rows[0];
+    if (user) {
+      if (user.google_id) throw ApiError.conflict("That email is linked to a different Google account.");
+      await pool.query("UPDATE users SET google_id = ? WHERE id = ?", [sub, user.id]);
+    } else {
+      try {
+        const [r] = await pool.query("INSERT INTO users (name, email, google_id) VALUES (?, ?, ?)", [name, email, sub]);
+        user = { id: r.insertId };
+      } catch (err) {
+        if (err.code === "ER_DUP_ENTRY") throw ApiError.conflict("Please try signing in again.");
+        throw err;
+      }
+    }
+  }
+  await pool.query("UPDATE users SET last_login_at = UTC_TIMESTAMP() WHERE id = ?", [user.id]);
+  return findById(user.id);
+}
+
 async function login(loginValue, password) {
   const user = await findByLogin(loginValue);
   if (!user) { auth.burn(password); return null; }
@@ -46,13 +73,14 @@ async function updateProfile(user, d) {
   if (d.email !== undefined) { sets.push("email = ?"); params.push(d.email ? d.email.toLowerCase() : null); }
   if (d.county !== undefined) { sets.push("county = ?"); params.push(d.county || null); }
   if (d.address !== undefined) { sets.push("address = ?"); params.push(d.address || null); }
+  if (d.phone && !user.phone) { sets.push("phone = ?"); params.push(auth.normalizePhone(d.phone)); }
   if (d.newPassword) {
-    if (!auth.verifyPassword(d.currentPassword || "", user.password_hash)) throw ApiError.badRequest("Your current password isn't right.");
+    if (user.password_hash && !auth.verifyPassword(d.currentPassword || "", user.password_hash)) throw ApiError.badRequest("Your current password isn't right.");
     sets.push("password_hash = ?"); params.push(auth.hashPassword(d.newPassword));
   }
   if (sets.length) {
     try { await pool.query(`UPDATE users SET ${sets.join(", ")} WHERE id = ?`, [...params, user.id]); }
-    catch (err) { if (err.code === "ER_DUP_ENTRY") throw ApiError.conflict("That email is already used by another account."); throw err; }
+    catch (err) { if (err.code === "ER_DUP_ENTRY") throw ApiError.conflict(/phone/.test(err.message) ? "That phone number already has an account." : "That email is already used by another account."); throw err; }
   }
   return findById(user.id);
 }
@@ -103,4 +131,4 @@ async function adminSetTempPassword(userId) {
   return r.affectedRows ? temp : null;
 }
 
-module.exports = { publicUser, findById, findByLogin, register, login, updateProfile, listOrders, claimOrder, startReset, finishReset, adminSetTempPassword };
+module.exports = { googleLogin, publicUser, findById, findByLogin, register, login, updateProfile, listOrders, claimOrder, startReset, finishReset, adminSetTempPassword };

@@ -22,7 +22,10 @@ const create = asyncHandler(async (req, res) => {
 
   // Remember where a signed-in customer last shipped, so next checkout is pre-filled.
   if (req.user) {
-    require("../config/db").pool.query("UPDATE users SET county = ?, address = ? WHERE id = ?", [county, address, req.user.id]).catch(() => {});
+    const { pool } = require("../config/db");
+    pool.query("UPDATE users SET county = ?, address = ? WHERE id = ?", [county, address, req.user.id]).catch(() => {});
+    // Google sign-ups have no phone yet: keep the one used on this order (ignored if another account has it).
+    if (!req.user.phone) pool.query("UPDATE users SET phone = ? WHERE id = ? AND phone IS NULL", [require("../utils/auth").normalizePhone(req.body.phone), req.user.id]).catch(() => {});
   }
 
   const settings = await settingsModel.getAll();

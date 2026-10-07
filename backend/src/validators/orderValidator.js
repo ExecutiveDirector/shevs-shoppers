@@ -44,6 +44,7 @@ const loginRules = [
 const profileRules = [
   body("name").optional().trim().isLength({ min: 2, max: 80 }).withMessage("Enter your name."),
   body("email").optional({ values: "falsy" }).trim().isEmail().withMessage("That email address doesn't look right.").isLength({ max: 120 }),
+  body("phone").optional({ values: "falsy" }).trim().matches(KENYAN_PHONE).withMessage("Enter a valid Kenyan phone number, e.g. 07XXXXXXXX."),
   body("county").optional({ values: "falsy" }).trim().isLength({ max: 40 }),
   body("address").optional({ values: "falsy" }).trim().isLength({ max: 200 }),
   body("newPassword").optional({ values: "falsy" }).isString().isLength({ min: 8, max: 100 }).withMessage("Use a new password of at least 8 characters."),
@@ -53,6 +54,7 @@ const claimRules = [
   body("orderCode").trim().matches(/^SHV-[A-Z0-9]{6}$/i).withMessage("Enter your order number, like SHV-ABC234."),
   body("phone").trim().matches(KENYAN_PHONE).withMessage("Enter the phone number you ordered with."),
 ];
+const googleRules = [body("credential").isString().isLength({ min: 20, max: 4000 }).withMessage("Google sign-in failed. Please try again.")];
 const forgotRules = [body("login").trim().isLength({ min: 3, max: 120 }).withMessage("Enter your phone number or email.")];
 const resetRules = [
   body("login").trim().isLength({ min: 3, max: 120 }),
@@ -60,4 +62,4 @@ const resetRules = [
   password("newPassword"),
 ];
 
-module.exports = { createOrderRules, reviewRules, notifyRules, registerRules, loginRules, profileRules, claimRules, forgotRules, resetRules };
+module.exports = { createOrderRules, reviewRules, notifyRules, registerRules, loginRules, profileRules, claimRules, forgotRules, resetRules, googleRules };

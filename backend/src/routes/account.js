@@ -3,8 +3,10 @@ const c = require("../controllers/accountController");
 const validate = require("../middleware/validate");
 const { requireCustomer } = require("../middleware/customerAuth");
 const { accountLimiter, registerLimiter } = require("../middleware/rateLimiters");
-const { registerRules, loginRules, profileRules, claimRules, forgotRules, resetRules } = require("../validators/orderValidator");
+const { registerRules, loginRules, profileRules, claimRules, forgotRules, resetRules, googleRules } = require("../validators/orderValidator");
 
+router.get("/config", c.config);
+router.post("/google", accountLimiter, googleRules, validate, c.googleSignIn);
 router.post("/register", registerLimiter, accountLimiter, registerRules, validate, c.register);
 router.post("/login", accountLimiter, loginRules, validate, c.login);
 router.post("/forgot", accountLimiter, forgotRules, validate, c.forgot);

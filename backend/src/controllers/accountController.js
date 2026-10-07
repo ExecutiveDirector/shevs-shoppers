@@ -2,6 +2,7 @@ const accountModel = require("../models/accountModel");
 const settingsModel = require("../models/settingsModel");
 const mailer = require("../utils/mailer");
 const auth = require("../utils/auth");
+const google = require("../utils/google");
 const asyncHandler = require("../utils/asyncHandler");
 const ApiError = require("../utils/ApiError");
 
@@ -16,6 +17,14 @@ const login = asyncHandler(async (req, res) => {
   const user = await accountModel.login(req.body.login, req.body.password);
   // Same message whether the account exists or not.
   if (!user) throw new ApiError(401, "Wrong phone/email or password.");
+  res.json(session(user));
+});
+
+const config = (req, res) => res.json({ googleClientId: google.configured() ? google.clientId() : null });
+
+const googleSignIn = asyncHandler(async (req, res) => {
+  const profile = await google.verify(req.body.credential);
+  const user = await accountModel.googleLogin(profile);
   res.json(session(user));
 });
 
@@ -60,4 +69,4 @@ const adminResetPassword = asyncHandler(async (req, res) => {
   res.json({ ok: true, temporaryPassword: temp });
 });
 
-module.exports = { register, login, me, updateMe, orders, claim, forgot, reset, adminResetPassword };
+module.exports = { config, googleSignIn, register, login, me, updateMe, orders, claim, forgot, reset, adminResetPassword };

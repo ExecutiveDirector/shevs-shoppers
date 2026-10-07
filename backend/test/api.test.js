@@ -233,3 +233,16 @@ test("account endpoints: guests are turned away, bad input is rejected early", a
   assert.equal((await post("register", { name: "Amina", phone: "0712345678", password: "short" })).status, 400);
   assert.equal((await post("reset", { login: "0712345678", code: "12", newPassword: "longenough1" })).status, 400);
 });
+
+test("google sign-in: hidden until configured, rejects missing/forged credentials", async () => {
+  const saved = process.env.GOOGLE_CLIENT_ID;
+  delete process.env.GOOGLE_CLIENT_ID;
+  assert.equal((await (await fetch(`${base}/api/account/config`)).json()).googleClientId, null);
+  const post = (b) => fetch(`${base}/api/account/google`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b) });
+  assert.equal((await post({})).status, 400);
+  assert.equal((await post({ credential: "x".repeat(40) })).status, 503); // not configured
+  process.env.GOOGLE_CLIENT_ID = "123.apps.googleusercontent.com";
+  assert.equal((await (await fetch(`${base}/api/account/config`)).json()).googleClientId, "123.apps.googleusercontent.com");
+  assert.equal((await post({ credential: "x".repeat(40) })).status, 401); // forged token
+  if (saved === undefined) delete process.env.GOOGLE_CLIENT_ID; else process.env.GOOGLE_CLIENT_ID = saved;
+});
