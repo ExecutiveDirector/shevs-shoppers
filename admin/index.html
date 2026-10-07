@@ -354,7 +354,7 @@ const fday=d=>new Date(d).toLocaleDateString("en-KE",{timeZone:TZ,day:"numeric",
 const waNumber=p=>{let d=String(p||"").replace(/\D/g,"");if(d.startsWith("0"))d="254"+d.slice(1);return d};
 const STATUSES=["pending","confirmed","dispatched","delivered","cancelled"];
 const DEFAULT_API="https://shevs-api-production.up.railway.app";
-const VIEWS=["dashboard","orders","customers","coupons","products","categories","settings","reports","reviews","waitlist","promotions","import"];
+const VIEWS=["dashboard","orders","customers","coupons","products","categories","settings","reports","reviews","waitlist","promotions","import","photos"];
 const NAV=[
  ["Overview",[["dashboard","🏠","Dashboard","d"]]],
  ["Sales",[["orders","🧾","Orders","o"],["customers","👥","Customers","u"],["coupons","🏷️","Coupons","c"],["reports","📈","Reports","r"]]],
@@ -447,9 +447,9 @@ function go(v){
  document.querySelectorAll(".nlink[data-view]").forEach(t=>{const on=t.dataset.view===v;t.classList.toggle("on",on);t.setAttribute("aria-current",on?"page":"false")});
  document.querySelectorAll("#tabs [data-view]").forEach(t=>t.classList.toggle("on",t.dataset.view===v));
  const sec=NAV.find(([,it])=>it.some(x=>x[0]===v));const item=sec&&sec[1].find(x=>x[0]===v);
- if(v==="import"){$("crumb").innerHTML="Catalogue › <b>Import products</b>";document.querySelectorAll(".nlink[data-view=products]").forEach(t=>t.classList.add("on"))}else $("crumb").innerHTML=item?`${esc(sec[0])} › <b>${item[2]}</b>`:"";
+ if(v==="import"){$("crumb").innerHTML="Catalogue › <b>Import products</b>";document.querySelectorAll(".nlink[data-view=products]").forEach(t=>t.classList.add("on"))}else if(v==="photos"){$("crumb").innerHTML="Catalogue › <b>Match photos</b>";document.querySelectorAll(".nlink[data-view=products]").forEach(t=>t.classList.add("on"))}else $("crumb").innerHTML=item?`${esc(sec[0])} › <b>${item[2]}</b>`:"";
  window.scrollTo(0,0);
- ({dashboard:vDashboard,orders:vOrders,products:vProducts,categories:vCategories,coupons:vCoupons,customers:vCustomers,settings:vSettings,reports:vReports,reviews:vReviews,waitlist:vWaitlist,promotions:vPromotions,import:vImport})[v]()}
+ ({dashboard:vDashboard,orders:vOrders,products:vProducts,categories:vCategories,coupons:vCoupons,customers:vCustomers,settings:vSettings,reports:vReports,reviews:vReviews,waitlist:vWaitlist,promotions:vPromotions,import:vImport,photos:vPhotos})[v]()}
 async function poll(){
  try{
   const d=await api("/stats");
@@ -479,7 +479,7 @@ function act(name,el){
   closeDrawer,closeEditor:()=>tryCloseEditor(),closeModal,
   openOrder:()=>openOrder(d.code),setStatus:()=>setStatus(d.code,d.status),exportOrders:()=>exportOrders(el),
   copyOrder,printOrder:()=>window.print(),saveNote:()=>saveNote(d.code),
-  newProduct:()=>productEditor(),importProducts:()=>{IMP.table=null;IMP.done=null;IMP.existing=null;go("import")},editProduct:()=>productEditor(+d.id),exportProducts:()=>exportProducts(el),
+  newProduct:()=>productEditor(),matchPhotos:()=>{PH.rows=[];go("photos")},stockAll:()=>stockAllForm(),importProducts:()=>{IMP.table=null;IMP.done=null;IMP.existing=null;go("import")},editProduct:()=>productEditor(+d.id),exportProducts:()=>exportProducts(el),
   stockStep:()=>stockStep(+d.id,+d.d,el),
   newCategory:()=>categoryForm(),editCategory:()=>categoryForm(+d.id),delCategory:()=>delCategory(+d.id,d.name),
   resetAcct:()=>resetAcct(+d.id,d.name),newPromo:()=>promoForm(),editPromo:()=>promoForm(+d.id),delPromo:()=>delPromo(+d.id,d.name),newBanner:()=>bannerForm(),editBanner:()=>bannerForm(+d.id),delBanner:()=>delBanner(+d.id,d.name),
@@ -534,6 +534,8 @@ const CMDS=[
  ...NAV.flatMap(([,items])=>items.map(([v,ic,l,k])=>({g:"Go to",ic,l,hint:"g "+k,act:"goView",data:{view:v}}))),
  {g:"Actions",ic:"➕",l:"New product",act:"newProduct"},
  {g:"Actions",ic:"⬆️",l:"Import products (CSV + photos)",act:"importProducts"},
+ {g:"Actions",ic:"🖼️",l:"Match photos to products by name",act:"matchPhotos"},
+ {g:"Actions",ic:"📦",l:"Set stock for many products",act:"stockAll"},
  {g:"Actions",ic:"➕",l:"New category",act:"newCategory"},
  {g:"Actions",ic:"➕",l:"New coupon",act:"newCoupon"},
  {g:"Actions",ic:"🎁",l:"New promotion",act:"newPromo"},
@@ -740,7 +742,7 @@ const marginPct=p=>p.cost_price!=null&&Number(p.price)>0?Math.round((p.price-p.c
 async function vProducts(){
  const s=st.products;await ensureCats();
  $("content").innerHTML=`
- <div class="pagehead"><h2>Products</h2><span class="sp"></span><button class="btn sec" data-act="exportProducts">⬇ Export CSV</button><button class="btn sec" data-act="importProducts">⬆ Import</button><button class="btn" data-act="newProduct">+ Add product</button></div>
+ <div class="pagehead"><h2>Products</h2><span class="sp"></span><button class="btn sec" data-act="exportProducts">⬇ Export CSV</button><button class="btn sec" data-act="importProducts">⬆ Import</button><button class="btn sec" data-act="matchPhotos">🖼️ Photos</button><button class="btn sec" data-act="stockAll">📦 Set stock</button><button class="btn" data-act="newProduct">+ Add product</button></div>
  <div class="summary" id="pSummary"></div>
  <div class="bar">
   <input type="search" id="pQ" placeholder="Search name, SKU, brand or tag" value="${esc(s.q)}" aria-label="Search products">
@@ -806,7 +808,7 @@ async function exportProducts(btn){
   toast(`Exported ${rows.length} product${rows.length===1?"":"s"}`)}catch(e){toast(e.message);handleErr(e)}finally{btn.disabled=false;btn.textContent=old}}
 
 /* ---------- bulk import: spreadsheet (CSV) + photos ---------- */
-const IMP={table:null,photos:new Map(),files:[],mode:"update",mkCats:true,busy:false,stop:false,rows:[],existing:null,done:null};
+const IMP={defStock:5,table:null,photos:new Map(),files:[],mode:"update",mkCats:true,busy:false,stop:false,rows:[],existing:null,done:null};
 const impKey=s=>String(s||"").toLowerCase().replace(/[^a-z0-9]+/g,"");
 const IMP_COLS={id:["id"],name:["name","product","productname","title","item"],category:["category","categoryname","type"],price:["price","sellingprice","saleprice"],compareAtPrice:["wasprice","was","compareatprice","compareat","oldprice"],costPrice:["costprice","cost","buyingprice"],stock:["stock","qty","quantity","openingstock"],sku:["sku","code","productcode"],brand:["brand"],description:["description","desc","details"],tags:["tags","keywords"],image:["image","imagelink","imageurl","photo","picture","imagefile","photofile","imagename","photoname"],active:["visible","active","show","published"],featured:["featured"],etaLabel:["deliveryestimate","eta","delivery","deliverytime"],lowStockThreshold:["lowstockalert","lowstock","lowstockthreshold"]};
 function parseCSV(t){
@@ -852,7 +854,7 @@ function impBuild(){
   const was=impMoney(g("compareAtPrice"));if(was!=null){if(!(was>=1))r.errs.push("'Was' price isn't valid.");else b.compareAtPrice=was}
   if(b.compareAtPrice!=null&&r.price!=null&&b.compareAtPrice<r.price)r.errs.push("'Was' price is lower than the price.");
   const cost=impMoney(g("costPrice"));if(cost!=null){if(!(cost>=0))r.errs.push("Cost price isn't valid.");else b.costPrice=cost}
-  const st=impMoney(g("stock"));if(st!=null){if(!Number.isInteger(st)||st<0)r.errs.push("Stock must be a whole number, 0 or more.");else b.stock=st}else if(!ex)b.stock=0;
+  const st=impMoney(g("stock"));if(st!=null){if(!Number.isInteger(st)||st<0)r.errs.push("Stock must be a whole number, 0 or more.");else b.stock=st}else if(!ex)b.stock=IMP.defStock;
   r.stock=b.stock!=null?b.stock:(ex?ex.stock:0);
   const low=impMoney(g("lowStockThreshold"));if(low!=null){if(!Number.isInteger(low)||low<0)r.errs.push("Low-stock alert must be a whole number.");else b.lowStockThreshold=low}
   // text
@@ -892,6 +894,7 @@ async function vImport(){
  </div>
  <div class="card imp"><h3>3 · Options</h3>
   <label class="chk"><input type="checkbox" id="impUpd" ${IMP.mode==="update"?"checked":""}> Update products that are already in the shop (matched by ID or SKU). Blank cells leave existing values unchanged.</label>
+  <label class="chk">Stock for new products with no Stock column value: <input type="number" id="impDef" min="0" max="100000" value="${IMP.defStock}" style="width:80px"></label>
   <label class="chk"><input type="checkbox" id="impMk" ${IMP.mkCats?"checked":""}> Create categories that don't exist yet</label>
  </div>
  <div id="impOut"></div>`;
@@ -901,6 +904,7 @@ async function vImport(){
  $("impUse").onclick=()=>{const v=$("impPaste").value;if(!v.trim()){toast("Paste your rows first");return}impLoad(v)};
  $("impImg").onchange=e=>{IMP.files=[...e.target.files];IMP.photos=new Map();IMP.files.forEach(f=>{const k=f.name.toLowerCase();IMP.photos.set(k,f);IMP.photos.set(impStem(k),f)});$("impImgN").textContent=IMP.files.length?`${IMP.files.length} photo${IMP.files.length>1?"s":""} selected`:"";impRefresh()};
  $("impUpd").onchange=e=>{IMP.mode=e.target.checked?"update":"skip";impRefresh()};
+ $("impDef").onchange=e=>{const v=Math.floor(Number(e.target.value));IMP.defStock=Number.isFinite(v)&&v>=0?v:0;e.target.value=IMP.defStock;impRefresh()};
  $("impMk").onchange=e=>{IMP.mkCats=e.target.checked;impRefresh()};
  if(IMP.table)impRefresh()}
 async function impLoad(text){
@@ -957,6 +961,76 @@ async function impRun(){
  $("impView").onclick=()=>{st.products.page=1;go("products")};
  toast(`${made} added, ${upd} updated${fails.length?`, ${fails.length} failed`:""}`);
  btn.disabled=true}
+
+/* ---------- set stock for many products ---------- */
+async function stockAllForm(){
+ modal(`<h3>Set stock for many products</h3>
+ <p class="muted">Sets the stock count to the same number. Each change is recorded in the stock history.</p>
+ <div class="fld"><label for="saQ">Stock count</label><input id="saQ" name="qty" type="number" min="0" max="1000000" value="5" required></div>
+ <div class="fld"><label for="saW">Apply to</label><select id="saW" name="who"><option value="all">Every product</option><option value="zero">Only products at 0 stock</option><option value="visible">Only products visible in the shop</option></select></div>
+ <div class="err" aria-live="polite"></div><div class="prog"></div>
+ <div class="mact"><button type="button" class="btn sec" data-act="closeModal">Cancel</button><button class="btn" type="submit">Set stock</button></div>`,
+ async f=>{
+  const qty=Math.floor(Number(f.elements.qty.value));if(!Number.isFinite(qty)||qty<0)throw new Error("Enter a stock count of 0 or more.");
+  const who=f.elements.who.value;let rows=await fetchAll("/products","products",{},100);
+  if(who==="zero")rows=rows.filter(p=>p.stock<=0);if(who==="visible")rows=rows.filter(p=>p.active);
+  rows=rows.filter(p=>p.stock!==qty);
+  if(!rows.length){closeModal();toast("Nothing to change — those products already have that stock");return}
+  let n=0;const fail=[];
+  for(const p of rows){f.querySelector(".prog").innerHTML=`<div class="progress"><i style="width:${Math.round(n/rows.length*100)}%"></i></div><p class="muted">${n} of ${rows.length}…</p>`;
+   try{await api(`/products/${p.id}/stock`,send("POST",{mode:"set",qty,reason:"correction",note:"Bulk stock set"}))}catch(e){if(e.auth)throw e;fail.push(p.name)}n++}
+  closeModal();toast(`Stock set to ${qty} on ${n-fail.length} product${n-fail.length===1?"":"s"}${fail.length?` · ${fail.length} failed`:""}`);if(view==="products"){loadProducts();loadSummary()}})}
+
+/* ---------- match photos to products by name ---------- */
+const PH={files:[],prods:null,rows:[],replace:true};
+const phStem=f=>impStem(f).replace(/[-_ ]*\(?\d{1,2}\)?$/,"");
+function phMatch(file){
+ const stem=impStem(file.name),k=impKey(stem),k2=impKey(phStem(file.name));
+ const P=PH.prods;if(!k)return null;
+ let p=P.find(x=>x.sku&&impKey(x.sku)===k)||P.find(x=>impKey(x.name)===k);
+ if(p)return{p,sure:true};
+ if(k2&&k2!==k){p=P.find(x=>x.sku&&impKey(x.sku)===k2)||P.find(x=>impKey(x.name)===k2);if(p)return{p,sure:true}}
+ // near matches: the name contains the file name or the other way round (needs 4+ letters so "a.jpg" can't match everything)
+ if(k.length>=4){const c=P.filter(x=>{const n=impKey(x.name);return n.includes(k)||(n.length>=4&&k.includes(n))});if(c.length===1)return{p:c[0],sure:false}}
+ return null}
+async function vPhotos(){
+ $("content").innerHTML=`<div class="pagehead"><button class="btn sec sm" id="phBack">← Products</button><h2>Match photos to products</h2></div>
+ <div class="card imp"><p class="muted">Select many photos at once. Name each photo like the product — <code>Wireless earbuds.jpg</code> — or like its SKU — <code>EAR-001.jpg</code>. We match them up, you check the preview, and the products' photos are updated. Capitals, spaces, dashes and endings like <code>-2</code> are ignored.</p>
+ <div class="impbtn"><label class="btn" for="phImg">Choose photos</label><input type="file" id="phImg" accept="image/*" multiple hidden><span class="muted" id="phN"></span></div>
+ <label class="chk" style="margin-top:12px"><input type="checkbox" id="phRep" ${PH.replace?"checked":""}> Replace photos that products already have (untick to only fill in products with no photo)</label></div><div id="phOut"></div>`;
+ $("phBack").onclick=()=>go("products");
+ $("phRep").onchange=e=>{PH.replace=e.target.checked;phDraw()};
+ $("phImg").onchange=async e=>{PH.files=[...e.target.files];$("phN").textContent=PH.files.length?`${PH.files.length} selected`:"";
+  if(!PH.prods){$("phOut").innerHTML=`<p class="muted">Loading your products…</p>`;try{PH.prods=await fetchAll("/products","products",{},100)}catch(err){handleErr(err);return}}
+  PH.rows=PH.files.map(f=>{const m=phMatch(f);return{f,pid:m?m.p.id:"",sure:m?m.sure:false,on:!!m&&m.sure,url:URL.createObjectURL(f)}});
+  // two photos for one product: keep the first, leave the rest for you to place by hand
+  const seen=new Set();PH.rows.forEach(r=>{if(r.pid){if(seen.has(r.pid)){r.pid="";r.on=false;r.dup=true}else seen.add(r.pid)}});phDraw()};
+ if(PH.rows.length)phDraw()}
+function phDraw(){
+ const out=$("phOut");if(!out||!PH.prods)return;const P=new Map(PH.prods.map(p=>[p.id,p]));
+ const opts=PH.prods.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(p=>`<option value="${p.id}">${esc(p.name)}${p.sku?" · "+esc(p.sku):""}</option>`).join("");
+ const eff=r=>{const p=P.get(+r.pid);return r.on&&p&&(PH.replace||!p.image_url)};
+ const n=PH.rows.filter(eff).length,un=PH.rows.filter(r=>!r.pid).length;
+ out.innerHTML=`<div class="summary"><div class="card"><span class="muted">Matched</span><b>${PH.rows.filter(r=>r.pid).length}</b></div><div class="card"><span class="muted">Need a product</span><b style="${un?"color:var(--sale)":""}">${un}</b></div><div class="card"><span class="muted">Will update</span><b>${n}</b></div></div>
+ <div class="tablewrap"><table class="imptbl"><thead><tr><th></th><th>New photo</th><th>Product</th><th>Current</th><th>Match</th></tr></thead><tbody>${PH.rows.map((r,i)=>{const p=P.get(+r.pid),cur=p&&safeUrl(p.image_url);
+  const skip=p&&!PH.replace&&p.image_url;
+  return `<tr><td><input type="checkbox" data-i="${i}" ${r.on&&r.pid?"checked":""} ${r.pid?"":"disabled"} aria-label="Use this photo"></td><td><span style="display:flex;gap:10px;align-items:center"><img class="impth" src="${r.url}" alt=""><span>${esc(r.f.name)}</span></span></td>
+  <td><select data-s="${i}"><option value="">— choose a product —</option>${opts.replace(`value="${r.pid}"`,`value="${r.pid}" selected`)}</select></td>
+  <td>${cur?`<img class="impth" src="${esc(cur)}" alt="" referrerpolicy="no-referrer">`:'<span class="muted">none</span>'}</td>
+  <td class="wrap">${!r.pid?(r.dup?'<span class="e">Another photo already matched this product</span>':'<span class="e">No match — pick the product</span>'):skip?'<span class="muted">Skipped — already has a photo</span>':r.sure?'<span class="tag ok">Exact</span>':'<span class="tag">Check this one</span>'}</td></tr>`}).join("")}</tbody></table></div>
+ <div class="impgo"><button class="btn" id="phGo" ${n?"":"disabled"}>Update ${n} product photo${n===1?"":"s"}</button></div><div id="phRun"></div>`;
+ out.querySelectorAll("[data-i]").forEach(c=>c.onchange=()=>{PH.rows[+c.dataset.i].on=c.checked;phDraw()});
+ out.querySelectorAll("[data-s]").forEach(s=>s.onchange=()=>{const r=PH.rows[+s.dataset.s];r.pid=s.value;r.on=!!s.value;r.sure=!!s.value;r.dup=false;phDraw()});
+ $("phGo").onclick=phRun}
+async function phRun(){
+ const P=new Map(PH.prods.map(p=>[p.id,p])),todo=PH.rows.filter(r=>{const p=P.get(+r.pid);return r.on&&p&&(PH.replace||!p.image_url)});if(!todo.length)return;
+ // one photo can only go to one product here; a product picked twice would just be overwritten
+ const box=$("phRun");$("phGo").disabled=true;let ok=0;const fail=[];
+ for(const r of todo){box.innerHTML=`<div class="progress"><i style="width:${Math.round((ok+fail.length)/todo.length*100)}%"></i></div><p class="muted">${ok+fail.length+1} of ${todo.length}: ${esc(r.f.name)}</p>`;
+  try{const blob=await shrinkImg(r.f);const d=await api("/uploads",{method:"POST",body:blob,headers:{"Content-Type":blob.type||"image/jpeg"}});
+   await api("/products/"+r.pid,send("PATCH",{imageUrl:d.url}));P.get(+r.pid).image_url=d.url;ok++}catch(e){if(e.auth){handleErr(e);return}fail.push(`${r.f.name}: ${e.message}`)}}
+ box.innerHTML=`<div class="card imp"><h3>Done ✅</h3><p><b>${ok}</b> photo${ok===1?"":"s"} updated${fail.length?` · <b style="color:var(--sale)">${fail.length} failed</b>`:""}</p>${fail.length?`<ul class="impfail">${fail.slice(0,10).map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}<button class="btn" id="phView">View products</button></div>`;
+ $("phView").onclick=()=>go("products");PH.rows=[];toast(`${ok} photo${ok===1?"":"s"} updated`)}
 
 /* ----- product editor ----- */
 let edId=null,edDirty=false;
@@ -1175,7 +1249,7 @@ async function vSettings(){
   <div><div class="lbl" style="margin-bottom:6px">Colour theme</div><div class="swatches">${Object.entries(ACCENTS).map(([k,[hex,name]])=>`<button type="button" class="sw ${prefs.accent===k?"on":""}" data-accent="${k}" style="background:${hex}" title="${name}" aria-label="${name}"></button>`).join("")}</div></div>
   <div><div class="lbl" style="margin-bottom:6px">Appearance</div><div class="seg" id="segTheme">${[["auto","Auto"],["light","Light"],["dark","Dark"]].map(([v,l])=>`<button type="button" data-v="${v}" class="${prefs.theme===v?"on":""}">${l}</button>`).join("")}</div></div>
   <div><div class="lbl" style="margin-bottom:6px">Density</div><div class="seg" id="segDensity">${[["comfortable","Comfortable"],["compact","Compact"]].map(([v,l])=>`<button type="button" data-v="${v}" class="${prefs.density===v?"on":""}">${l}</button>`).join("")}</div></div>
-  <div class="fld" style="max-width:260px"><label for="pHome">Open this page when I log in</label><select id="pHome">${VIEWS.filter(v=>v!=="import").map(v=>`<option value="${v}" ${prefs.home===v?"selected":""}>${v[0].toUpperCase()+v.slice(1)}</option>`).join("")}</select></div>
+  <div class="fld" style="max-width:260px"><label for="pHome">Open this page when I log in</label><select id="pHome">${VIEWS.filter(v=>v!=="import"&&v!=="photos").map(v=>`<option value="${v}" ${prefs.home===v?"selected":""}>${v[0].toUpperCase()+v.slice(1)}</option>`).join("")}</select></div>
  </div>
  <div class="sect"><h3>🔐 Connection</h3>
   <div class="drow"><span>API</span><b style="word-break:break-all">${esc(API)}</b></div>
