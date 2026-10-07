@@ -162,6 +162,12 @@ body[data-density=compact] .card{padding:12px}
 .check .tick{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:12px;flex:none}
 .check.done .tick{background:var(--ok);border-color:var(--ok);color:#fff}
 .check.done span{color:var(--mute);text-decoration:line-through}
+.imp{margin-bottom:14px}.imp p{margin:6px 0 10px}.impbtn{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.impbtn label.btn{cursor:pointer}
+.impd{margin-top:12px}.impd summary{cursor:pointer;color:var(--link);font-size:14px}.impd textarea{width:100%;margin:8px 0;font:13px/1.4 ui-monospace,monospace;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--bg);color:inherit}
+.chk{display:flex;gap:10px;align-items:flex-start;margin:6px 0;font-size:14px}.chk input{margin-top:3px}
+.imptbl td.wrap{white-space:normal;min-width:220px;font-size:13px}.imptbl tr.bad td{background:color-mix(in srgb,var(--sale) 7%,transparent)}.imptbl .e{color:var(--sale);font-weight:500}
+.impth{width:36px;height:36px;object-fit:cover;border-radius:8px;display:block}.tag.ok{background:color-mix(in srgb,var(--ok,#1a7f4b) 14%,transparent);color:var(--ok,#1a7f4b)}.tag.bad{background:var(--sale);color:#fff}.tag.mute{opacity:.6}
+.impgo{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:16px 0}.impfail{margin:8px 0 12px 18px;font-size:13px}
 .progress{height:8px;background:var(--bg);border-radius:99px;overflow:hidden;margin:6px 0 10px}
 .progress i{display:block;height:100%;background:var(--brand)}
 
@@ -348,7 +354,7 @@ const fday=d=>new Date(d).toLocaleDateString("en-KE",{timeZone:TZ,day:"numeric",
 const waNumber=p=>{let d=String(p||"").replace(/\D/g,"");if(d.startsWith("0"))d="254"+d.slice(1);return d};
 const STATUSES=["pending","confirmed","dispatched","delivered","cancelled"];
 const DEFAULT_API="https://shevs-api-production.up.railway.app";
-const VIEWS=["dashboard","orders","customers","coupons","products","categories","settings","reports","reviews","waitlist","promotions"];
+const VIEWS=["dashboard","orders","customers","coupons","products","categories","settings","reports","reviews","waitlist","promotions","import"];
 const NAV=[
  ["Overview",[["dashboard","🏠","Dashboard","d"]]],
  ["Sales",[["orders","🧾","Orders","o"],["customers","👥","Customers","u"],["coupons","🏷️","Coupons","c"],["reports","📈","Reports","r"]]],
@@ -441,9 +447,9 @@ function go(v){
  document.querySelectorAll(".nlink[data-view]").forEach(t=>{const on=t.dataset.view===v;t.classList.toggle("on",on);t.setAttribute("aria-current",on?"page":"false")});
  document.querySelectorAll("#tabs [data-view]").forEach(t=>t.classList.toggle("on",t.dataset.view===v));
  const sec=NAV.find(([,it])=>it.some(x=>x[0]===v));const item=sec&&sec[1].find(x=>x[0]===v);
- $("crumb").innerHTML=item?`${esc(sec[0])} › <b>${item[2]}</b>`:"";
+ if(v==="import"){$("crumb").innerHTML="Catalogue › <b>Import products</b>";document.querySelectorAll(".nlink[data-view=products]").forEach(t=>t.classList.add("on"))}else $("crumb").innerHTML=item?`${esc(sec[0])} › <b>${item[2]}</b>`:"";
  window.scrollTo(0,0);
- ({dashboard:vDashboard,orders:vOrders,products:vProducts,categories:vCategories,coupons:vCoupons,customers:vCustomers,settings:vSettings,reports:vReports,reviews:vReviews,waitlist:vWaitlist,promotions:vPromotions})[v]()}
+ ({dashboard:vDashboard,orders:vOrders,products:vProducts,categories:vCategories,coupons:vCoupons,customers:vCustomers,settings:vSettings,reports:vReports,reviews:vReviews,waitlist:vWaitlist,promotions:vPromotions,import:vImport})[v]()}
 async function poll(){
  try{
   const d=await api("/stats");
@@ -473,7 +479,7 @@ function act(name,el){
   closeDrawer,closeEditor:()=>tryCloseEditor(),closeModal,
   openOrder:()=>openOrder(d.code),setStatus:()=>setStatus(d.code,d.status),exportOrders:()=>exportOrders(el),
   copyOrder,printOrder:()=>window.print(),saveNote:()=>saveNote(d.code),
-  newProduct:()=>productEditor(),editProduct:()=>productEditor(+d.id),exportProducts:()=>exportProducts(el),
+  newProduct:()=>productEditor(),importProducts:()=>{IMP.table=null;IMP.done=null;IMP.existing=null;go("import")},editProduct:()=>productEditor(+d.id),exportProducts:()=>exportProducts(el),
   stockStep:()=>stockStep(+d.id,+d.d,el),
   newCategory:()=>categoryForm(),editCategory:()=>categoryForm(+d.id),delCategory:()=>delCategory(+d.id,d.name),
   resetAcct:()=>resetAcct(+d.id,d.name),newPromo:()=>promoForm(),editPromo:()=>promoForm(+d.id),delPromo:()=>delPromo(+d.id,d.name),newBanner:()=>bannerForm(),editBanner:()=>bannerForm(+d.id),delBanner:()=>delBanner(+d.id,d.name),
@@ -527,6 +533,7 @@ function closeDrawer(){$("drawer").classList.remove("open");if(!$("editor").clas
 const CMDS=[
  ...NAV.flatMap(([,items])=>items.map(([v,ic,l,k])=>({g:"Go to",ic,l,hint:"g "+k,act:"goView",data:{view:v}}))),
  {g:"Actions",ic:"➕",l:"New product",act:"newProduct"},
+ {g:"Actions",ic:"⬆️",l:"Import products (CSV + photos)",act:"importProducts"},
  {g:"Actions",ic:"➕",l:"New category",act:"newCategory"},
  {g:"Actions",ic:"➕",l:"New coupon",act:"newCoupon"},
  {g:"Actions",ic:"🎁",l:"New promotion",act:"newPromo"},
@@ -733,7 +740,7 @@ const marginPct=p=>p.cost_price!=null&&Number(p.price)>0?Math.round((p.price-p.c
 async function vProducts(){
  const s=st.products;await ensureCats();
  $("content").innerHTML=`
- <div class="pagehead"><h2>Products</h2><span class="sp"></span><button class="btn sec" data-act="exportProducts">⬇ Export CSV</button><button class="btn" data-act="newProduct">+ Add product</button></div>
+ <div class="pagehead"><h2>Products</h2><span class="sp"></span><button class="btn sec" data-act="exportProducts">⬇ Export CSV</button><button class="btn sec" data-act="importProducts">⬆ Import</button><button class="btn" data-act="newProduct">+ Add product</button></div>
  <div class="summary" id="pSummary"></div>
  <div class="bar">
   <input type="search" id="pQ" placeholder="Search name, SKU, brand or tag" value="${esc(s.q)}" aria-label="Search products">
@@ -797,6 +804,159 @@ async function exportProducts(btn){
   downloadCsv("shevs-products",["ID","Name","SKU","Brand","Category","Price","Was price","Cost price","Stock","Low-stock alert","Visible","Featured","Tags","Delivery estimate","Description","Image link"],
    rows.map(p=>[p.id,p.name,p.sku||"",p.brand||"",p.category_name,p.price,p.compare_at_price,p.cost_price==null?"":p.cost_price,p.stock,p.low_stock_threshold==null?"":p.low_stock_threshold,p.active?"yes":"no",p.featured?"yes":"no",p.tags||"",p.eta_label,p.description||"",p.image_url||""]));
   toast(`Exported ${rows.length} product${rows.length===1?"":"s"}`)}catch(e){toast(e.message);handleErr(e)}finally{btn.disabled=false;btn.textContent=old}}
+
+/* ---------- bulk import: spreadsheet (CSV) + photos ---------- */
+const IMP={table:null,photos:new Map(),files:[],mode:"update",mkCats:true,busy:false,stop:false,rows:[],existing:null,done:null};
+const impKey=s=>String(s||"").toLowerCase().replace(/[^a-z0-9]+/g,"");
+const IMP_COLS={id:["id"],name:["name","product","productname","title","item"],category:["category","categoryname","type"],price:["price","sellingprice","saleprice"],compareAtPrice:["wasprice","was","compareatprice","compareat","oldprice"],costPrice:["costprice","cost","buyingprice"],stock:["stock","qty","quantity","openingstock"],sku:["sku","code","productcode"],brand:["brand"],description:["description","desc","details"],tags:["tags","keywords"],image:["image","imagelink","imageurl","photo","picture","imagefile","photofile","imagename","photoname"],active:["visible","active","show","published"],featured:["featured"],etaLabel:["deliveryestimate","eta","delivery","deliverytime"],lowStockThreshold:["lowstockalert","lowstock","lowstockthreshold"]};
+function parseCSV(t){
+ t=String(t).replace(/^﻿/,"");const first=t.split(/\r?\n/)[0]||"";
+ const cnt=ch=>(first.split(ch).length-1);const d=[["\t",cnt("\t")],[";",cnt(";")],[",",cnt(",")]].sort((a,b)=>b[1]-a[1])[0][0];
+ const rows=[];let row=[],cur="",q=false;
+ for(let i=0;i<t.length;i++){const c=t[i];
+  if(q){if(c==='"'){if(t[i+1]==='"'){cur+='"';i++}else q=false}else cur+=c}
+  else if(c==='"'&&cur==="")q=true;
+  else if(c===d){row.push(cur);cur=""}
+  else if(c==="\n"||c==="\r"){if(c==="\r"&&t[i+1]==="\n")i++;row.push(cur);cur="";if(row.some(x=>x.trim()!==""))rows.push(row);row=[]}
+  else cur+=c}
+ row.push(cur);if(row.some(x=>x.trim()!==""))rows.push(row);return rows}
+const impMoney=s=>{const x=String(s==null?"":s).replace(/kes|ksh\.?|[,\s]/gi,"");return x===""?null:Number(x)};
+const impBool=s=>{const x=String(s==null?"":s).trim().toLowerCase();if(!x)return undefined;if(["yes","y","true","1","visible","show","on"].includes(x))return true;if(["no","n","false","0","hidden","hide","off"].includes(x))return false;return null};
+const impCatKey=s=>String(s||"").toLowerCase().replace(/[^\p{L}\p{N}]+/gu," ").trim();
+const impStem=f=>String(f).replace(/\.[a-z0-9]{2,5}$/i,"");
+function impPhoto(v){const k=String(v||"").trim().toLowerCase();if(!k)return null;return IMP.photos.get(k)||IMP.photos.get(impStem(k))||null}
+function impBuild(){
+ const T=IMP.table;IMP.rows=[];if(!T||T.length<2)return;
+ const head=T[0].map(impKey),col={};
+ for(const[f,names]of Object.entries(IMP_COLS)){const i=head.findIndex(h=>names.includes(h));if(i>=0)col[f]=i}
+ const catMap=new Map(cats.map(c=>[impCatKey(c.name),c]));
+ const byId=new Map(),bySku=new Map();(IMP.existing||[]).forEach(p=>{byId.set(p.id,p);if(p.sku)bySku.set(String(p.sku).toLowerCase(),p)});
+ const seenSku=new Set();
+ T.slice(1).forEach((raw,i)=>{
+  const g=f=>col[f]==null?"":String(raw[col[f]]==null?"":raw[col[f]]).trim().replace(/^'(?=[=+\-@])/,"");
+  const r={n:i+2,raw,errs:[],warns:[],body:{},action:"create",file:null,photoUrl:""};
+  const name=g("name"),sku=g("sku"),idv=g("id");
+  const ex=(idv&&/^\d+$/.test(idv)&&byId.get(+idv))||(sku&&bySku.get(sku.toLowerCase()))||null;
+  if(ex){r.existingId=ex.id;r.action=IMP.mode==="update"?"update":"skip";if(r.action==="skip")r.warns.push("Already in your shop — skipped")}
+  const upd=r.action==="update",b=r.body;
+  r.name=name||(ex&&ex.name)||"";
+  if(name){if(name.length<2||name.length>160)r.errs.push("Name must be 2–160 characters.");else b.name=name}else if(!ex)r.errs.push("Name is missing.");
+  // category
+  const cn=g("category");r.cat=cn;
+  if(cn){const c=catMap.get(impCatKey(cn));if(c){b.categoryId=c.id}else if(IMP.mkCats){r.newCat=cn.slice(0,80)}else r.errs.push(`Category "${cn}" doesn't exist.`)}
+  else if(!ex)r.errs.push("Category is missing.");
+  // money + numbers
+  const price=impMoney(g("price"));
+  if(price==null){if(!ex)r.errs.push("Price is missing.")}else if(!(price>=1&&price<=1e7))r.errs.push("Price must be 1 or more.");else b.price=price;
+  r.price=b.price!=null?b.price:(ex?Number(ex.price):null);
+  const was=impMoney(g("compareAtPrice"));if(was!=null){if(!(was>=1))r.errs.push("'Was' price isn't valid.");else b.compareAtPrice=was}
+  if(b.compareAtPrice!=null&&r.price!=null&&b.compareAtPrice<r.price)r.errs.push("'Was' price is lower than the price.");
+  const cost=impMoney(g("costPrice"));if(cost!=null){if(!(cost>=0))r.errs.push("Cost price isn't valid.");else b.costPrice=cost}
+  const st=impMoney(g("stock"));if(st!=null){if(!Number.isInteger(st)||st<0)r.errs.push("Stock must be a whole number, 0 or more.");else b.stock=st}else if(!ex)b.stock=0;
+  r.stock=b.stock!=null?b.stock:(ex?ex.stock:0);
+  const low=impMoney(g("lowStockThreshold"));if(low!=null){if(!Number.isInteger(low)||low<0)r.errs.push("Low-stock alert must be a whole number.");else b.lowStockThreshold=low}
+  // text
+  if(sku){if(!/^[A-Za-z0-9._\- ]{1,40}$/.test(sku))r.errs.push("SKU can only use letters, numbers, spaces and . _ -");else{b.sku=sku;const k=sku.toLowerCase();if(seenSku.has(k))r.errs.push("This SKU appears twice in your file.");seenSku.add(k)}}
+  const brand=g("brand");if(brand){if(brand.length>80)r.errs.push("Brand is too long (max 80).");else b.brand=brand}
+  const desc=g("description");if(desc){if(desc.length>2000)r.errs.push(`Description is too long (${desc.length}/2000).`);else b.description=desc}
+  const tags=g("tags");if(tags){if(tags.length>255)r.errs.push("Tags are too long (max 255).");else b.tags=tags}
+  const eta=g("etaLabel");if(eta){if(eta.length>40)r.errs.push("Delivery estimate is too long (max 40).");else b.etaLabel=eta}
+  for(const f of["active","featured"]){const v=impBool(g(f));if(v===null)r.errs.push(`"${f==="active"?"Visible":"Featured"}" should be yes or no.`);else if(v!==undefined)b[f]=v}
+  // photo: a link, or the name of a photo you selected (falls back to a photo named after the SKU)
+  const im=g("image");
+  if(/^https?:\/\//i.test(im)){if(im.length>500)r.errs.push("Image link is too long.");else{b.imageUrl=im;r.photoUrl=im}}
+  else{const f=impPhoto(im)||(!im&&sku?impPhoto(sku):null);
+   if(f){r.file=f}else if(im)r.warns.push(`Photo "${im}" wasn't among the photos you selected — imported without a photo`);
+   else if(!ex||!ex.image_url)r.warns.push("No photo")}
+  if(r.errs.length)r.action="error";
+  IMP.rows.push(r)})}
+function impMissingCols(){const head=(IMP.table&&IMP.table[0]||[]).map(impKey);const miss=[];for(const f of["name","category","price"]){if(!IMP_COLS[f].some(n=>head.includes(n)))miss.push(f)}return miss}
+const shrinkImg=async file=>{try{const bm=await createImageBitmap(file),m=1600,k=Math.min(1,m/Math.max(bm.width,bm.height)),c=document.createElement("canvas");c.width=Math.round(bm.width*k);c.height=Math.round(bm.height*k);c.getContext("2d").drawImage(bm,0,0,c.width,c.height);const b=await new Promise(r=>c.toBlob(r,"image/jpeg",.88));return b&&b.size<file.size?b:file}catch{return file}};
+function impTemplate(){
+ downloadCsv("shevs-product-import-template",["Name","Category","Price","Was price","Cost price","Stock","SKU","Brand","Description","Tags","Image","Visible","Featured","Delivery estimate"],[
+  ["Wireless earbuds","Electronics","2499","3200","1600","25","EAR-001","Soundly","Bluetooth 5.3, 20h battery, charging case","audio, wireless","earbuds.jpg","yes","yes","2–4 days"],
+  ["Cotton bedsheet set","Home","3800","","2400","12","BED-014","","Queen size, 4 pieces, soft cotton","bedding","https://example.com/photo.jpg","yes","no",""]])}
+async function vImport(){
+ await ensureCats();
+ $("content").innerHTML=`
+ <div class="pagehead"><button class="btn sec sm" data-view-back>← Products</button><h2>Import products</h2></div>
+ <div class="card imp"><h3>1 · Your spreadsheet</h3>
+  <p class="muted">Add many products at once. Fill in a spreadsheet (Excel or Google Sheets), save it as <b>CSV</b>, then choose it here. Only <b>Name</b>, <b>Category</b> and <b>Price</b> are required.</p>
+  <div class="impbtn"><button class="btn sec" id="impTpl">⬇ Download the template</button><label class="btn" for="impCsv">Choose CSV file</label><input type="file" id="impCsv" accept=".csv,.txt,text/csv" hidden></div>
+  <details class="impd"><summary>…or paste rows copied from Excel / Google Sheets</summary><textarea id="impPaste" rows="5" placeholder="Paste here, including the header row"></textarea><button class="btn sm" id="impUse" type="button">Use pasted rows</button></details>
+  <details class="impd"><summary>Columns we understand</summary><p class="muted">Name · Category · Price · Was price · Cost price · Stock · SKU · Brand · Description · Tags · Image · Visible (yes/no) · Featured (yes/no) · Delivery estimate · Low-stock alert · ID. Tip: <b>Export CSV</b> on the Products page gives you a file in this format — edit it and import it back to change many products at once (matched by ID or SKU).</p></details>
+ </div>
+ <div class="card imp"><h3>2 · Photos <small class="muted">(optional)</small></h3>
+  <p class="muted">Select all the product photos together. In the <b>Image</b> column write each photo's file name (e.g. <code>earbuds.jpg</code>), or a web link. If you leave it blank, a photo named after the product's SKU (e.g. <code>EAR-001.jpg</code>) is used. Photos are resized automatically.</p>
+  <div class="impbtn"><label class="btn sec" for="impImg">Choose photos</label><input type="file" id="impImg" accept="image/*" multiple hidden><span class="muted" id="impImgN"></span></div>
+ </div>
+ <div class="card imp"><h3>3 · Options</h3>
+  <label class="chk"><input type="checkbox" id="impUpd" ${IMP.mode==="update"?"checked":""}> Update products that are already in the shop (matched by ID or SKU). Blank cells leave existing values unchanged.</label>
+  <label class="chk"><input type="checkbox" id="impMk" ${IMP.mkCats?"checked":""}> Create categories that don't exist yet</label>
+ </div>
+ <div id="impOut"></div>`;
+ $("impTpl").onclick=impTemplate;
+ document.querySelector("[data-view-back]").onclick=()=>go("products");
+ $("impCsv").onchange=async e=>{const f=e.target.files[0];if(!f)return;if(f.size>5e6){toast("That file is too big (max 5 MB).");return}impLoad(await f.text())};
+ $("impUse").onclick=()=>{const v=$("impPaste").value;if(!v.trim()){toast("Paste your rows first");return}impLoad(v)};
+ $("impImg").onchange=e=>{IMP.files=[...e.target.files];IMP.photos=new Map();IMP.files.forEach(f=>{const k=f.name.toLowerCase();IMP.photos.set(k,f);IMP.photos.set(impStem(k),f)});$("impImgN").textContent=IMP.files.length?`${IMP.files.length} photo${IMP.files.length>1?"s":""} selected`:"";impRefresh()};
+ $("impUpd").onchange=e=>{IMP.mode=e.target.checked?"update":"skip";impRefresh()};
+ $("impMk").onchange=e=>{IMP.mkCats=e.target.checked;impRefresh()};
+ if(IMP.table)impRefresh()}
+async function impLoad(text){
+ const t=parseCSV(text);if(t.length<2){toast("We couldn't find any product rows in that file.");return}
+ IMP.table=t;IMP.done=null;impRefresh()}
+async function impRefresh(){
+ const out=$("impOut");if(!out||!IMP.table)return;
+ const miss=impMissingCols();
+ if(miss.length){out.innerHTML=`<div class="card imp"><b>Missing column${miss.length>1?"s":""}: ${miss.map(m=>({name:"Name",category:"Category",price:"Price"})[m]).join(", ")}.</b><p class="muted">Check the first row of your file has these headings, or start from the template.</p></div>`;return}
+ if(!IMP.existing){out.innerHTML=`<p class="muted">Checking your shop…</p>`;try{IMP.existing=await fetchAll("/products","products",{},100)}catch(e){handleErr(e);return}}
+ impBuild();const R=IMP.rows,c=a=>R.filter(r=>r.action===a).length;
+ const withPhoto=R.filter(r=>r.file||r.photoUrl).length,used=new Set(R.filter(r=>r.file).map(r=>r.file));
+ const unused=IMP.files.filter(f=>!used.has(f));
+ const ok=R.filter(r=>r.action==="create"||r.action==="update").length;
+ const newCats=[...new Set(R.filter(r=>r.newCat&&r.action!=="error").map(r=>r.newCat))];
+ out.innerHTML=`<div class="summary"><div class="card"><span class="muted">New</span><b>${c("create")}</b></div><div class="card"><span class="muted">Updates</span><b>${c("update")}</b></div><div class="card"><span class="muted">Problems</span><b style="${c("error")?"color:var(--sale)":""}">${c("error")}</b></div><div class="card"><span class="muted">With photo</span><b>${withPhoto}/${R.length}</b></div></div>
+ ${newCats.length?`<p class="muted">New categories to create: <b>${newCats.map(esc).join(", ")}</b></p>`:""}
+ ${unused.length?`<p class="muted">${unused.length} selected photo${unused.length>1?"s weren't":" wasn't"} used: ${unused.slice(0,6).map(f=>esc(f.name)).join(", ")}${unused.length>6?"…":""}</p>`:""}
+ <div class="tablewrap"><table class="imptbl"><thead><tr><th>#</th><th></th><th>Status</th><th>Product</th><th>Category</th><th class="r">Price</th><th class="r">Stock</th><th>Notes</th></tr></thead><tbody>${R.slice(0,300).map(r=>{
+  const st=r.action==="error"?`<span class="tag bad">Problem</span>`:r.action==="update"?`<span class="tag">Update</span>`:r.action==="skip"?`<span class="tag mute">Skip</span>`:`<span class="tag ok">New</span>`;
+  const th=r.file?`<img class="impth" src="${URL.createObjectURL(r.file)}" alt="">`:r.photoUrl?`<img class="impth" src="${esc(safeUrl(r.photoUrl))}" alt="" referrerpolicy="no-referrer">`:"";
+  return `<tr class="${r.action==="error"?"bad":""}"><td>${r.n}</td><td>${th}</td><td>${st}</td><td>${esc(r.name)||"—"}</td><td>${esc(r.cat||"")}${r.newCat&&r.action!=="error"?` <small class="muted">(new)</small>`:""}</td><td class="r">${r.price!=null?num(r.price):"—"}</td><td class="r">${r.stock!=null?num(r.stock):"—"}</td><td class="wrap">${[...r.errs.map(e=>`<span class="e">${esc(e)}</span>`),...r.warns.map(w=>`<span class="muted">${esc(w)}</span>`)].join("<br>")}</td></tr>`}).join("")}</tbody></table></div>
+ ${R.length>300?`<p class="muted">Showing the first 300 of ${R.length} rows.</p>`:""}
+ <div class="impgo"><button class="btn" id="impGo" ${ok?"":"disabled"}>Import ${ok} product${ok===1?"":"s"}</button>${c("error")?`<span class="muted">${c("error")} row${c("error")>1?"s have":" has"} problems and will be skipped. Fix them in your file and import again, or go ahead.</span>`:""}</div>
+ <div id="impRun"></div>`;
+ const go_=$("impGo");if(go_)go_.onclick=impRun}
+async function impRun(){
+ if(IMP.busy)return;
+ const todo=IMP.rows.filter(r=>r.action==="create"||r.action==="update");if(!todo.length)return;
+ if(!(await confirmBox("Import products?",`${todo.filter(r=>r.action==="create").length} new and ${todo.filter(r=>r.action==="update").length} updated products will be saved to your live shop.`,"Import now",false)))return;
+ IMP.busy=true;IMP.stop=false;const box=$("impRun"),btn=$("impGo");btn.disabled=true;
+ const paint=(n,msg)=>{box.innerHTML=`<div class="progress"><i style="width:${Math.round(n/todo.length*100)}%"></i></div><p>${esc(msg)} <button class="btn sec sm" id="impStop" type="button">Stop</button></p>`;const s=$("impStop");if(s)s.onclick=()=>{IMP.stop=true;s.disabled=true}};
+ const fails=[];let ok=0,made=0,upd=0;
+ try{
+  // 1. categories
+  const newNames=[...new Set(todo.filter(r=>r.newCat).map(r=>r.newCat))],ids=new Map();
+  for(const n of newNames){paint(0,`Creating category ${n}…`);try{const d=await api("/categories",send("POST",{name:n,icon:"📦"}));ids.set(n,(d.category||d).id)}catch(e){if(e.auth){handleErr(e);return}todo.filter(r=>r.newCat===n).forEach(r=>{r.err=`Couldn't create category "${n}": ${e.message}`})}}
+  if(newNames.length)await ensureCats(true);
+  // 2. products, one by one so a problem on one row never blocks the rest
+  const up=new Map();let i=0;
+  for(const r of todo){
+   if(IMP.stop)break;paint(i,`Importing ${i+1} of ${todo.length}: ${r.name}`);i++;
+   if(r.err){fails.push(r);continue}
+   try{
+    const body={...r.body};if(r.newCat)body.categoryId=ids.get(r.newCat);
+    if(r.file){if(!up.has(r.file)){const blob=await shrinkImg(r.file);const d=await api("/uploads",{method:"POST",body:blob,headers:{"Content-Type":blob.type||"image/jpeg"}});up.set(r.file,d.url)}body.imageUrl=up.get(r.file)}
+    if(r.action==="update"){await api("/products/"+r.existingId,send("PATCH",body));upd++}else{await api("/products",send("POST",body));made++}
+    ok++}
+   catch(e){if(e.auth){handleErr(e);return}r.err=e.message;fails.push(r)}}
+ }finally{IMP.busy=false}
+ IMP.existing=null;IMP.done={ok,made,upd,fails,stopped:IMP.stop};
+ box.innerHTML=`<div class="card imp"><h3>${IMP.stop?"Stopped":"Done"} ✅</h3><p><b>${made}</b> added · <b>${upd}</b> updated${fails.length?` · <b style="color:var(--sale)">${fails.length} failed</b>`:""}${IMP.stop?" · import was stopped early":""}</p>${fails.length?`<ul class="impfail">${fails.slice(0,20).map(r=>`<li>Row ${r.n} · ${esc(r.name)} — ${esc(r.err)}</li>`).join("")}</ul><button class="btn sec" id="impErr">⬇ Download the failed rows</button> `:""}<button class="btn" id="impView">View products</button></div>`;
+ if(fails.length)$("impErr").onclick=()=>downloadCsv("shevs-import-failed",[...IMP.table[0],"Error"],fails.map(r=>[...r.raw,r.err]));
+ $("impView").onclick=()=>{st.products.page=1;go("products")};
+ toast(`${made} added, ${upd} updated${fails.length?`, ${fails.length} failed`:""}`);
+ btn.disabled=true}
 
 /* ----- product editor ----- */
 let edId=null,edDirty=false;
@@ -1015,7 +1175,7 @@ async function vSettings(){
   <div><div class="lbl" style="margin-bottom:6px">Colour theme</div><div class="swatches">${Object.entries(ACCENTS).map(([k,[hex,name]])=>`<button type="button" class="sw ${prefs.accent===k?"on":""}" data-accent="${k}" style="background:${hex}" title="${name}" aria-label="${name}"></button>`).join("")}</div></div>
   <div><div class="lbl" style="margin-bottom:6px">Appearance</div><div class="seg" id="segTheme">${[["auto","Auto"],["light","Light"],["dark","Dark"]].map(([v,l])=>`<button type="button" data-v="${v}" class="${prefs.theme===v?"on":""}">${l}</button>`).join("")}</div></div>
   <div><div class="lbl" style="margin-bottom:6px">Density</div><div class="seg" id="segDensity">${[["comfortable","Comfortable"],["compact","Compact"]].map(([v,l])=>`<button type="button" data-v="${v}" class="${prefs.density===v?"on":""}">${l}</button>`).join("")}</div></div>
-  <div class="fld" style="max-width:260px"><label for="pHome">Open this page when I log in</label><select id="pHome">${VIEWS.map(v=>`<option value="${v}" ${prefs.home===v?"selected":""}>${v[0].toUpperCase()+v.slice(1)}</option>`).join("")}</select></div>
+  <div class="fld" style="max-width:260px"><label for="pHome">Open this page when I log in</label><select id="pHome">${VIEWS.filter(v=>v!=="import").map(v=>`<option value="${v}" ${prefs.home===v?"selected":""}>${v[0].toUpperCase()+v.slice(1)}</option>`).join("")}</select></div>
  </div>
  <div class="sect"><h3>🔐 Connection</h3>
   <div class="drow"><span>API</span><b style="word-break:break-all">${esc(API)}</b></div>
