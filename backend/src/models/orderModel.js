@@ -107,11 +107,12 @@ async function createOrder(input) {
       try {
         const [orderResult] = await conn.query(
           `INSERT INTO orders
-            (order_code, customer_name, phone, customer_email, county, address, payment_method,
+            (order_code, user_id, customer_name, phone, customer_email, county, address, payment_method,
              status, subtotal, delivery_fee, discount, coupon_code, total)
-           VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?)`,
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?)`,
           [
             orderCode,
+            input.userId || null,
             input.customerName,
             input.phone,
             input.customerEmail || null,

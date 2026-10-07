@@ -56,6 +56,7 @@ router.post("/promotions", promoRules, validate, e.promoCreate);
 router.patch("/promotions/:id", promoRules, validate, e.promoUpdate);
 router.delete("/promotions/:id", e.promoDelete);
 
+router.post("/accounts/:id/reset-password", require("../controllers/accountController").adminResetPassword);
 router.get("/customers", c.listCustomers);
 
 router.get("/settings", c.getSettings);

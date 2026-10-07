@@ -204,3 +204,32 @@ test("sales report: bad dates fall back instead of reaching SQL", async () => {
   const r = await fetch(`${base}/api/admin/reports/sales?from=1;DROP&to=x`, { headers: { "x-admin-key": process.env.ADMIN_API_KEY } });
   assert.notEqual(r.status, 401);
 });
+
+test("account security: scrypt passwords, signed tokens, phone normalising", () => {
+  const auth = require("../src/utils/auth");
+  const h = auth.hashPassword("correct horse");
+  assert.ok(h.startsWith("scrypt$") && !h.includes("correct"));
+  assert.ok(auth.verifyPassword("correct horse", h));
+  assert.ok(!auth.verifyPassword("Correct horse", h));
+  assert.ok(!auth.verifyPassword("x", "garbage"));
+  const user = { id: 5, password_hash: h };
+  const t = auth.issueToken(user);
+  const p = auth.readToken(t);
+  assert.equal(p.u, 5);
+  assert.equal(p.f, auth.fingerprint(h));
+  assert.equal(auth.readToken(t.slice(0, -2) + "xx"), null); // tampered signature
+  const forged = Buffer.from(JSON.stringify({ u: 1, e: Date.now() + 1e9, f: "x" })).toString("base64url") + "." + t.split(".")[1];
+  assert.equal(auth.readToken(forged), null); // body swapped, signature reused
+  const expired = (() => { const b = Buffer.from(JSON.stringify({ u: 5, e: Date.now() - 1, f: "x" })).toString("base64url"); return b + "." + require("crypto").createHmac("sha256", process.env.ACCOUNT_SECRET || require("crypto").createHash("sha256").update("shevs-accounts:" + process.env.ADMIN_API_KEY).digest("hex")).update(b).digest("base64url"); })();
+  assert.equal(auth.readToken(expired), null);
+  for (const v of ["0712345678", "+254712345678", "254 712 345 678"]) assert.equal(auth.normalizePhone(v), "254712345678");
+});
+
+test("account endpoints: guests are turned away, bad input is rejected early", async () => {
+  assert.equal((await fetch(`${base}/api/account/me`)).status, 401);
+  assert.equal((await fetch(`${base}/api/account/orders`, { headers: { Authorization: "Bearer nope" } })).status, 401);
+  const post = (p, b) => fetch(`${base}/api/account/${p}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b) });
+  assert.equal((await post("register", { name: "A", phone: "123", password: "x" })).status, 400);
+  assert.equal((await post("register", { name: "Amina", phone: "0712345678", password: "short" })).status, 400);
+  assert.equal((await post("reset", { login: "0712345678", code: "12", newPassword: "longenough1" })).status, 400);
+});

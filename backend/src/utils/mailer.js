@@ -91,4 +91,9 @@ function restockEmail(product, shopName) {
   return { subject: `Back in stock: ${product.name}`, text: `Good news — ${product.name} is back in stock at ${shopName}.${url ? "\n" + url : ""}`, html: shell(`<h2 style="margin:0 0 6px">Back in stock 🎉</h2><p><b>${esc(product.name)}</b> is available again at ${esc(shopName)}. Stock is limited, so order soon.</p>${url ? `<p><a href="${esc(url)}" style="display:inline-block;background:#1b1b1f;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none">View product</a></p>` : ""}`) };
 }
 
-module.exports = { send, orderEmail, receiptEmail, statusEmail, restockEmail, configured };
+function resetEmail(code, shopName) {
+  return { subject: `${shopName} password reset code: ${code}`, text: `Your ${shopName} password reset code is ${code}. It works for 15 minutes. If you didn't ask for it, ignore this email.`,
+    html: shell(`<h2 style="margin:0 0 6px">Reset your password</h2><p>Your code is:</p><p style="font-size:30px;letter-spacing:6px;font-weight:700;margin:8px 0">${esc(code)}</p><p style="color:#666">It works for 15 minutes. If you didn't ask for this, you can ignore this email.</p>`) };
+}
+
+module.exports = { resetEmail, send, orderEmail, receiptEmail, statusEmail, restockEmail, configured };

@@ -281,6 +281,23 @@ background-image:radial-gradient(circle at 20% 30%,rgba(255,255,255,.05) 0 2px,t
 .dfav{display:inline-flex;align-items:center;gap:8px;border:1.5px solid var(--line);background:var(--card);border-radius:12px;padding:0 16px;height:50px;font-weight:500}
 .dfav[aria-pressed="true"]{border-color:var(--pink);color:var(--pink)}
 .dfav[aria-pressed="true"] svg{fill:currentColor}
+.drawer-acct{display:flex;gap:12px;align-items:center;text-align:left;width:calc(100% - 24px);margin:4px 12px 8px;padding:12px 14px;border:1.5px solid var(--line);background:var(--card);border-radius:14px}
+.drawer-acct small{display:block;color:var(--mute);font-size:12.5px;margin-top:2px}
+.acctbtn .t{max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.af{display:grid;gap:12px;margin:14px 0}.af input,.af select{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:12px;font-size:16px;width:100%}.af small{color:var(--mute)}.af .frow{display:grid;grid-template-columns:1fr 1fr;gap:10px}.af[hidden]{display:none}
+.afl{margin:6px 0;color:var(--mute)}.afl a{color:var(--accent);font-weight:600}
+.acctnudge{background:var(--tint);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:0 0 14px;line-height:1.5}
+#account{padding-bottom:40px}.acchead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin:6px 0 14px}.acchead h1{font-size:30px}.acchead p{color:var(--mute);margin-top:2px}
+.acctabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin-bottom:16px}.acctabs button{border:0;background:none;padding:10px 14px;font-weight:600;color:var(--mute);border-bottom:3px solid transparent}.acctabs button.on{color:var(--ink);border-color:var(--accent)}
+.ord{border:1px solid var(--line);background:var(--card);border-radius:16px;padding:14px;margin-bottom:12px}.oh{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.oh small{display:block;color:var(--mute);margin-top:2px}
+.st{font-size:12px;font-weight:700;padding:4px 10px;border-radius:99px;background:#eef1ef;color:#333;white-space:nowrap}.st-pending{background:#fff1d6;color:#8a5a00}.st-confirmed{background:#e0ecff;color:#1d4ed8}.st-dispatched{background:#ede4ff;color:#6d28d9}.st-delivered{background:#dcf3e6;color:#0f6b3b}.st-cancelled{background:#fde3e3;color:#b42318}
+.prog{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:12px 0 4px}.prog i{height:5px;border-radius:9px;background:var(--line)}.prog i.on{background:var(--accent)}
+.oitems{list-style:none;padding:0;margin:10px 0}.oitems li{display:flex;align-items:center;gap:10px;padding:6px 0}.oitems li>span:not(.oe){flex:1;min-width:0}.oitems img,.oitems .oe{width:44px;height:44px;border-radius:10px;object-fit:cover;background:#eef1ef;display:grid;place-items:center;font-size:22px;flex:none}.oitems a{color:inherit;text-decoration:underline;text-decoration-color:var(--line)}
+.otot{display:flex;justify-content:space-between;gap:10px;border-top:1px solid var(--line);padding-top:10px;color:var(--mute)}.otot b{color:var(--ink)}
+.oact{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.btn.sm{padding:9px 14px;font-size:14px}.btn.sec{background:var(--card);color:var(--ink);border:1.5px solid var(--line)}
+.claim{margin-top:18px;border:1px dashed var(--line);border-radius:14px;padding:12px 14px}.claim summary{cursor:pointer;font-weight:600}
+.acf{max-width:520px}
+@media(max-width:560px){.af .frow{grid-template-columns:1fr}.acchead h1{font-size:26px}}
 .bulk{background:#fff4d6;color:#7a5200;border-radius:10px;padding:9px 12px;font-weight:600;margin:12px 0}
 .nfy{display:grid;gap:8px;border:1.5px dashed var(--line);border-radius:14px;padding:14px;margin-top:14px}.nfy div{display:flex;gap:8px}.nfy input{flex:1;min-width:0}.nfy small{color:var(--mute)}
 .revs{margin-top:34px}.rf{display:grid;gap:10px;border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}.rf .frow{display:grid;grid-template-columns:1fr 1fr;gap:10px}.rf input,.rf select,.rf textarea,.nfy input{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:11px 12px;font-size:15px;width:100%}.rf textarea{min-height:80px;resize:vertical}.rf small{color:var(--mute)}
@@ -451,6 +468,7 @@ body{padding-bottom:64px}
 <div class="sug" id="sug" role="listbox" aria-label="Search suggestions" hidden></div>
 </div>
 <div class="act">
+<button class="lbtn acctbtn" type="button" id="acctBtn" onclick="openAccount()" aria-label="Account"><span data-ico="user"></span><span class="t" id="acctLbl">Sign in</span></button>
 <button class="lbtn" type="button" onclick="openTrack()"><span data-ico="box"></span><span class="t">Track order</span></button>
 <button class="lbtn wishbtn" type="button" onclick="openWishlist()" aria-label="Open wishlist"><span data-ico="heart"></span><span class="t">Wishlist</span><span class="badge" id="wcnt" hidden>0</span></button>
 <button class="lbtn cartbtn" type="button" onclick="panel('cart')" aria-label="Open cart"><span data-ico="cart"></span><span class="t">Cart</span><span class="badge" id="cnt" hidden>0</span></button>
@@ -462,6 +480,7 @@ body{padding-bottom:64px}
 <div class="scrim" id="scrim" onclick="panel(null)"></div>
 <aside class="drawer" id="drawer" aria-label="Categories" aria-hidden="true">
 <div class="dh"><a class="logo" href="#" onclick="go(-1);panel(null);return false">shevs<b>.</b></a><button class="x" aria-label="Close menu" onclick="panel(null)">✕</button></div>
+<button class="drawer-acct" type="button" id="drawerAcct" onclick="panel(null);openAccount()"></button>
 <nav class="cats" id="cats"></nav>
 </aside>
 <aside class="drawer right" id="cartp" aria-label="Shopping cart" aria-hidden="true">
@@ -512,6 +531,7 @@ body{padding-bottom:64px}
 </section>
 <section id="detail" hidden><div class="crumbs" id="crumbsD"></div><div id="detailBody"></div></section>
 <section id="wishlist" hidden><div class="crumbs" id="crumbsW"></div><div class="rh"><h2>Your wishlist</h2></div><div class="pgrid" id="wgrid"></div></section>
+<section id="account" hidden><div class="crumbs" id="crumbsA"></div><div id="accountBody"></div></section>
 <section id="checkout" hidden><div class="crumbs" id="crumbsK"></div><div id="checkoutBody"></div></section>
 </div>
 </main>
@@ -548,7 +568,8 @@ const waShow=()=>{const n=waNum();return n.startsWith("254")?"0"+n.slice(3).repl
 async function apiGet(path){const r=await fetch(API_BASE+path);if(!r.ok)throw new Error("HTTP "+r.status);return r.json()}
 async function apiPost(path,body){
 if(!API_BASE)return null;
-try{const r=await fetch(API_BASE+path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+/* orders placed while signed in are attached to the account */
+try{const r=await fetch(API_BASE+path,{method:"POST",headers:{"Content-Type":"application/json",...(path==="/api/orders"&&ACC.token?{Authorization:"Bearer "+ACC.token}:{})},body:JSON.stringify(body)});
 const data=await r.json().catch(()=>({}));
 if(!r.ok)return{ok:false,error:(data&&data.error&&data.error.message)||"That didn't go through. Please try again."};
 return{ok:true,data}}catch(e){return null}}
@@ -557,7 +578,7 @@ return{ok:true,data}}catch(e){return null}}
 const $=id=>document.getElementById(id),kes=n=>"KES "+Number(n).toLocaleString("en-KE");
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const store={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-const IC={search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',x:'<path d="M6 6l12 12M18 6L6 18"/>',heart:'<path d="M12 20s-7-4.4-9-9.2C1.6 7.3 3.8 4 7 4c2 0 3.4 1.1 5 3 1.6-1.9 3-3 5-3 3.2 0 5.4 3.3 4 6.8C19 15.6 12 20 12 20z"/>',cart:'<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.5 12.5h11L21 7H6"/>',home:'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/>',grid:'<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>',box:'<path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/>',trend:'<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',share:'<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="m8.2 10.8 7.6-3.6M8.2 13.2l7.6 3.6"/>',chat:'<path d="M21 11.5a8.4 8.4 0 0 1-8.8 8.4 8.9 8.9 0 0 1-3.6-.7L3 21l1.1-4.9A8.3 8.3 0 0 1 3 11.5 8.4 8.4 0 0 1 11.8 3a8.4 8.4 0 0 1 9.2 8.5z"/>'};
+const IC={search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',x:'<path d="M6 6l12 12M18 6L6 18"/>',heart:'<path d="M12 20s-7-4.4-9-9.2C1.6 7.3 3.8 4 7 4c2 0 3.4 1.1 5 3 1.6-1.9 3-3 5-3 3.2 0 5.4 3.3 4 6.8C19 15.6 12 20 12 20z"/>',cart:'<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.5 12.5h11L21 7H6"/>',home:'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/>',grid:'<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>',box:'<path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/>',trend:'<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',share:'<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="m8.2 10.8 7.6-3.6M8.2 13.2l7.6 3.6"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',chat:'<path d="M21 11.5a8.4 8.4 0 0 1-8.8 8.4 8.9 8.9 0 0 1-3.6-.7L3 21l1.1-4.9A8.3 8.3 0 0 1 3 11.5 8.4 8.4 0 0 1 11.8 3a8.4 8.4 0 0 1 9.2 8.5z"/>'};
 const I=(n,s=20)=>`<svg class="i" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]}</svg>`;
 document.querySelectorAll("[data-ico]").forEach(e=>{e.innerHTML=I(e.dataset.ico,e.dataset.ico==="x"?15:22)});
 const smooth=()=>matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth";
@@ -604,7 +625,7 @@ function stockInfo(x){if(x.st<=0)return{txt:"Out of stock",cls:"out"};if(x.st<=4
 const desc=x=>x.d||`A popular pick from our ${x.c} range. Checked before it ships, with easy returns within 7 days.`;
 const tile=(x,cls="",alt="")=>`<div class="ph ${cls}" style="--t:${hue(x.ci)}"><span aria-hidden="true">${x.e}</span>${x.img?`<img src="${esc(x.img)}" alt="${esc(alt)}" loading="lazy" decoding="async" onerror="this.remove()">`:""}</div>`;
 function crumbs(id,items){$(id).innerHTML=items.map((it,i)=>{const last=i===items.length-1;return(i?'<span class="sep" aria-hidden="true">/</span>':"")+(last?`<b>${esc(it.t)}</b>`:`<button type="button" onclick="${it.fn}">${esc(it.t)}</button>`)}).join("")}
-function hideAllViews(){["home","results","detail","wishlist","checkout"].forEach(id=>{$(id).hidden=true});if(window.buyObs){window.buyObs.disconnect();window.buyObs=null}$("stickybuy").hidden=true}
+function hideAllViews(){["home","results","detail","wishlist","checkout","account"].forEach(id=>{$(id).hidden=true});if(window.buyObs){window.buyObs.disconnect();window.buyObs=null}$("stickybuy").hidden=true}
 function showView(id){hideAllViews();$(id).hidden=false;act=-99;nav();scrollTo({top:0,behavior:smooth()})}
 
 /* ---------- search engine ---------- */
@@ -750,6 +771,87 @@ const at=Math.max(0,STAGES.findIndex(s=>s[0]===o.status));
 out.innerHTML=`<p><b>${esc(o.orderCode)}</b> · ${kes(o.total)}</p><ul class="tl">${STAGES.map((s,i)=>`<li class="${i<=at?"done":""}"><i></i>${s[1]}</li>`).join("")}</ul><ul>${(o.items||[]).map(it=>`<li>${it.qty} × ${esc(it.name_snapshot)}</li>`).join("")}</ul>`}
 catch(err){out.innerHTML=`<p>We couldn't find that order. Check the number and try again.</p>`}}
 
+
+/* ---------- customer account ---------- */
+let ACC=(()=>{try{const a=JSON.parse(localStorage.getItem("shevs.acct")||"null");return a&&a.token?a:{token:"",user:null}}catch{return{token:"",user:null}}})();
+ACC.orders=null;
+function saveAcc(){try{localStorage.setItem("shevs.acct",JSON.stringify({token:ACC.token,user:ACC.user}))}catch{}syncAcct()}
+function syncAcct(){const n=ACC.user?ACC.user.name.split(" ")[0]:"Sign in";const l=$("acctLbl");if(l)l.textContent=n;const b=$("acctBtn");if(b)b.setAttribute("aria-label",ACC.user?"My account":"Sign in or create an account");
+const d=$("drawerAcct");if(d)d.innerHTML=`<span data-ico="user"></span><span><b>${ACC.user?"Hi, "+esc(n):"Sign in or create account"}</b><small>${ACC.user?"Your orders and details":"Keep your order history and check out faster"}</small></span>`;if(d)d.querySelectorAll("[data-ico]").forEach(e=>e.innerHTML=I(e.dataset.ico,22))}
+function signOut(){ACC={token:"",user:null,orders:null};saveAcc();toast("Signed out");go(-1)}
+/* one helper for every account call: adds the sign-in token, returns {ok,status,data,error} */
+async function acct(method,path,body){
+if(!API_BASE)return{ok:false,status:0,error:"The shop isn't connected yet."};
+try{const r=await fetch(API_BASE+path,{method,headers:{"Content-Type":"application/json",...(ACC.token?{Authorization:"Bearer "+ACC.token}:{})},body:body?JSON.stringify(body):undefined});
+const data=await r.json().catch(()=>({}));
+if(r.status===401&&ACC.token&&path.startsWith("/api/account/me")||r.status===401&&ACC.token&&path.startsWith("/api/account/orders")){ACC={token:"",user:null,orders:null};saveAcc()}
+if(!r.ok){const det=data&&data.error&&Array.isArray(data.error.details)?data.error.details.map(x=>x.message).filter(Boolean)[0]:"";return{ok:false,status:r.status,error:det||(data&&data.error&&data.error.message)||"That didn't go through. Please try again."}}
+return{ok:true,status:r.status,data}}catch{return{ok:false,status:0,error:"We couldn't reach the shop. Check your connection and try again."}}}
+const PHONE_OK=v=>/^(?:\+254|254|0)[17]\d{8}$/.test(v);
+const cleanPhone=v=>v.replace(/[\s-]/g,"");
+function openAccount(){if(ACC.user){renderAccount();return}openAuth("login")}
+/* sign in / sign up / forgot password, in the slide-in panel */
+function openAuth(mode,pre){pre=pre||{};window._authPre=pre;
+if(mode==="register")return openInfo("Create your account",`<p>Save your details for quicker checkout and see all your orders in one place.</p><form class="af" id="regF" onsubmit="doRegister(event)" novalidate><div class="fld"><label for="rgn">Full name</label><input id="rgn" required autocomplete="name" value="${esc(pre.name||"")}"></div><div class="fld"><label for="rgp">Phone number</label><input id="rgp" type="tel" required placeholder="07XX XXX XXX" autocomplete="tel" value="${esc(pre.phone||"")}"></div><div class="fld"><label for="rge">Email <small>(optional — for receipts and password reset)</small></label><input id="rge" type="email" autocomplete="email" value="${esc(pre.email||"")}"></div><div class="fld"><label for="rgw">Password <small>(at least 8 characters)</small></label><input id="rgw" type="password" required minlength="8" autocomplete="new-password"></div><button class="btn" type="submit">Create account</button><p class="note" id="afMsg" aria-live="polite"></p></form><p class="afl">Already registered? <button class="see" type="button" onclick="openAuth('login')">Sign in</button></p>`);
+if(mode==="forgot")return openInfo("Forgot your password?",`<p>Enter your phone number or email. If your account has an email address, we'll send a 6-digit code to it.</p><form class="af" id="fgF" onsubmit="doForgot(event)" novalidate><div class="fld"><label for="fgl">Phone number or email</label><input id="fgl" required autocomplete="username" value="${esc(pre.login||"")}"></div><button class="btn" type="submit">Send code</button><p class="note" id="afMsg" aria-live="polite"></p></form><form class="af" id="rsF" onsubmit="doReset(event)" novalidate hidden><div class="fld"><label for="rsc">6-digit code</label><input id="rsc" inputmode="numeric" maxlength="6" autocomplete="one-time-code"></div><div class="fld"><label for="rsw">New password</label><input id="rsw" type="password" minlength="8" autocomplete="new-password"></div><button class="btn" type="submit">Set new password</button></form><p class="afl">No email on your account? <a href="${esc(waLink("Hi, I can't sign in to my account. Please help me reset my password."))}" target="_blank" rel="noopener">Message us on WhatsApp</a>.</p>`);
+openInfo("Sign in",`<form class="af" id="loginF" onsubmit="doLogin(event)" novalidate><div class="fld"><label for="lgl">Phone number or email</label><input id="lgl" required autocomplete="username" value="${esc(pre.login||"")}"></div><div class="fld"><label for="lgw">Password</label><input id="lgw" type="password" required autocomplete="current-password"></div><button class="btn" type="submit">Sign in</button><p class="note" id="afMsg" aria-live="polite"></p></form><p class="afl"><button class="see" type="button" onclick="openAuth('forgot',{login:$('lgl').value})">Forgot your password?</button></p><p class="afl">New here? <button class="see" type="button" onclick="openAuth('register')">Create an account</button></p>`)}
+const afMsg=t=>{const m=$("afMsg");if(m)m.textContent=t};
+function signedIn(d,after){accTab="orders";ACC={token:d.token,user:d.user,orders:null};saveAcc();panel(null);if(after)after();else renderAccount()}
+async function doLogin(e){e.preventDefault();const l=$("lgl").value.trim(),w=$("lgw").value;if(!l||!w){afMsg("Enter your phone number or email, and your password.");return}
+afMsg("Signing in…");const r=await acct("POST","/api/account/login",{login:cleanPhone(l).includes("@")?l:cleanPhone(l),password:w});
+if(!r.ok){afMsg(r.error);return}signedIn(r.data,window._authThen);window._authThen=null}
+async function doRegister(e){e.preventDefault();const n=$("rgn").value.trim(),p=cleanPhone($("rgp").value),em=$("rge").value.trim(),w=$("rgw").value;
+if(n.length<2){afMsg("Please enter your name.");return}if(!PHONE_OK(p)){afMsg("Enter a valid phone number, e.g. 07XXXXXXXX.");return}if(em&&!/^\S+@\S+\.\S+$/.test(em)){afMsg("That email address doesn't look right.");return}if(w.length<8){afMsg("Use a password of at least 8 characters.");return}
+afMsg("Creating your account…");const r=await acct("POST","/api/account/register",{name:n,phone:p,email:em||undefined,password:w});
+if(!r.ok){afMsg(r.error);return}
+const claim=(window._authPre||{}).claim;
+signedIn(r.data,async()=>{if(claim){await acct("POST","/api/account/orders/claim",claim)}renderAccount();toast("Welcome, "+r.data.user.name.split(" ")[0]+"!")})}
+async function doForgot(e){e.preventDefault();const l=$("fgl").value.trim();if(!l){afMsg("Enter your phone number or email.");return}afMsg("Sending…");
+const r=await acct("POST","/api/account/forgot",{login:l.includes("@")?l:cleanPhone(l)});if(!r.ok){afMsg(r.error);return}afMsg(r.data.message);window._fgLogin=l.includes("@")?l:cleanPhone(l);$("rsF").hidden=false}
+async function doReset(e){e.preventDefault();const c=$("rsc").value.trim(),w=$("rsw").value;if(!/^\d{6}$/.test(c)){afMsg("Enter the 6-digit code from your email.");return}if(w.length<8){afMsg("Use a password of at least 8 characters.");return}
+afMsg("Saving…");const r=await acct("POST","/api/account/reset",{login:window._fgLogin||$("fgl").value.trim(),code:c,newPassword:w});if(!r.ok){afMsg(r.error);return}signedIn(r.data);toast("Password updated")}
+
+/* account page: orders + details */
+const ST_LABEL={pending:"Order received",confirmed:"Confirmed",dispatched:"On its way",delivered:"Delivered",cancelled:"Cancelled"};
+let accTab="orders";
+async function renderAccount(tab){if(!ACC.user){openAuth("login");return}if(openP)panel(null);if(tab)accTab=tab;
+crumbs("crumbsA",[{t:"Home",fn:"go(-1)"},{t:"My account"}]);showView("account");
+$("accountBody").innerHTML=`<div class="acchead"><div><h1>Hi, ${esc(ACC.user.name.split(" ")[0])}</h1><p>${esc(ACC.user.phone.replace(/^254/,"0"))}${ACC.user.email?" · "+esc(ACC.user.email):""}</p></div><button class="see" type="button" onclick="signOut()">Sign out</button></div>
+<div class="acctabs" role="tablist"><button role="tab" type="button" class="${accTab==="orders"?"on":""}" onclick="renderAccount('orders')">My orders</button><button role="tab" type="button" class="${accTab==="details"?"on":""}" onclick="renderAccount('details')">My details</button></div><div id="accPane"><p class="note">Loading…</p></div>`;
+if(accTab==="details")return accDetails();
+const r=await acct("GET","/api/account/orders");
+if(!ACC.user){return}
+if(!r.ok){$("accPane").innerHTML=`<p class="note">${esc(r.error)}</p><button class="btn" type="button" onclick="renderAccount('orders')">Try again</button>`;return}
+ACC.orders=r.data.orders;drawOrders()}
+function drawOrders(){const list=ACC.orders||[],pane=$("accPane");if(!pane)return;
+const claim=`<details class="claim"><summary>Ordered before you signed up? Add an older order</summary><form class="af" onsubmit="claimOrder(event)" novalidate><div class="frow"><div class="fld"><label for="clc">Order number</label><input id="clc" placeholder="SHV-XXXXXX" autocomplete="off"></div><div class="fld"><label for="clp">Phone used on the order</label><input id="clp" type="tel" placeholder="07XX XXX XXX"></div></div><button class="btn" type="submit">Add to my account</button><p class="note" id="clm" aria-live="polite"></p></form></details>`;
+if(!list.length){pane.innerHTML=`<div class="empty"><span class="eb" aria-hidden="true">🧾</span><h3>No orders yet</h3><p>Orders you place while signed in will show up here.</p><button class="btn" type="button" onclick="go(-1)">Start shopping</button></div>${claim}`;return}
+pane.innerHTML=list.map(o=>{const stage=Math.max(0,STAGES.findIndex(s=>s[0]===o.status));
+const d=new Date(o.created_at).toLocaleDateString("en-KE",{day:"numeric",month:"short",year:"numeric"});
+return `<article class="ord"><div class="oh"><div><b>${esc(o.order_code)}</b><small>${d} · ${o.payment_method==="mpesa"?"M-Pesa":"Cash on delivery"}</small></div><span class="st st-${esc(o.status)}">${esc(ST_LABEL[o.status]||o.status)}</span></div>
+${o.status!=="cancelled"?`<div class="prog" aria-hidden="true">${STAGES.map((s,i)=>`<i class="${i<=stage?"on":""}"></i>`).join("")}</div>`:""}
+<ul class="oitems">${o.items.map(it=>{const x=it.product_id&&G(it.product_id);return `<li>${x&&x.img?`<img src="${esc(x.img)}" alt="" loading="lazy" onerror="this.remove()">`:`<span class="oe" aria-hidden="true">${esc((x&&x.e)||it.emoji||"🛍️")}</span>`}<span>${it.qty} × ${x?`<a href="#p${x.id}" onclick="openDetail(${x.id});return false">${esc(it.name_snapshot)}</a>`:esc(it.name_snapshot)}</span><b>${kes(it.line_total)}</b></li>`}).join("")}</ul>
+<div class="otot"><span>Delivery ${o.delivery_fee>0?kes(o.delivery_fee):"free"}${o.discount>0?" · discount −"+kes(o.discount):""}</span><b>Total ${kes(o.total)}</b></div>
+<div class="oact"><button class="btn sm" type="button" onclick="reorder('${esc(o.order_code)}')">Buy again</button><button class="btn sm sec" type="button" onclick="openTrack('${esc(o.order_code)}')">Track</button>${o.status==="delivered"?`<button class="btn sm sec" type="button" onclick="reviewFrom('${esc(o.order_code)}')">Write a review</button>`:""}<a class="btn sm sec" target="_blank" rel="noopener" href="${esc(waLink("Hi, I have a question about my order "+o.order_code))}">Ask about it</a></div></article>`}).join("")+claim}
+async function claimOrder(e){e.preventDefault();const c=$("clc").value.trim().toUpperCase(),p=cleanPhone($("clp").value),m=$("clm");
+if(!/^SHV-[A-Z0-9]{6}$/.test(c)){m.textContent="Enter your order number, like SHV-ABC234.";return}if(!PHONE_OK(p)){m.textContent="Enter the phone number you ordered with.";return}
+m.textContent="Adding…";const r=await acct("POST","/api/account/orders/claim",{orderCode:c,phone:p});if(!r.ok){m.textContent=r.error;return}ACC.orders=r.data.orders;toast("Order added");drawOrders()}
+function reorder(code){const o=(ACC.orders||[]).find(x=>x.order_code===code);if(!o)return;let added=0,skipped=[];
+for(const it of o.items){const x=it.product_id&&G(it.product_id);if(!x||x.st<=0){skipped.push(it.name_snapshot);continue}const q=Math.min(it.qty,x.st);cart[x.id]=Math.min(x.st,(cart[x.id]||0)+q);added+=q}
+syncCart();if(!added){toast("Those items aren't available right now");return}
+toast(skipped.length?`Added to cart · ${skipped.length} item${skipped.length>1?"s":""} unavailable`:"Added to your cart",{label:"View cart",fn:"panel('cart')"})}
+function reviewFrom(code){const o=(ACC.orders||[]).find(x=>x.order_code===code);const it=o&&o.items.find(i=>i.product_id&&G(i.product_id));if(!it){toast("That product isn't in the shop any more");return}
+window._revOpen=true;openDetail(it.product_id)}
+function accDetails(){const u=ACC.user;$("accPane").innerHTML=`<form class="af acf" id="profF" onsubmit="saveProfile(event)" novalidate><div class="fld"><label for="pfn">Full name</label><input id="pfn" value="${esc(u.name)}" autocomplete="name"></div><div class="fld"><label>Phone</label><input value="${esc(u.phone.replace(/^254/,"0"))}" disabled><small>Your phone number is your sign-in. To change it, message us on WhatsApp.</small></div><div class="fld"><label for="pfe">Email</label><input id="pfe" type="email" value="${esc(u.email||"")}" autocomplete="email"></div><div class="frow"><div class="fld"><label for="pfc">County</label><select id="pfc"><option value="">Select county</option>${["Nairobi","Mombasa","Kisumu","Nakuru","Uasin Gishu","Kiambu","Machakos","Other"].map(c=>`<option ${u.county===c?"selected":""}>${c}</option>`).join("")}</select></div><div class="fld"><label for="pfa">Delivery address</label><input id="pfa" value="${esc(u.address||"")}" autocomplete="street-address"></div></div><button class="btn" type="submit">Save details</button><p class="note" id="pfm" aria-live="polite"></p></form>
+<form class="af acf" id="pwF" onsubmit="savePassword(event)" novalidate><h2 style="font-size:18px">Change password</h2><div class="fld"><label for="pwc">Current password</label><input id="pwc" type="password" autocomplete="current-password"></div><div class="fld"><label for="pwn">New password <small>(at least 8 characters)</small></label><input id="pwn" type="password" autocomplete="new-password"></div><button class="btn sec" type="submit">Change password</button><p class="note" id="pwm" aria-live="polite"></p></form>`}
+async function saveProfile(e){e.preventDefault();const m=$("pfm"),n=$("pfn").value.trim(),em=$("pfe").value.trim();
+if(n.length<2){m.textContent="Please enter your name.";return}if(em&&!/^\S+@\S+\.\S+$/.test(em)){m.textContent="That email address doesn't look right.";return}
+m.textContent="Saving…";const r=await acct("PATCH","/api/account/me",{name:n,email:em,county:$("pfc").value,address:$("pfa").value.trim()});
+if(!r.ok){m.textContent=r.error;return}ACC.user=r.data.user;saveAcc();m.textContent="Saved.";toast("Details saved")}
+async function savePassword(e){e.preventDefault();const m=$("pwm"),c=$("pwc").value,n=$("pwn").value;if(!c){m.textContent="Enter your current password.";return}if(n.length<8){m.textContent="Use a new password of at least 8 characters.";return}
+m.textContent="Saving…";const r=await acct("PATCH","/api/account/me",{currentPassword:c,newPassword:n});if(!r.ok){m.textContent=r.error;return}ACC.token=r.data.token;ACC.user=r.data.user;saveAcc();$("pwF").reset();m.textContent="Password changed.";toast("Password changed")}
+async function refreshAccount(){if(!ACC.token)return;const r=await acct("GET","/api/account/me");if(r.ok){ACC.user=r.data.user;saveAcc()}}
+
 /* ---------- nav ---------- */
 function build(){
 $("cats").innerHTML=`<button type="button" data-i="-1" onclick="go(-1);panel(null)"><span class="ic">🏠</span>Home</button><hr><div class="lbl">Shop by aisle</div>`+CATS.map(([n,e],i)=>`<button type="button" data-i="${i}" onclick="go(${i});panel(null)"><span class="ic">${e}</span>${esc(n)}<span class="n">${CC[i]}</span></button>`).join("");
@@ -789,7 +891,13 @@ let list=[];try{list=(await apiGet("/api/products/"+id+"/reviews")).reviews||[]}
 if($("revs")!==box)return;
 box.innerHTML=`<div class="sh"><div><h2>Customer reviews</h2><p>${list.length?`${list.length} verified buyer${list.length===1?"":"s"}`:"No reviews yet"}</p></div><button class="see" type="button" onclick="$('revForm').hidden=!$('revForm').hidden">Write a review</button></div>
 <form id="revForm" class="rf" hidden onsubmit="sendReview(event,${id})"><p class="note">Only customers who received this product can review it. Use the order number and phone you ordered with.</p><div class="frow"><input id="rvo" required placeholder="Order number (SHV-…)" aria-label="Order number" autocomplete="off"><input id="rvp" required type="tel" placeholder="Phone number" aria-label="Phone number" autocomplete="tel"></div><div class="frow"><input id="rvn" required placeholder="Your name" aria-label="Your name" autocomplete="name"><select id="rvr" aria-label="Rating"><option value="5">★★★★★ Excellent</option><option value="4">★★★★ Good</option><option value="3">★★★ Okay</option><option value="2">★★ Poor</option><option value="1">★ Bad</option></select></div><textarea id="rvc" maxlength="1000" placeholder="What did you think? (optional)" aria-label="Your review"></textarea><button class="btn" type="submit">Send review</button><small id="rvMsg" aria-live="polite"></small></form>
-${list.map(r=>`<article class="rv"><div class="rvh"><span class="stars" aria-label="${r.rating} out of 5">${stars(r.rating)}</span><b>${esc(r.name)}</b><small>Verified buyer · ${new Date(r.created_at).toLocaleDateString("en-KE",{day:"numeric",month:"short",year:"numeric"})}</small></div>${r.comment?`<p>${esc(r.comment)}</p>`:""}</article>`).join("")}`}
+${ACC.user?`<p class="note">Signed in as ${esc(ACC.user.name)} — we'll fill in your order details when you have a delivered order with this product.</p>`:""}${list.map(r=>`<article class="rv"><div class="rvh"><span class="stars" aria-label="${r.rating} out of 5">${stars(r.rating)}</span><b>${esc(r.name)}</b><small>Verified buyer · ${new Date(r.created_at).toLocaleDateString("en-KE",{day:"numeric",month:"short",year:"numeric"})}</small></div>${r.comment?`<p>${esc(r.comment)}</p>`:""}</article>`).join("")}`;prefillReview(id)}
+async function prefillReview(id){if(!ACC.user)return;
+if(!ACC.orders){const r=await acct("GET","/api/account/orders");if(r.ok)ACC.orders=r.data.orders}
+const o=(ACC.orders||[]).find(x=>x.status==="delivered"&&x.items.some(i=>i.product_id===id));if(!$("rvo"))return;
+if(o){$("rvo").value=o.order_code;$("rvp").value=ACC.user.phone.replace(/^254/,"0");$("rvn").value=ACC.user.name}
+else $("rvn").value=ACC.user.name;
+if(window._revOpen){window._revOpen=false;$("revForm").hidden=false;$("revs").scrollIntoView({behavior:"smooth",block:"start"})}}
 async function sendReview(e,id){e.preventDefault();const m=$("rvMsg"),btn=e.target.querySelector("button[type=submit]");m.textContent="Sending…";btn.disabled=true;
 const r=await apiPost("/api/products/"+id+"/reviews",{orderCode:$("rvo").value.trim().toUpperCase(),phone:$("rvp").value.replace(/[\s-]/g,""),name:$("rvn").value.trim(),rating:+$("rvr").value,comment:$("rvc").value.trim()});
 btn.disabled=false;m.textContent=r===null?"We couldn't reach the shop. Try again.":r.ok?r.data.message:r.error;if(r&&r.ok)e.target.reset()}
@@ -819,6 +927,8 @@ updateCkTotals()}
 function updateCkTotals(){$("ckTotals").innerHTML=`<div class="oi"><span>Subtotal</span><span>${kes(ckSubtotal())}</span></div>${ckDiscount?`<div class="oi"><span>Coupon (${esc(ckCode)})</span><span>−${kes(ckDiscount)}</span></div>`:""}<div class="oi"><span>Delivery</span><span>${ckShip()?kes(ckShip()):"Free"}</span></div><div class="oi tot"><span>Total</span><span>${kes(ckTotal())}</span></div>`}
 function renderCheckout(){const ids=cartIds();
 $("checkoutBody").innerHTML=`<div class="ckwrap"><form id="ckform" novalidate><h1 style="font-size:30px;margin-bottom:18px">Delivery details</h1><div class="fld"><label for="ckn">Full name</label><input id="ckn" required autocomplete="name"></div><div class="fld"><label for="ckp">Phone number</label><input id="ckp" type="tel" required placeholder="07XX XXX XXX" autocomplete="tel"></div><div class="fld"><label for="cke">Email <small style="color:var(--mute)">(optional — for your receipt)</small></label><input id="cke" type="email" autocomplete="email" placeholder="you@example.com"></div><div class="fld"><label for="ckc">County</label><select id="ckc" required><option value="">Select county</option>${["Nairobi","Mombasa","Kisumu","Nakuru","Uasin Gishu","Kiambu","Machakos","Other"].map(c=>`<option>${c}</option>`).join("")}</select></div><div class="fld"><label for="cka">Estate / street address</label><input id="cka" required autocomplete="street-address"></div><h2 style="font-size:18px;margin:20px 0 10px">How will you pay?</h2><label class="pm"><input type="radio" name="pay" value="mpesa" checked><span>M-Pesa<small>We share payment details on WhatsApp</small></span></label><label class="pm"><input type="radio" name="pay" value="cod"><span>Cash on delivery<small>Pay the rider when it arrives</small></span></label><button class="btn" type="submit" style="margin-top:18px;width:100%;text-align:center;padding:15px;font-size:16px">Send order</button><p class="note">You won't be charged on this website. We confirm your order on WhatsApp first.</p></form><div class="osum"><h2 style="font-size:19px;margin-bottom:10px">Order summary</h2>${ids.map(id=>`<div class="oi"><span>${cart[id]} × ${esc(G(id).n)}</span><span>${kes(line(id))}</span></div>`).join("")}<div class="fld" style="margin:14px 0"><label for="ckq">Coupon code</label><div style="display:flex;gap:8px"><input id="ckq" placeholder="Enter code" style="flex:1"><button type="button" class="see" onclick="applyCoupon()">Apply</button></div><div id="ckqMsg" class="note" aria-live="polite" style="margin-top:4px"></div></div><div id="ckTotals"></div></div></div>`;
+if(ACC.user){const u=ACC.user;$("ckn").value=u.name;$("ckp").value=u.phone.replace(/^254/,"0");if(u.email)$("cke").value=u.email;if(u.county)$("ckc").value=u.county;if(u.address)$("cka").value=u.address}
+else{$("ckform").insertAdjacentHTML("afterbegin",`<p class="acctnudge">Have an account? <button class="see" type="button" onclick="window._authThen=()=>renderCheckout();openAuth('login')">Sign in</button> to fill this in automatically.</p>`)}
 updateCkTotals();
 $("ckform").onsubmit=async e=>{e.preventDefault();
 const btn=$("ckform").querySelector('button[type="submit"]'),label=btn.textContent;
@@ -829,16 +939,17 @@ if(email&&!/^\S+@\S+\.\S+$/.test(email)){toast("That email address doesn't look 
 if(!county){toast("Please select a county");$("ckc").focus();return}
 if(!address){toast("Please enter your delivery address");$("cka").focus();return}
 btn.disabled=true;btn.textContent="Sending…";
+window._guest={name,phone,email,claim:null};
 const payload={customerName:name,phone,customerEmail:email||undefined,county,address,paymentMethod:document.querySelector('input[name="pay"]:checked').value,couponCode:ckDiscount?ckCode:null,items:cartIds().map(id=>({productId:id,qty:cart[id]}))};
 const res=await apiPost("/api/orders",payload);
 if(res===null){btn.disabled=false;btn.textContent=label;toast("We couldn't reach the shop. Check your connection and try again.");return}
-if(res.ok){placeOrder(res.data.total,res.data.orderCode,res.data.whatsappUrl,!!email);return}
+if(res.ok){window._guest.claim={orderCode:res.data.orderCode,phone};placeOrder(res.data.total,res.data.orderCode,res.data.whatsappUrl,!!email);return}
 btn.disabled=false;btn.textContent=label;toast(res.error)}}
 function placeOrder(total,orderCode,whatsappUrl,emailed){const oid=orderCode;
 const wa=whatsappUrl||waLink("Hi Shevs, I'd like to confirm order "+oid);
 const d=new Date(Date.now()+3*86400000),eta=d.toLocaleDateString("en-KE",{weekday:"long",day:"numeric",month:"short"});
 cart={};syncCart();
-$("checkoutBody").innerHTML=`<div class="conf"><span class="cb-ic" aria-hidden="true">✅</span><h1>Order ${esc(oid)} is in</h1><p>${kes(total)} · expect delivery around <b>${eta}</b>.</p><ol><li><b>Send it on WhatsApp.</b> Tap the button so we get your order.</li><li><b>We confirm.</b> We reply to check stock and arrange delivery.</li><li><b>You pay.</b> By M-Pesa or cash, as you chose.</li></ol><a class="btn" href="${esc(wa)}" target="_blank" rel="noopener">Send order on WhatsApp</a><br>${emailed?`<p class="note" style="margin-top:12px">A receipt is on its way to your email.</p>`:""}<button class="see" type="button" onclick="openTrack(${JSON.stringify(oid).replace(/"/g,'&quot;')})">Track this order</button> · <button class="see" type="button" onclick="go(-1)">Continue shopping</button></div>`;
+$("checkoutBody").innerHTML=`<div class="conf"><span class="cb-ic" aria-hidden="true">✅</span><h1>Order ${esc(oid)} is in</h1><p>${kes(total)} · expect delivery around <b>${eta}</b>.</p><ol><li><b>Send it on WhatsApp.</b> Tap the button so we get your order.</li><li><b>We confirm.</b> We reply to check stock and arrange delivery.</li><li><b>You pay.</b> By M-Pesa or cash, as you chose.</li></ol><a class="btn" href="${esc(wa)}" target="_blank" rel="noopener">Send order on WhatsApp</a><br>${emailed?`<p class="note" style="margin-top:12px">A receipt is on its way to your email.</p>`:""}<button class="see" type="button" onclick="openTrack(${JSON.stringify(oid).replace(/"/g,'&quot;')})">Track this order</button> · <button class="see" type="button" onclick="go(-1)">Continue shopping</button>${ACC.user?`<p class="note" style="margin-top:12px">This order is saved in <a href="#" onclick="renderAccount('orders');return false">your account</a>.</p>`:`<div class="acctnudge" style="margin-top:18px"><b>Keep your order history</b><br>Create an account in one step — we'll add this order to it.<br><button class="btn sm" type="button" style="margin-top:8px" onclick="openAuth('register',window._guest)">Create account</button></div>`}</div>`;
 loadCatalog(true)}
 
 /* ---------- home rendering ---------- */
@@ -891,7 +1002,7 @@ function metrics(){const h=$("hdr").offsetHeight,m=matchMedia("(max-width:700px)
 /* ---------- init ---------- */
 addEventListener("resize",metrics);
 if(window.ResizeObserver)new ResizeObserver(metrics).observe($("hdr"));
-metrics();syncCart();syncWishBadge();
+metrics();syncCart();syncWishBadge();syncAcct();refreshAccount();
 $("win").innerHTML=`<div class="sk" style="grid-column:1/-1;aspect-ratio:3.2"></div>`;
 loadCatalog();
 </script>

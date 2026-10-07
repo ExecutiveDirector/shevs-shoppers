@@ -12,12 +12,18 @@ const create = asyncHandler(async (req, res) => {
     customerName,
     phone,
     customerEmail: customerEmail || null,
+    userId: req.user ? req.user.id : null,
     county,
     address,
     paymentMethod,
     couponCode: couponCode || null,
     items,
   });
+
+  // Remember where a signed-in customer last shipped, so next checkout is pre-filled.
+  if (req.user) {
+    require("../config/db").pool.query("UPDATE users SET county = ?, address = ? WHERE id = ?", [county, address, req.user.id]).catch(() => {});
+  }
 
   const settings = await settingsModel.getAll();
   const whatsappUrl = buildOrderWhatsAppLink(order, lineItems, settings.whatsapp_number, settings.shop_name);

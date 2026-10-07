@@ -476,7 +476,7 @@ function act(name,el){
   newProduct:()=>productEditor(),editProduct:()=>productEditor(+d.id),exportProducts:()=>exportProducts(el),
   stockStep:()=>stockStep(+d.id,+d.d,el),
   newCategory:()=>categoryForm(),editCategory:()=>categoryForm(+d.id),delCategory:()=>delCategory(+d.id,d.name),
-  newPromo:()=>promoForm(),editPromo:()=>promoForm(+d.id),delPromo:()=>delPromo(+d.id,d.name),newBanner:()=>bannerForm(),editBanner:()=>bannerForm(+d.id),delBanner:()=>delBanner(+d.id,d.name),
+  resetAcct:()=>resetAcct(+d.id,d.name),newPromo:()=>promoForm(),editPromo:()=>promoForm(+d.id),delPromo:()=>delPromo(+d.id,d.name),newBanner:()=>bannerForm(),editBanner:()=>bannerForm(+d.id),delBanner:()=>delBanner(+d.id,d.name),
   revSet:()=>revSet(+d.id,d.status),revDel:()=>revDel(+d.id),alertDone:()=>alertDone(+d.id),alertDel:()=>alertDel(+d.id),repRange:()=>repRange(d.r),repExport:()=>repExport(el),
   newCoupon:()=>couponForm(),editCoupon:()=>couponForm(+d.id),delCoupon:()=>delCoupon(+d.id,d.code),
   goOrders:()=>{st.orders.status=d.status||"";st.orders.page=1;go("orders")},
@@ -991,7 +991,7 @@ async function loadCustomers(){
  body.innerHTML=`<tr><td colspan="7" class="loading">Loading customers…</td></tr>`;
  try{
   const d=await api("/customers"+qs({page:s.page,pageSize:s.size,q:s.q}));s.total=d.total;
-  body.innerHTML=d.customers.length?d.customers.map(u=>`<tr><td><b>${esc(u.name)}</b>${u.orders>1?" "+badge("ok","Repeat"):""}</td><td>${esc(u.phone)}</td><td>${esc(u.county)}</td><td class="r">${u.orders}</td><td class="r">${kes(u.spent)}</td><td>${fdate(u.last_order)}</td><td class="r"><a class="btn sec sm" target="_blank" rel="noopener" href="https://wa.me/${waNumber(u.phone)}">💬 WhatsApp</a></td></tr>`).join(""):`<tr><td colspan="7" class="empty"><b>No customers yet</b>They'll appear here after their first order.</td></tr>`;
+  body.innerHTML=d.customers.length?d.customers.map(u=>`<tr><td><b>${esc(u.name)}</b>${u.orders>1?" "+badge("ok","Repeat"):""}${u.account_id?" "+badge("confirmed","Has account"):""}</td><td>${esc(u.phone)}</td><td>${esc(u.county)}</td><td class="r">${u.orders}</td><td class="r">${kes(u.spent)}</td><td>${fdate(u.last_order)}</td><td class="r"><a class="btn sec sm" target="_blank" rel="noopener" href="https://wa.me/${waNumber(u.phone)}">💬 WhatsApp</a>${u.account_id?` <button class="btn sec sm" data-act="resetAcct" data-id="${u.account_id}" data-name="${esc(u.name)}" title="Help them sign in again">🔑 Reset password</button>`:""}</td></tr>`).join(""):`<tr><td colspan="7" class="empty"><b>No customers yet</b>They'll appear here after their first order.</td></tr>`;
   $("uPager").innerHTML=d.total>s.size?pager(s,"customers"):`<div class="pager">${num(d.total)} customer${d.total===1?"":"s"}</div>`;
  }catch(e){body.innerHTML=`<tr><td colspan="7" class="empty">Couldn't load customers: ${esc(e.message)}</td></tr>`;handleErr(e)}}
 
@@ -1038,6 +1038,14 @@ async function vSettings(){
  for(const[id,k]of[["segTheme","theme"],["segDensity","density"]])$(id).onclick=e=>{const b=e.target.closest("[data-v]");if(!b)return;prefs[k]=b.dataset.v;savePrefs();$(id).querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b))};
  $("pHome").onchange=()=>{prefs.home=$("pHome").value;savePrefs();toast("Saved")}}
 
+
+/* ---------- customer accounts ---------- */
+async function resetAcct(id,name){
+ if(!(await confirmBox("Reset "+name+"'s password?","They'll be signed out everywhere. You'll get a temporary password to send them (for example on WhatsApp); they can change it after signing in.","Reset password",false)))return;
+ try{const r=await api("/accounts/"+id+"/reset-password",send("POST"));
+  modal(`<h3>Temporary password</h3><p>Send this to ${esc(name)}. It's shown only once.</p><div class="fld"><input id="tmpPw" readonly value="${esc(r.temporaryPassword)}" style="font:600 20px monospace;letter-spacing:1px" onclick="this.select()"></div><div class="err"></div><div class="mact"><button type="button" class="btn sec" data-act="closeModal">Close</button><button type="submit" class="btn">Copy</button></div>`,
+   async()=>{try{await navigator.clipboard.writeText(r.temporaryPassword);toast("Copied")}catch{document.getElementById("tmpPw").select()}})}
+ catch(e){toast(e.message);handleErr(e)}}
 
 /* ---------- reports ---------- */
 const rep={from:"",to:"",preset:"30"};

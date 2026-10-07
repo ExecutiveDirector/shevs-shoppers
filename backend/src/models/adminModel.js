@@ -633,7 +633,8 @@ async function listCustomers({ q, limit, offset }) {
             SUBSTRING_INDEX(GROUP_CONCAT(county ORDER BY created_at DESC SEPARATOR '\n'), '\n', 1) AS county,
             COUNT(*) AS orders,
             COALESCE(SUM(CASE WHEN status <> 'cancelled' THEN total END),0) AS spent,
-            MAX(created_at) AS last_order
+            MAX(created_at) AS last_order,
+            (SELECT u.id FROM users u WHERE u.phone = CONCAT('254', RIGHT(orders.phone, 9)) LIMIT 1) AS account_id
      FROM orders ${w}
      GROUP BY phone ORDER BY last_order DESC LIMIT ? OFFSET ?`,
     [...params, limit, offset]

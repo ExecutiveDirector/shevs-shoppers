@@ -4,6 +4,7 @@ const { pool } = require("../config/db");
 router.use("/products", require("./products"));
 router.use("/categories", require("./categories"));
 router.use("/coupons", require("./coupons"));
+router.use("/account", require("./account"));
 router.use("/orders", require("./orders"));
 router.get("/settings", async (req, res, next) => {
   try {

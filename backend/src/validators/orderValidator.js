@@ -1,6 +1,7 @@
 const { body } = require("express-validator");
 
-const KENYAN_PHONE = /^(?:\+254|254|0)7\d{8}$/;
+// Safaricom and Airtel numbers start 07… or 01… (e.g. 0112 345 678).
+const KENYAN_PHONE = /^(?:\+254|254|0)[17]\d{8}$/;
 
 const createOrderRules = [
   body("customerName").trim().isLength({ min: 2, max: 80 }).withMessage("Enter the full name for delivery."),
@@ -29,4 +30,34 @@ const notifyRules = [
   body("contact").trim().custom((v) => /^\S+@\S+\.\S+$/.test(v) || KENYAN_PHONE.test(v)).withMessage("Enter a phone number (07XXXXXXXX) or an email address."),
 ];
 
-module.exports = { createOrderRules, reviewRules, notifyRules };
+const password = (field, msg) => body(field).isString().isLength({ min: 8, max: 100 }).withMessage(msg || "Use a password of at least 8 characters.");
+const registerRules = [
+  body("name").trim().isLength({ min: 2, max: 80 }).withMessage("Enter your name."),
+  body("phone").trim().matches(KENYAN_PHONE).withMessage("Enter a valid Kenyan phone number, e.g. 07XXXXXXXX."),
+  body("email").optional({ values: "falsy" }).trim().isEmail().withMessage("That email address doesn't look right.").isLength({ max: 120 }),
+  password("password"),
+];
+const loginRules = [
+  body("login").trim().isLength({ min: 3, max: 120 }).withMessage("Enter your phone number or email."),
+  body("password").isString().isLength({ min: 1, max: 100 }).withMessage("Enter your password."),
+];
+const profileRules = [
+  body("name").optional().trim().isLength({ min: 2, max: 80 }).withMessage("Enter your name."),
+  body("email").optional({ values: "falsy" }).trim().isEmail().withMessage("That email address doesn't look right.").isLength({ max: 120 }),
+  body("county").optional({ values: "falsy" }).trim().isLength({ max: 40 }),
+  body("address").optional({ values: "falsy" }).trim().isLength({ max: 200 }),
+  body("newPassword").optional({ values: "falsy" }).isString().isLength({ min: 8, max: 100 }).withMessage("Use a new password of at least 8 characters."),
+  body("currentPassword").optional().isString().isLength({ max: 100 }),
+];
+const claimRules = [
+  body("orderCode").trim().matches(/^SHV-[A-Z0-9]{6}$/i).withMessage("Enter your order number, like SHV-ABC234."),
+  body("phone").trim().matches(KENYAN_PHONE).withMessage("Enter the phone number you ordered with."),
+];
+const forgotRules = [body("login").trim().isLength({ min: 3, max: 120 }).withMessage("Enter your phone number or email.")];
+const resetRules = [
+  body("login").trim().isLength({ min: 3, max: 120 }),
+  body("code").trim().matches(/^\d{6}$/).withMessage("Enter the 6-digit code from your email."),
+  password("newPassword"),
+];
+
+module.exports = { createOrderRules, reviewRules, notifyRules, registerRules, loginRules, profileRules, claimRules, forgotRules, resetRules };
