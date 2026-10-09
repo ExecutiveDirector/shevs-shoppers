@@ -18,6 +18,7 @@ const productRules = (isUpdate) => [
   body("costPrice").optional({ values: "null" }).isFloat({ min: 0, max: 10000000 }).withMessage("Enter a valid cost price.").toFloat(),
   body("lowStockThreshold").optional({ values: "null" }).isInt({ min: 0, max: 100000 }).withMessage("Low-stock alert must be 0 or more.").toInt(),
   body("featured").optional().isBoolean().withMessage("Invalid featured value.").toBoolean(),
+  body("colors").optional({ values: "falsy" }).trim().isLength({ max: 255 }).withMessage("Colours are too long."),
   body("tags").optional({ values: "falsy" }).trim().isLength({ max: 255 }).withMessage("Tags are too long (max 255)."),
   body().custom((v) => {
     if (v.price != null && v.compareAtPrice != null && Number(v.compareAtPrice) < Number(v.price)) {
@@ -25,6 +26,23 @@ const productRules = (isUpdate) => [
     }
     return true;
   }),
+];
+
+const variantsRules = [
+  body("variants").isArray({ max: 30 }).withMessage("Send a list of sizes."),
+  body("variants.*.id").optional({ values: "null" }).isInt({ min: 1 }).toInt(),
+  body("variants.*.label").trim().isLength({ min: 1, max: 60 }).withMessage("Every size needs a name (max 60 characters)."),
+  body("variants.*.price").isFloat({ min: 1, max: 10000000 }).withMessage("Enter a price for every size.").toFloat(),
+  body("variants.*.compareAtPrice").optional({ values: "falsy" }).isFloat({ min: 1, max: 10000000 }).withMessage("Enter a valid 'was' price.").toFloat(),
+  body("variants.*.costPrice").optional({ values: "falsy" }).isFloat({ min: 0, max: 10000000 }).withMessage("Enter a valid cost price.").toFloat(),
+  body("variants.*.stock").optional().isInt({ min: 0, max: 1000000 }).withMessage("Stock must be 0 or more.").toInt(),
+  body("variants.*.sku").optional({ values: "falsy" }).trim().isLength({ max: 40 }),
+  body("variants.*.active").optional().isBoolean().toBoolean(),
+];
+const photosRules = [
+  body("photos").isArray({ max: 12 }).withMessage("Use at most 12 photos."),
+  body("photos.*.url").trim().isURL({ protocols: ["http", "https"], require_protocol: true }).withMessage("A photo link isn't valid.").isLength({ max: 500 }),
+  body("photos.*.color").optional({ values: "falsy" }).trim().isLength({ max: 40 }).withMessage("Colour names can be up to 40 characters."),
 ];
 
 const categoryRules = (isUpdate) => [
@@ -91,4 +109,4 @@ const promoRules = [
   body().custom((v) => { if (v.startsAt && v.endsAt && new Date(v.endsAt) <= new Date(v.startsAt)) throw new Error("The end must be after the start."); return true; }),
 ];
 
-module.exports = { bannerRules, promoRules, productRules, categoryRules, couponRules, stockRules, bulkRules, noteRules, settingsRules };
+module.exports = { variantsRules, photosRules, bannerRules, promoRules, productRules, categoryRules, couponRules, stockRules, bulkRules, noteRules, settingsRules };

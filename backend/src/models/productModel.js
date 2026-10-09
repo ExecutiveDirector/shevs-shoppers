@@ -1,10 +1,12 @@
 const { pool } = require("../config/db");
 const promoModel = require("./promoModel");
+const variantModel = require("./variantModel");
 
 const BASE_SELECT = `
   SELECT p.id, p.category_id, c.name AS category_name, p.name, p.emoji,
          p.price, p.compare_at_price, p.stock, p.rating, p.rating_count,
-         p.eta_label, p.active, p.brand, p.description, p.image_url, p.featured, p.tags
+         p.eta_label, p.active, p.brand, p.description, p.image_url, p.featured, p.tags, p.colors,
+         (SELECT COUNT(*) FROM product_variants v WHERE v.product_id = p.id AND v.active = 1) AS variant_count
   FROM products p
   JOIN categories c ON c.id = p.category_id
 `;
@@ -50,12 +52,14 @@ async function findAll({ categoryId, search, minPrice, maxPrice, minRating, onSa
   params.push(Number(limit) || 40, Number(offset) || 0);
 
   const [rows] = await pool.query(sql, params);
-  return promoModel.decorate(rows);
+  return promoModel.decorate(await variantModel.attach(rows));
 }
 
 async function findById(id) {
   const [rows] = await pool.query(`${BASE_SELECT} WHERE p.id = ? AND p.active = 1`, [id]);
-  return (await promoModel.decorate(rows))[0] || null;
+  const p = (await promoModel.decorate(await variantModel.attach(rows)))[0] || null;
+  if (p) { p.photos = await variantModel.photosFor(p.id, p.image_url); p.colors = await variantModel.colorsFor(null, p.id); }
+  return p;
 }
 
 async function findRelated(categoryId, excludeId, limit = 6) {
@@ -63,7 +67,7 @@ async function findRelated(categoryId, excludeId, limit = 6) {
     `${BASE_SELECT} WHERE p.category_id = ? AND p.id != ? AND p.active = 1 ORDER BY p.rating DESC LIMIT ?`,
     [categoryId, excludeId, limit]
   );
-  return promoModel.decorate(rows);
+  return promoModel.decorate(await variantModel.attach(rows));
 }
 
 // Locks the row within an existing transaction (conn) so two simultaneous

@@ -46,6 +46,11 @@ async function decorate(rows) {
       p.compare_at_price = Math.max(Number(p.compare_at_price) || 0, base);
       p.price = discounted(base, pct);
     }
+    for (const v of p.variants || []) {
+      const vb = Number(v.price), vpct = percentFor(promos, p, 1);
+      if (vpct) { v.compare_at_price = Math.max(Number(v.compare_at_price) || 0, vb); v.price = discounted(vb, vpct); }
+      v.base_price = vb;
+    }
     const tiers = promos.filter((pr) => pr.min_qty > 1 && matches(pr, p)).map((pr) => ({ minQty: pr.min_qty, percent: pr.percent_off }));
     // Every tier is sent with the undiscounted price so the cart can work out the same total the server will.
     if (tiers.length) { p.bulk = tiers; p.base_price = base; }

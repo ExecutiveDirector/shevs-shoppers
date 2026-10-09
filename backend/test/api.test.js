@@ -8,6 +8,7 @@ const path = require("node:path");
 process.env.ADMIN_API_KEY = "test-admin-key-0123456789";
 process.env.CORS_ORIGIN = "https://shop.example";
 process.env.WHATSAPP_NUMBER = "254700000000";
+process.env.ADMIN_AUTH_LIMIT = "1000"; // many tests use bad keys on purpose
 
 // Replace the real MySQL pool before anything imports it.
 const queries = [];
@@ -245,4 +246,29 @@ test("google sign-in: hidden until configured, rejects missing/forged credential
   assert.equal((await (await fetch(`${base}/api/account/config`)).json()).googleClientId, "123.apps.googleusercontent.com");
   assert.equal((await post({ credential: "x".repeat(40) })).status, 401); // forged token
   if (saved === undefined) delete process.env.GOOGLE_CLIENT_ID; else process.env.GOOGLE_CLIENT_ID = saved;
+});
+
+test("photo recognition: switched off without a key, validates input, maps the model's answer to real products", async () => {
+  const saved = { k: process.env.ANTHROPIC_API_KEY, u: process.env.ANTHROPIC_API_URL };
+  delete process.env.ANTHROPIC_API_KEY;
+  const H = { "x-admin-key": process.env.ADMIN_API_KEY };
+  assert.equal((await (await fetch(`${base}/api/admin/ai-status`, { headers: H })).json()).photoRecognition, false);
+  const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
+  const post = (body, type = "image/png") => fetch(`${base}/api/admin/photos/identify`, { method: "POST", headers: { ...H, "Content-Type": type }, body });
+  assert.equal((await post(png)).status, 503);
+  process.env.ANTHROPIC_API_KEY = "test-key";
+  assert.equal((await (await fetch(`${base}/api/admin/ai-status`, { headers: H })).json()).photoRecognition, true);
+  assert.equal((await post(png, "text/plain")).status, 400);
+  // a stand-in for the Anthropic API that answers with an id that doesn't exist
+  const http = require("http");
+  const srv = http.createServer((rq, rs) => { rs.setHeader("content-type", "application/json"); rs.end(JSON.stringify({ content: [{ type: "text", text: '{"productId": 987654, "confidence": "high", "color": "pink"}' }] })); });
+  await new Promise((r) => srv.listen(0, r));
+  process.env.ANTHROPIC_API_URL = `http://127.0.0.1:${srv.address().port}/v1/messages`;
+  const r = await post(png);
+  srv.close();
+  if (saved.k === undefined) delete process.env.ANTHROPIC_API_KEY; else process.env.ANTHROPIC_API_KEY = saved.k;
+  if (saved.u === undefined) delete process.env.ANTHROPIC_API_URL; else process.env.ANTHROPIC_API_URL = saved.u;
+  assert.equal(r.status, 200);
+  const j = await r.json();
+  assert.equal(j.productId, null); // invented ids are discarded
 });

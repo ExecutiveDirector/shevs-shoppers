@@ -168,6 +168,9 @@ body[data-density=compact] .card{padding:12px}
 .imptbl td.wrap{white-space:normal;min-width:220px;font-size:13px}.imptbl tr.bad td{background:color-mix(in srgb,var(--sale) 7%,transparent)}.imptbl .e{color:var(--sale);font-weight:500}
 .impth{width:36px;height:36px;object-fit:cover;border-radius:8px;display:block}.tag.ok{background:color-mix(in srgb,var(--ok,#1a7f4b) 14%,transparent);color:var(--ok,#1a7f4b)}.tag.bad{background:var(--sale);color:#fff}.tag.mute{opacity:.6}
 .impgo{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:16px 0}.impfail{margin:8px 0 12px 18px;font-size:13px}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}.gt{display:flex;flex-direction:column;gap:6px}.gimg{position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden;background:var(--bg);border:1px solid var(--line)}.gimg img{width:100%;height:100%;object-fit:cover;display:block}.gimg em{position:absolute;left:6px;top:6px;background:var(--brand);color:#fff;font-style:normal;font-size:11px;padding:2px 8px;border-radius:99px}
+.gt.main .gimg{border-color:var(--brand);border-width:2px}.gc{width:100%;font-size:13px;padding:6px 8px}.gb{display:flex;gap:4px}.gb button{flex:1;border:1px solid var(--line);background:var(--card);border-radius:8px;padding:4px 0;cursor:pointer;color:inherit}.gb button:disabled{opacity:.35;cursor:default}
+.vzt{min-width:640px}.vzt input[type=number],.vzt input:not([type]){width:100%;min-width:70px;padding:7px 8px}.vzt td{padding:6px 8px}
 .progress{height:8px;background:var(--bg);border-radius:99px;overflow:hidden;margin:6px 0 10px}
 .progress i{display:block;height:100%;background:var(--brand)}
 
@@ -397,7 +400,7 @@ async function api(path,opts={}){
  if(!r.ok){
   const er=(data&&data.error)||{};
   const det=Array.isArray(er.details)?er.details.map(x=>x.message).filter(Boolean).join(" "):"";
-  throw new Error(det||er.message||`Request failed (${r.status})`)}
+  const e=new Error(det||er.message||`Request failed (${r.status})`);e.status=r.status;throw e}
  return data}
 const send=(method,body)=>({method,body:JSON.stringify(body||{})});
 const qs=o=>{const p=new URLSearchParams();Object.entries(o).forEach(([k,v])=>{if(v!==""&&v!=null)p.set(k,v)});const s=p.toString();return s?"?"+s:""};
@@ -788,8 +791,8 @@ async function loadProducts(){
    const flag=p.stock<=0?badge("out","Out"):p.stock<=lowOf(p)?badge("low","Low"):"";
    return `<tr class="click ${s.sel.has(p.id)?"sel":""}" data-open="${p.id}"><td><input type="checkbox" data-sel="${p.id}" ${s.sel.has(p.id)?"checked":""} aria-label="Select ${esc(p.name)}"></td>
    <td class="w"><div class="pname">${thumb(p)}<div><b>${esc(p.name)}</b> ${p.featured?badge("feat","★ Featured"):""}<br><small class="muted">${[p.sku?"SKU "+esc(p.sku):"",esc(p.brand||""),esc(p.eta_label)].filter(Boolean).join(" · ")}</small></div></div></td>
-   <td>${esc(p.category_name)}</td><td class="r">${kes(p.price)}${was?` <small class="muted"><s>${kes(p.compare_at_price)}</s> −${off}%</small>`:""}${mg!=null?`<br><small class="muted">${mg}% margin</small>`:""}</td>
-   <td><span class="stock"><button data-act="stockStep" data-id="${p.id}" data-d="-1" aria-label="Decrease stock">−</button><input type="number" min="0" value="${p.stock}" data-stock="${p.id}" aria-label="Stock for ${esc(p.name)}"><button data-act="stockStep" data-id="${p.id}" data-d="1" aria-label="Increase stock">+</button></span> ${flag}</td>
+   <td>${esc(p.category_name)}</td><td class="r">${p.variant_count>0?`<small class="muted">from </small>`:""}${kes(p.price)}${was?` <small class="muted"><s>${kes(p.compare_at_price)}</s> −${off}%</small>`:""}${mg!=null?`<br><small class="muted">${mg}% margin</small>`:""}</td>
+   <td>${p.variant_count>0?`<b>${p.stock}</b> <small class="muted">in ${p.variant_count} size${p.variant_count>1?"s":""}</small> ${flag}`:`<span class="stock"><button data-act="stockStep" data-id="${p.id}" data-d="-1" aria-label="Decrease stock">−</button><input type="number" min="0" value="${p.stock}" data-stock="${p.id}" aria-label="Stock for ${esc(p.name)}"><button data-act="stockStep" data-id="${p.id}" data-d="1" aria-label="Increase stock">+</button></span> ${flag}`}</td>
    <td><label class="switch"><input type="checkbox" data-vis="${p.id}" ${p.active?"checked":""} aria-label="Visible in shop"><span></span></label></td>
    <td class="r"><button class="btn sec sm" data-act="editProduct" data-id="${p.id}">Edit</button></td></tr>`}).join(""):`<tr><td colspan="7" class="empty"><b>No products here</b>${s.q||s.state||s.category?"Try clearing the filters.":`<a href="#products" data-act="newProduct">Add your first product</a>`}</td></tr>`;
   $("pPager").innerHTML=d.total>s.size?pager(s,"products"):`<div class="pager">${num(d.total)} product${d.total===1?"":"s"}</div>`;
@@ -803,14 +806,14 @@ async function exportProducts(btn){
  btn.disabled=true;const old=btn.textContent;btn.textContent="Preparing…";
  try{
   const rows=await fetchAll("/products","products",{state:st.products.state,q:st.products.q,category:st.products.category},100);
-  downloadCsv("shevs-products",["ID","Name","SKU","Brand","Category","Price","Was price","Cost price","Stock","Low-stock alert","Visible","Featured","Tags","Delivery estimate","Description","Image link"],
-   rows.map(p=>[p.id,p.name,p.sku||"",p.brand||"",p.category_name,p.price,p.compare_at_price,p.cost_price==null?"":p.cost_price,p.stock,p.low_stock_threshold==null?"":p.low_stock_threshold,p.active?"yes":"no",p.featured?"yes":"no",p.tags||"",p.eta_label,p.description||"",p.image_url||""]));
+  downloadCsv("shevs-products",["ID","Name","SKU","Brand","Category","Price","Was price","Cost price","Stock","Low-stock alert","Visible","Featured","Tags","Delivery estimate","Description","Colours","Sizes","Image"],
+   rows.map(p=>[p.id,p.name,p.sku||"",p.brand||"",p.category_name,p.price,p.compare_at_price,p.cost_price==null?"":p.cost_price,p.stock,p.low_stock_threshold==null?"":p.low_stock_threshold,p.active?"yes":"no",p.featured?"yes":"no",p.tags||"",p.eta_label,p.description||"",p.colors||"",p.sizes_text||"",p.photos_text||p.image_url||""]));
   toast(`Exported ${rows.length} product${rows.length===1?"":"s"}`)}catch(e){toast(e.message);handleErr(e)}finally{btn.disabled=false;btn.textContent=old}}
 
 /* ---------- bulk import: spreadsheet (CSV) + photos ---------- */
 const IMP={defStock:5,table:null,photos:new Map(),files:[],mode:"update",mkCats:true,busy:false,stop:false,rows:[],existing:null,done:null};
 const impKey=s=>String(s||"").toLowerCase().replace(/[^a-z0-9]+/g,"");
-const IMP_COLS={id:["id"],name:["name","product","productname","title","item"],category:["category","categoryname","type"],price:["price","sellingprice","saleprice"],compareAtPrice:["wasprice","was","compareatprice","compareat","oldprice"],costPrice:["costprice","cost","buyingprice"],stock:["stock","qty","quantity","openingstock"],sku:["sku","code","productcode"],brand:["brand"],description:["description","desc","details"],tags:["tags","keywords"],image:["image","imagelink","imageurl","photo","picture","imagefile","photofile","imagename","photoname"],active:["visible","active","show","published"],featured:["featured"],etaLabel:["deliveryestimate","eta","delivery","deliverytime"],lowStockThreshold:["lowstockalert","lowstock","lowstockthreshold"]};
+const IMP_COLS={id:["id"],name:["name","product","productname","title","item"],category:["category","categoryname","type"],price:["price","sellingprice","saleprice"],compareAtPrice:["wasprice","was","compareatprice","compareat","oldprice"],costPrice:["costprice","cost","buyingprice"],stock:["stock","qty","quantity","openingstock"],sku:["sku","code","productcode"],brand:["brand"],description:["description","desc","details"],tags:["tags","keywords"],image:["image","imagelink","imageurl","photo","photos","picture","pictures","images","imagefile","photofile","imagename","photoname"],active:["visible","active","show","published"],featured:["featured"],etaLabel:["deliveryestimate","eta","delivery","deliverytime"],lowStockThreshold:["lowstockalert","lowstock","lowstockthreshold"],sizes:["sizes","sizesandprices","variants","sizeoptions"],colors:["colours","colors","colour","color"]};
 function parseCSV(t){
  t=String(t).replace(/^﻿/,"");const first=t.split(/\r?\n/)[0]||"";
  const cnt=ch=>(first.split(ch).length-1);const d=[["\t",cnt("\t")],[";",cnt(";")],[",",cnt(",")]].sort((a,b)=>b[1]-a[1])[0][0];
@@ -848,14 +851,26 @@ function impBuild(){
   if(cn){const c=catMap.get(impCatKey(cn));if(c){b.categoryId=c.id}else if(IMP.mkCats){r.newCat=cn.slice(0,80)}else r.errs.push(`Category "${cn}" doesn't exist.`)}
   else if(!ex)r.errs.push("Category is missing.");
   // money + numbers
+  // sizes: "6x6:1500:5; 5x6:1400:3"  (name:price[:stock[:cost]]) — each size has its own price and stock
+  const sz=g("sizes");
+  if(sz){r.sizes=[];const seenL=new Set();
+   for(const part of sz.split(/\s*[;|]\s*/).filter(Boolean)){const f=part.split(":").map(x=>x.trim()),lab=f[0],pr=impMoney(f[1]),stk=f[2]===undefined||f[2]===""?(IMP.defStock):impMoney(f[2]),cs=f[3]===undefined||f[3]===""?null:impMoney(f[3]);
+    if(!lab){r.errs.push(`A size in "${part}" has no name.`);continue}if(seenL.has(lab.toLowerCase())){r.errs.push(`The size "${lab}" is listed twice.`);continue}seenL.add(lab.toLowerCase());
+    if(!(pr>=1)){r.errs.push(`Size "${lab}" needs a price (use ${lab}:1500:5).`);continue}
+    if(stk==null||!Number.isInteger(stk)||stk<0){r.errs.push(`Stock for size "${lab}" isn't a whole number.`);continue}
+    r.sizes.push({label:lab,price:pr,stock:stk,costPrice:cs==null||!(cs>=0)?undefined:cs})}
+   if(!r.sizes.length&&!r.errs.length)r.errs.push("Sizes column is empty.");}
   const price=impMoney(g("price"));
-  if(price==null){if(!ex)r.errs.push("Price is missing.")}else if(!(price>=1&&price<=1e7))r.errs.push("Price must be 1 or more.");else b.price=price;
-  r.price=b.price!=null?b.price:(ex?Number(ex.price):null);
+  if(sz&&r.sizes&&r.sizes.length){b.price=Math.min(...r.sizes.map(x=>x.price));delete b.stock;if(price!=null)r.warns.push("Price column ignored — each size has its own price")}
+  else if(price==null){if(!ex)r.errs.push("Price is missing.")}else if(!(price>=1&&price<=1e7))r.errs.push("Price must be 1 or more.");else b.price=price;
+  if(r.sizes&&ex&&Number(ex.variant_count)>=0){delete b.compareAtPrice;delete b.price}
+  const cl=g("colors");if(cl){b.colors=cl.split(/\s*[,;|]\s*/).filter(Boolean).join(", ");if(b.colors.length>255){r.errs.push("Colours are too long.");delete b.colors}}
+  r.price=r.sizes&&r.sizes.length?Math.min(...r.sizes.map(x=>x.price)):(b.price!=null?b.price:(ex?Number(ex.price):null));
   const was=impMoney(g("compareAtPrice"));if(was!=null){if(!(was>=1))r.errs.push("'Was' price isn't valid.");else b.compareAtPrice=was}
   if(b.compareAtPrice!=null&&r.price!=null&&b.compareAtPrice<r.price)r.errs.push("'Was' price is lower than the price.");
   const cost=impMoney(g("costPrice"));if(cost!=null){if(!(cost>=0))r.errs.push("Cost price isn't valid.");else b.costPrice=cost}
-  const st=impMoney(g("stock"));if(st!=null){if(!Number.isInteger(st)||st<0)r.errs.push("Stock must be a whole number, 0 or more.");else b.stock=st}else if(!ex)b.stock=IMP.defStock;
-  r.stock=b.stock!=null?b.stock:(ex?ex.stock:0);
+  const st=impMoney(g("stock"));if(r.sizes&&r.sizes.length){}else if(st!=null){if(!Number.isInteger(st)||st<0)r.errs.push("Stock must be a whole number, 0 or more.");else b.stock=st}else if(!ex)b.stock=IMP.defStock;
+  r.stock=r.sizes&&r.sizes.length?r.sizes.reduce((a,x)=>a+x.stock,0):(b.stock!=null?b.stock:(ex?ex.stock:0));
   const low=impMoney(g("lowStockThreshold"));if(low!=null){if(!Number.isInteger(low)||low<0)r.errs.push("Low-stock alert must be a whole number.");else b.lowStockThreshold=low}
   // text
   if(sku){if(!/^[A-Za-z0-9._\- ]{1,40}$/.test(sku))r.errs.push("SKU can only use letters, numbers, spaces and . _ -");else{b.sku=sku;const k=sku.toLowerCase();if(seenSku.has(k))r.errs.push("This SKU appears twice in your file.");seenSku.add(k)}}
@@ -865,19 +880,25 @@ function impBuild(){
   const eta=g("etaLabel");if(eta){if(eta.length>40)r.errs.push("Delivery estimate is too long (max 40).");else b.etaLabel=eta}
   for(const f of["active","featured"]){const v=impBool(g(f));if(v===null)r.errs.push(`"${f==="active"?"Visible":"Featured"}" should be yes or no.`);else if(v!==undefined)b[f]=v}
   // photo: a link, or the name of a photo you selected (falls back to a photo named after the SKU)
-  const im=g("image");
-  if(/^https?:\/\//i.test(im)){if(im.length>500)r.errs.push("Image link is too long.");else{b.imageUrl=im;r.photoUrl=im}}
-  else{const f=impPhoto(im)||(!im&&sku?impPhoto(sku):null);
-   if(f){r.file=f}else if(im)r.warns.push(`Photo "${im}" wasn't among the photos you selected — imported without a photo`);
-   else if(!ex||!ex.image_url)r.warns.push("No photo")}
+  // photos: one or several, separated by "|". Each is a link or a selected file's name, optionally tagged with a colour: "pink.jpg @ Pink | blue.jpg @ Blue"
+  const im=g("image");r.photos=[];
+  for(const part of im.split("|").map(x=>x.trim()).filter(Boolean)){const m=part.split(/\s+@\s+/),ref=m[0].trim(),color=(m[1]||"").trim().slice(0,40);
+   if(/^https?:\/\//i.test(ref)){if(ref.length>500)r.errs.push("An image link is too long.");else r.photos.push({url:ref,color})}
+   else{const f=impPhoto(ref);if(f)r.photos.push({file:f,color});else r.warns.push(`Photo "${ref}" wasn't among the photos you selected`)}}
+  if(!r.photos.length&&!im&&sku){const f=impPhoto(sku);if(f)r.photos.push({file:f,color:""})}
+  if(r.photos.length>12){r.errs.push("Use at most 12 photos per product.");r.photos.length=12}
+  const p0=r.photos[0];if(p0){if(p0.file)r.file=p0.file;else r.photoUrl=p0.url}
+  if(!r.photos.length&&!im&&(!ex||!ex.image_url))r.warns.push("No photo");
+  if(r.photos.length>1)r.warns.push(`${r.photos.length} photos`);
+  if(r.sizes&&r.sizes.length)r.warns.push(`${r.sizes.length} size${r.sizes.length>1?"s":""}`);
   if(r.errs.length)r.action="error";
   IMP.rows.push(r)})}
-function impMissingCols(){const head=(IMP.table&&IMP.table[0]||[]).map(impKey);const miss=[];for(const f of["name","category","price"]){if(!IMP_COLS[f].some(n=>head.includes(n)))miss.push(f)}return miss}
+function impMissingCols(){const head=(IMP.table&&IMP.table[0]||[]).map(impKey);const miss=[];for(const f of["name"]){if(!IMP_COLS[f].some(n=>head.includes(n)))miss.push(f)}return miss}
 const shrinkImg=async file=>{try{const bm=await createImageBitmap(file),m=1600,k=Math.min(1,m/Math.max(bm.width,bm.height)),c=document.createElement("canvas");c.width=Math.round(bm.width*k);c.height=Math.round(bm.height*k);c.getContext("2d").drawImage(bm,0,0,c.width,c.height);const b=await new Promise(r=>c.toBlob(r,"image/jpeg",.88));return b&&b.size<file.size?b:file}catch{return file}};
 function impTemplate(){
- downloadCsv("shevs-product-import-template",["Name","Category","Price","Was price","Cost price","Stock","SKU","Brand","Description","Tags","Image","Visible","Featured","Delivery estimate"],[
-  ["Wireless earbuds","Electronics","2499","3200","1600","25","EAR-001","Soundly","Bluetooth 5.3, 20h battery, charging case","audio, wireless","earbuds.jpg","yes","yes","2–4 days"],
-  ["Cotton bedsheet set","Home","3800","","2400","12","BED-014","","Queen size, 4 pieces, soft cotton","bedding","https://example.com/photo.jpg","yes","no",""]])}
+ downloadCsv("shevs-product-import-template",["Name","Category","Price","Was price","Cost price","Stock","SKU","Brand","Description","Tags","Colours","Sizes","Image","Visible","Featured","Delivery estimate"],[
+  ["Wireless earbuds","Electronics","2499","3200","1600","25","EAR-001","Soundly","Bluetooth 5.3, 20h battery, charging case","audio, wireless","","","earbuds.jpg","yes","yes","2–4 days"],
+  ["Bedsheet","Home","","","","","BED-014","","High-quality bedsheet with a comfortable finish, suitable for everyday use.","bedding","Pink, Blue, Grey","5x6:1400:10:900; 6x6:1500:8:1000; 6x7:1700:5:1150","bed-pink.jpg @ Pink | bed-blue.jpg @ Blue | bed-grey.jpg @ Grey","yes","no","2–4 days"]])}
 async function vImport(){
  await ensureCats();
  $("content").innerHTML=`
@@ -886,7 +907,7 @@ async function vImport(){
   <p class="muted">Add many products at once. Fill in a spreadsheet (Excel or Google Sheets), save it as <b>CSV</b>, then choose it here. Only <b>Name</b>, <b>Category</b> and <b>Price</b> are required.</p>
   <div class="impbtn"><button class="btn sec" id="impTpl">⬇ Download the template</button><label class="btn" for="impCsv">Choose CSV file</label><input type="file" id="impCsv" accept=".csv,.txt,text/csv" hidden></div>
   <details class="impd"><summary>…or paste rows copied from Excel / Google Sheets</summary><textarea id="impPaste" rows="5" placeholder="Paste here, including the header row"></textarea><button class="btn sm" id="impUse" type="button">Use pasted rows</button></details>
-  <details class="impd"><summary>Columns we understand</summary><p class="muted">Name · Category · Price · Was price · Cost price · Stock · SKU · Brand · Description · Tags · Image · Visible (yes/no) · Featured (yes/no) · Delivery estimate · Low-stock alert · ID. Tip: <b>Export CSV</b> on the Products page gives you a file in this format — edit it and import it back to change many products at once (matched by ID or SKU).</p></details>
+  <details class="impd"><summary>Columns we understand</summary><p class="muted">Name · Category · Price · Was price · Cost price · Stock · SKU · Brand · Description · Tags · Colours · Sizes · Image · Visible (yes/no) · Featured (yes/no) · Delivery estimate · Low-stock alert · ID. <b>One product per row.</b> For sizes with their own prices write <code>Sizes</code> as <code>5x6:1400:10:900; 6x6:1500:8:1000</code> (name : price : stock : cost — stock and cost are optional) and leave Price and Stock empty. <b>Colours</b>: <code>Pink, Blue, Grey</code>. <b>Image</b>: one or more file names or links separated by <code>|</code>, optionally tagged with a colour: <code>pink.jpg @ Pink | blue.jpg @ Blue</code>. Tip: <b>Export CSV</b> on the Products page gives you a file in this format — edit it and import it back to change many products at once (matched by ID or SKU).</p></details>
  </div>
  <div class="card imp"><h3>2 · Photos <small class="muted">(optional)</small></h3>
   <p class="muted">Select all the product photos together. In the <b>Image</b> column write each photo's file name (e.g. <code>earbuds.jpg</code>), or a web link. If you leave it blank, a photo named after the product's SKU (e.g. <code>EAR-001.jpg</code>) is used. Photos are resized automatically.</p>
@@ -916,7 +937,7 @@ async function impRefresh(){
  if(miss.length){out.innerHTML=`<div class="card imp"><b>Missing column${miss.length>1?"s":""}: ${miss.map(m=>({name:"Name",category:"Category",price:"Price"})[m]).join(", ")}.</b><p class="muted">Check the first row of your file has these headings, or start from the template.</p></div>`;return}
  if(!IMP.existing){out.innerHTML=`<p class="muted">Checking your shop…</p>`;try{IMP.existing=await fetchAll("/products","products",{},100)}catch(e){handleErr(e);return}}
  impBuild();const R=IMP.rows,c=a=>R.filter(r=>r.action===a).length;
- const withPhoto=R.filter(r=>r.file||r.photoUrl).length,used=new Set(R.filter(r=>r.file).map(r=>r.file));
+ const withPhoto=R.filter(r=>r.file||r.photoUrl).length,used=new Set(R.flatMap(r=>r.photos.filter(p=>p.file).map(p=>p.file)));
  const unused=IMP.files.filter(f=>!used.has(f));
  const ok=R.filter(r=>r.action==="create"||r.action==="update").length;
  const newCats=[...new Set(R.filter(r=>r.newCat&&r.action!=="error").map(r=>r.newCat))];
@@ -950,8 +971,18 @@ async function impRun(){
    if(r.err){fails.push(r);continue}
    try{
     const body={...r.body};if(r.newCat)body.categoryId=ids.get(r.newCat);
-    if(r.file){if(!up.has(r.file)){const blob=await shrinkImg(r.file);const d=await api("/uploads",{method:"POST",body:blob,headers:{"Content-Type":blob.type||"image/jpeg"}});up.set(r.file,d.url)}body.imageUrl=up.get(r.file)}
-    if(r.action==="update"){await api("/products/"+r.existingId,send("PATCH",body));upd++}else{await api("/products",send("POST",body));made++}
+    // upload each selected photo once, even when several products share it
+    const gallery=[];
+    for(const ph of r.photos){if(ph.file){if(!up.has(ph.file)){const blob=await shrinkImg(ph.file);const d=await api("/uploads",{method:"POST",body:blob,headers:{"Content-Type":blob.type||"image/jpeg"}});up.set(ph.file,d.url)}gallery.push({url:up.get(ph.file),color:ph.color||undefined})}else gallery.push({url:ph.url,color:ph.color||undefined})}
+    if(gallery.length)body.imageUrl=gallery[0].url;
+    let pid=r.existingId;
+    if(r.action==="update"){await api("/products/"+pid,send("PATCH",body));upd++}else{const c=await api("/products",send("POST",body));pid=c.product.id;made++}
+    if(r.sizes&&r.sizes.length){
+     // keep the ids of sizes that already exist so past orders stay linked to them
+     let old=[];if(r.action==="update"){try{old=(await api("/products/"+pid)).variants||[]}catch{}}
+     const byL=new Map(old.map(v=>[v.label.toLowerCase(),v.id]));
+     await api(`/products/${pid}/variants`,send("PUT",{variants:r.sizes.map(z=>({...z,id:byL.get(z.label.toLowerCase())}))}))}
+    if(gallery.length)await api(`/products/${pid}/photos`,send("PUT",{photos:gallery}));
     ok++}
    catch(e){if(e.auth){handleErr(e);return}r.err=e.message;fails.push(r)}}
  }finally{IMP.busy=false}
@@ -974,63 +1005,81 @@ async function stockAllForm(){
   const qty=Math.floor(Number(f.elements.qty.value));if(!Number.isFinite(qty)||qty<0)throw new Error("Enter a stock count of 0 or more.");
   const who=f.elements.who.value;let rows=await fetchAll("/products","products",{},100);
   if(who==="zero")rows=rows.filter(p=>p.stock<=0);if(who==="visible")rows=rows.filter(p=>p.active);
-  rows=rows.filter(p=>p.stock!==qty);
-  if(!rows.length){closeModal();toast("Nothing to change — those products already have that stock");return}
+  const sizedN=rows.filter(p=>p.variant_count>0).length;rows=rows.filter(p=>p.stock!==qty&&!(p.variant_count>0));
+  if(!rows.length){closeModal();toast(sizedN?"Nothing to change — products with sizes have stock set per size":"Nothing to change — those products already have that stock");return}
   let n=0;const fail=[];
   for(const p of rows){f.querySelector(".prog").innerHTML=`<div class="progress"><i style="width:${Math.round(n/rows.length*100)}%"></i></div><p class="muted">${n} of ${rows.length}…</p>`;
    try{await api(`/products/${p.id}/stock`,send("POST",{mode:"set",qty,reason:"correction",note:"Bulk stock set"}))}catch(e){if(e.auth)throw e;fail.push(p.name)}n++}
-  closeModal();toast(`Stock set to ${qty} on ${n-fail.length} product${n-fail.length===1?"":"s"}${fail.length?` · ${fail.length} failed`:""}`);if(view==="products"){loadProducts();loadSummary()}})}
+  closeModal();toast(`Stock set to ${qty} on ${n-fail.length} product${n-fail.length===1?"":"s"}${fail.length?` · ${fail.length} failed`:""}${sizedN?` · ${sizedN} with sizes skipped`:""}`);if(view==="products"){loadProducts();loadSummary()}})}
 
-/* ---------- match photos to products by name ---------- */
-const PH={files:[],prods:null,rows:[],replace:true};
-const phStem=f=>impStem(f).replace(/[-_ ]*\(?\d{1,2}\)?$/,"");
+/* ---------- match photos to products (by name, or by what's in the picture) ---------- */
+const PH={files:[],prods:null,rows:[],mode:"add",ai:null,aiBusy:false};
+const phTitle=s=>String(s||"").replace(/\b\w/g,c=>c.toUpperCase());
+// "Bedsheet pink 2.jpg" -> product "Bedsheet", colour "Pink": try the longest run of leading words that names a product
 function phMatch(file){
- const stem=impStem(file.name),k=impKey(stem),k2=impKey(phStem(file.name));
- const P=PH.prods;if(!k)return null;
- let p=P.find(x=>x.sku&&impKey(x.sku)===k)||P.find(x=>impKey(x.name)===k);
- if(p)return{p,sure:true};
- if(k2&&k2!==k){p=P.find(x=>x.sku&&impKey(x.sku)===k2)||P.find(x=>impKey(x.name)===k2);if(p)return{p,sure:true}}
- // near matches: the name contains the file name or the other way round (needs 4+ letters so "a.jpg" can't match everything)
- if(k.length>=4){const c=P.filter(x=>{const n=impKey(x.name);return n.includes(k)||(n.length>=4&&k.includes(n))});if(c.length===1)return{p:c[0],sure:false}}
+ const P=PH.prods,stem=impStem(file.name),k=impKey(stem);if(!k)return null;
+ const byKey=key=>P.find(x=>x.sku&&impKey(x.sku)===key)||P.find(x=>impKey(x.name)===key);
+ const words=stem.split(/[-_ ]+/).filter(Boolean);
+ for(let i=words.length;i>=1;i--){const p=byKey(impKey(words.slice(0,i).join(" ")));
+  if(p){const rest=words.slice(i).filter(w=>!/^\(?\d{1,2}\)?$/.test(w)).join(" ");
+   const known=(p.colors||"").split(",").map(s=>s.trim()).filter(Boolean).find(c=>impKey(c)===impKey(rest));
+   return{p,sure:true,color:known||phTitle(rest)}}}
+ if(k.length>=4){const c=P.filter(x=>{const n=impKey(x.name);return n.includes(k)||(n.length>=4&&k.includes(n))});if(c.length===1)return{p:c[0],sure:false,color:""}}
  return null}
+async function phAiStatus(){if(PH.ai===null){try{PH.ai=!!(await api("/ai-status")).photoRecognition}catch(e){if(e.auth)throw e;PH.ai=false}}return PH.ai}
 async function vPhotos(){
  $("content").innerHTML=`<div class="pagehead"><button class="btn sec sm" id="phBack">← Products</button><h2>Match photos to products</h2></div>
- <div class="card imp"><p class="muted">Select many photos at once. Name each photo like the product — <code>Wireless earbuds.jpg</code> — or like its SKU — <code>EAR-001.jpg</code>. We match them up, you check the preview, and the products' photos are updated. Capitals, spaces, dashes and endings like <code>-2</code> are ignored.</p>
+ <div class="card imp"><p class="muted">Select many photos at once. Name each photo like the product — <code>Bedsheet.jpg</code> — and add the colour if you like: <code>Bedsheet pink.jpg</code>, <code>Bedsheet blue.jpg</code>. Several photos for one product become its gallery (the first is the main picture). Check the preview, then apply.</p>
  <div class="impbtn"><label class="btn" for="phImg">Choose photos</label><input type="file" id="phImg" accept="image/*" multiple hidden><span class="muted" id="phN"></span></div>
- <label class="chk" style="margin-top:12px"><input type="checkbox" id="phRep" ${PH.replace?"checked":""}> Replace photos that products already have (untick to only fill in products with no photo)</label></div><div id="phOut"></div>`;
+ <label style="display:block;margin-top:12px">When a product already has photos<select id="phMode"><option value="add">Add these to its existing photos</option><option value="replace">Replace its existing photos</option><option value="fill">Only fill products that have no photo</option></select></label>
+ <div id="phAi"></div></div><div id="phOut"></div>`;
  $("phBack").onclick=()=>go("products");
- $("phRep").onchange=e=>{PH.replace=e.target.checked;phDraw()};
+ $("phMode").value=PH.mode;$("phMode").onchange=e=>{PH.mode=e.target.value;phDraw()};
  $("phImg").onchange=async e=>{PH.files=[...e.target.files];$("phN").textContent=PH.files.length?`${PH.files.length} selected`:"";
   if(!PH.prods){$("phOut").innerHTML=`<p class="muted">Loading your products…</p>`;try{PH.prods=await fetchAll("/products","products",{},100)}catch(err){handleErr(err);return}}
-  PH.rows=PH.files.map(f=>{const m=phMatch(f);return{f,pid:m?m.p.id:"",sure:m?m.sure:false,on:!!m&&m.sure,url:URL.createObjectURL(f)}});
-  // two photos for one product: keep the first, leave the rest for you to place by hand
-  const seen=new Set();PH.rows.forEach(r=>{if(r.pid){if(seen.has(r.pid)){r.pid="";r.on=false;r.dup=true}else seen.add(r.pid)}});phDraw()};
+  PH.rows=PH.files.map(f=>{const m=phMatch(f);return{f,pid:m?m.p.id:"",color:m?m.color:"",sure:m?m.sure:false,on:!!m&&m.sure,url:URL.createObjectURL(f),guess:false}});phDraw()};
+ if(await phAiStatus()&&!$("phAi").innerHTML)$("phAi").innerHTML=`<p style="margin-top:12px"><button class="btn sec" id="phIdent" type="button">✨ Identify unmatched photos by what's in them</button> <span class="muted" id="phIdentN"></span></p><p class="muted">Uses AI to look at each photo and pick the product (and colour). Guesses are left unticked for you to check.</p>`,$("phIdent").onclick=phIdentify;
  if(PH.rows.length)phDraw()}
+async function phIdentify(){
+ const todo=PH.rows.filter(r=>!r.pid);if(!todo.length){toast("Every photo already has a product.");return}
+ if(PH.aiBusy)return;PH.aiBusy=true;const btn=$("phIdent");btn.disabled=true;let n=0,hit=0;
+ const small=async f=>{const bm=await createImageBitmap(f),k=Math.min(1,768/Math.max(bm.width,bm.height)),c=document.createElement("canvas");c.width=Math.round(bm.width*k);c.height=Math.round(bm.height*k);c.getContext("2d").drawImage(bm,0,0,c.width,c.height);return new Promise(r=>c.toBlob(r,"image/jpeg",.8))};
+ try{for(const r of todo){$("phIdentN").textContent=`Looking at photo ${++n} of ${todo.length}…`;
+   try{const blob=await small(r.f),d=await api("/photos/identify",{method:"POST",body:blob,headers:{"Content-Type":"image/jpeg"}});
+    if(d.productId&&PH.prods.some(p=>p.id===d.productId)){r.pid=d.productId;r.color=d.color?phTitle(d.color):r.color;r.guess=true;r.sure=d.confidence==="high";r.on=d.confidence==="high";hit++}}
+   catch(e){if(e.auth){handleErr(e);return}if(e.status===503||e.status===429||e.status===502){toast(e.message);break}}}
+  $("phIdentN").textContent=`${hit} of ${todo.length} identified`}
+ finally{PH.aiBusy=false;btn.disabled=false}phDraw()}
 function phDraw(){
  const out=$("phOut");if(!out||!PH.prods)return;const P=new Map(PH.prods.map(p=>[p.id,p]));
  const opts=PH.prods.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(p=>`<option value="${p.id}">${esc(p.name)}${p.sku?" · "+esc(p.sku):""}</option>`).join("");
- const eff=r=>{const p=P.get(+r.pid);return r.on&&p&&(PH.replace||!p.image_url)};
- const n=PH.rows.filter(eff).length,un=PH.rows.filter(r=>!r.pid).length;
- out.innerHTML=`<div class="summary"><div class="card"><span class="muted">Matched</span><b>${PH.rows.filter(r=>r.pid).length}</b></div><div class="card"><span class="muted">Need a product</span><b style="${un?"color:var(--sale)":""}">${un}</b></div><div class="card"><span class="muted">Will update</span><b>${n}</b></div></div>
- <div class="tablewrap"><table class="imptbl"><thead><tr><th></th><th>New photo</th><th>Product</th><th>Current</th><th>Match</th></tr></thead><tbody>${PH.rows.map((r,i)=>{const p=P.get(+r.pid),cur=p&&safeUrl(p.image_url);
-  const skip=p&&!PH.replace&&p.image_url;
+ const skipped=r=>{const p=P.get(+r.pid);return !!p&&PH.mode==="fill"&&!!p.image_url};
+ const eff=r=>{const p=P.get(+r.pid);return r.on&&p&&!skipped(r)};
+ const n=PH.rows.filter(eff).length,un=PH.rows.filter(r=>!r.pid).length,prodsN=new Set(PH.rows.filter(eff).map(r=>r.pid)).size;
+ out.innerHTML=`<div class="summary"><div class="card"><span class="muted">Matched</span><b>${PH.rows.filter(r=>r.pid).length}</b></div><div class="card"><span class="muted">Need a product</span><b style="${un?"color:var(--sale)":""}">${un}</b></div><div class="card"><span class="muted">Will add</span><b>${n}</b></div></div>
+ <div class="tablewrap"><table class="imptbl"><thead><tr><th></th><th>New photo</th><th>Product</th><th>Colour</th><th>Match</th></tr></thead><tbody>${PH.rows.map((r,i)=>{
   return `<tr><td><input type="checkbox" data-i="${i}" ${r.on&&r.pid?"checked":""} ${r.pid?"":"disabled"} aria-label="Use this photo"></td><td><span style="display:flex;gap:10px;align-items:center"><img class="impth" src="${r.url}" alt=""><span>${esc(r.f.name)}</span></span></td>
   <td><select data-s="${i}"><option value="">— choose a product —</option>${opts.replace(`value="${r.pid}"`,`value="${r.pid}" selected`)}</select></td>
-  <td>${cur?`<img class="impth" src="${esc(cur)}" alt="" referrerpolicy="no-referrer">`:'<span class="muted">none</span>'}</td>
-  <td class="wrap">${!r.pid?(r.dup?'<span class="e">Another photo already matched this product</span>':'<span class="e">No match — pick the product</span>'):skip?'<span class="muted">Skipped — already has a photo</span>':r.sure?'<span class="tag ok">Exact</span>':'<span class="tag">Check this one</span>'}</td></tr>`}).join("")}</tbody></table></div>
- <div class="impgo"><button class="btn" id="phGo" ${n?"":"disabled"}>Update ${n} product photo${n===1?"":"s"}</button></div><div id="phRun"></div>`;
+  <td><input data-c="${i}" value="${esc(r.color||"")}" placeholder="optional" maxlength="40" style="width:110px" aria-label="Colour"></td>
+  <td class="wrap">${!r.pid?'<span class="e">No match — pick the product</span>':skipped(r)?'<span class="muted">Skipped — already has a photo</span>':r.guess?`<span class="tag">${r.sure?"AI: confident":"AI guess — check"}</span>`:r.sure?'<span class="tag ok">Exact</span>':'<span class="tag">Check this one</span>'}</td></tr>`}).join("")}</tbody></table></div>
+ <div class="impgo"><button class="btn" id="phGo" ${n?"":"disabled"}>Add ${n} photo${n===1?"":"s"} to ${prodsN} product${prodsN===1?"":"s"}</button></div><div id="phRun"></div>`;
  out.querySelectorAll("[data-i]").forEach(c=>c.onchange=()=>{PH.rows[+c.dataset.i].on=c.checked;phDraw()});
- out.querySelectorAll("[data-s]").forEach(s=>s.onchange=()=>{const r=PH.rows[+s.dataset.s];r.pid=s.value;r.on=!!s.value;r.sure=!!s.value;r.dup=false;phDraw()});
+ out.querySelectorAll("[data-s]").forEach(s=>s.onchange=()=>{const r=PH.rows[+s.dataset.s];r.pid=s.value?+s.value:"";r.on=!!s.value;r.sure=!!s.value;r.guess=false;phDraw()});
+ out.querySelectorAll("[data-c]").forEach(c=>c.onchange=()=>{PH.rows[+c.dataset.c].color=c.value.trim()});
  $("phGo").onclick=phRun}
 async function phRun(){
- const P=new Map(PH.prods.map(p=>[p.id,p])),todo=PH.rows.filter(r=>{const p=P.get(+r.pid);return r.on&&p&&(PH.replace||!p.image_url)});if(!todo.length)return;
- // one photo can only go to one product here; a product picked twice would just be overwritten
- const box=$("phRun");$("phGo").disabled=true;let ok=0;const fail=[];
- for(const r of todo){box.innerHTML=`<div class="progress"><i style="width:${Math.round((ok+fail.length)/todo.length*100)}%"></i></div><p class="muted">${ok+fail.length+1} of ${todo.length}: ${esc(r.f.name)}</p>`;
-  try{const blob=await shrinkImg(r.f);const d=await api("/uploads",{method:"POST",body:blob,headers:{"Content-Type":blob.type||"image/jpeg"}});
-   await api("/products/"+r.pid,send("PATCH",{imageUrl:d.url}));P.get(+r.pid).image_url=d.url;ok++}catch(e){if(e.auth){handleErr(e);return}fail.push(`${r.f.name}: ${e.message}`)}}
- box.innerHTML=`<div class="card imp"><h3>Done ✅</h3><p><b>${ok}</b> photo${ok===1?"":"s"} updated${fail.length?` · <b style="color:var(--sale)">${fail.length} failed</b>`:""}</p>${fail.length?`<ul class="impfail">${fail.slice(0,10).map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}<button class="btn" id="phView">View products</button></div>`;
- $("phView").onclick=()=>go("products");PH.rows=[];toast(`${ok} photo${ok===1?"":"s"} updated`)}
+ const P=new Map(PH.prods.map(p=>[p.id,p])),todo=PH.rows.filter(r=>{const p=P.get(+r.pid);return r.on&&p&&!(PH.mode==="fill"&&p.image_url)});if(!todo.length)return;
+ const groups=new Map();todo.forEach(r=>{const k=+r.pid;if(!groups.has(k))groups.set(k,[]);groups.get(k).push(r)});
+ const box=$("phRun");$("phGo").disabled=true;let ok=0,np=0;const fail=[];let done=0;
+ for(const [pid,rows] of groups){box.innerHTML=`<div class="progress"><i style="width:${Math.round(done/groups.size*100)}%"></i></div><p class="muted">${done+1} of ${groups.size}: ${esc(P.get(pid).name)}</p>`;
+  try{const fresh=[];
+   for(const r of rows){const blob=await shrinkImg(r.f);const d=await api("/uploads",{method:"POST",body:blob,headers:{"Content-Type":blob.type||"image/jpeg"}});fresh.push({url:d.url,color:r.color||undefined})}
+   let old=[];if(PH.mode==="add"){const det=await api("/products/"+pid);old=(det.photos||[]).map(x=>({url:x.url,color:x.color||undefined}))}
+   const all=old.concat(fresh).slice(0,12);
+   await api(`/products/${pid}/photos`,send("PUT",{photos:all}));P.get(pid).image_url=all[0].url;ok+=rows.length;np++}
+  catch(e){if(e.auth){handleErr(e);return}fail.push(`${P.get(pid).name}: ${e.message}`)}done++}
+ box.innerHTML=`<div class="card imp"><h3>Done ✅</h3><p><b>${ok}</b> photo${ok===1?"":"s"} added to <b>${np}</b> product${np===1?"":"s"}${fail.length?` · <b style="color:var(--sale)">${fail.length} failed</b>`:""}</p>${fail.length?`<ul class="impfail">${fail.slice(0,10).map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}<button class="btn" id="phView">View products</button></div>`;
+ $("phView").onclick=()=>go("products");PH.rows=[];toast(`${ok} photo${ok===1?"":"s"} added`)}
 
 /* ----- product editor ----- */
 let edId=null,edDirty=false;
@@ -1040,16 +1089,16 @@ async function productEditor(id){
  $("gsRes").hidden=true;
  await ensureCats();
  if(!cats.length){toast("Add a category first.");go("categories");return}
- let p={name:"",sku:"",brand:"",description:"",image_url:"",emoji:"",category_id:cats[0].id,price:"",compare_at_price:"",cost_price:null,stock:0,low_stock_threshold:null,featured:0,tags:"",eta_label:"2–4 days",active:1},sales=null,hist=[];
+ let p={name:"",sku:"",brand:"",description:"",image_url:"",emoji:"",category_id:cats[0].id,price:"",compare_at_price:"",cost_price:null,stock:0,low_stock_threshold:null,featured:0,tags:"",colors:"",eta_label:"2–4 days",active:1},sales=null,hist=[],vz=[],gal=[];
  edId=id||null;edDirty=false;
  $("edTitle").textContent=id?"Edit product":"New product";
  $("editor").classList.add("open");$("editor").setAttribute("aria-hidden","false");$("scrim").classList.add("open");
  $("edFoot").innerHTML="";
  if(id){
   $("edForm").innerHTML=`<p class="muted">Loading…</p>`;
-  try{const d=await api("/products/"+id);p=d.product;sales=d.sales;hist=d.history}catch(e){$("edForm").innerHTML=`<p style="color:var(--sale)">Couldn't load this product: ${esc(e.message)}</p>`;handleErr(e);return}}
+  try{const d=await api("/products/"+id);p=d.product;sales=d.sales;hist=d.history;vz=(d.variants||[]).map(v=>({id:v.id,label:v.label,price:v.price,was:v.compare_at_price>v.price?v.compare_at_price:"",cost:v.cost_price==null?"":v.cost_price,stock:v.stock,active:v.active}));gal=(d.photos||[]).map(x=>({url:x.url,color:x.color||""}));if(!gal.length&&p.image_url)gal=[{url:p.image_url,color:""}]}catch(e){$("edForm").innerHTML=`<p style="color:var(--sale)">Couldn't load this product: ${esc(e.message)}</p>`;handleErr(e);return}}
  $("edTitle").textContent=id?p.name:"New product";
- const f=$("edForm");
+ const f=$("edForm");let hadSizes=vz.length>0;
  f.innerHTML=`
  <div class="sect"><h3>👀 How customers see it</h3><div class="pv" id="pv"></div></div>
  <div class="sect"><h3>Basics</h3>
@@ -1057,26 +1106,33 @@ async function productEditor(id){
   <div class="frow"><div class="fld"><label for="eCat">Category *</label><select id="eCat" name="categoryId">${cats.map(c=>`<option value="${c.id}" ${c.id===p.category_id?"selected":""}>${esc(c.icon)} ${esc(c.name)}</option>`).join("")}</select></div>
    <div class="fld"><label for="eBrand">Brand</label><input id="eBrand" name="brand" maxlength="80" value="${esc(p.brand||"")}" placeholder="e.g. Samsung"></div></div>
   <div class="fld"><label for="eDesc">Description</label><textarea id="eDesc" name="description" maxlength="2000" placeholder="What is it? Key features, size, what's in the box…">${esc(p.description||"")}</textarea><span class="hint" id="descCount"></span></div>
+  <div class="fld"><label for="eColors">Colours</label><input id="eColors" name="colors" maxlength="255" value="${esc(p.colors||"")}" placeholder="Pink, Blue, Grey (separate with commas)"><span class="hint">Customers pick one when ordering. Leave empty if there is only one colour. Tag your photos with these names below so the right photo shows.</span></div>
   <div class="fld"><label for="eTags">Tags</label><input id="eTags" name="tags" maxlength="255" value="${esc(p.tags||"")}" placeholder="audio, wireless, gift (separate with commas)"><div class="tagrow" id="tagPrev"></div><span class="hint">Tags help customers find this product when they search.</span></div>
  </div>
- <div class="sect"><h3>Photo</h3>
-  <div class="upl" id="upl"><span class="thumb" id="uplPrev"></span><div class="uplb"><div class="uplbtns"><label class="btn sm" for="eFile" id="uplPick">📷 Upload photo</label><button type="button" class="btn sec sm" id="uplClear">Remove</button></div><input id="eFile" type="file" accept="image/*" hidden><span class="hint" id="uplMsg">JPG, PNG or WebP. Photos are resized automatically, so phone pictures are fine.</span></div></div>
-  <div class="fld"><label for="eImg">Or paste an image link</label><input id="eImg" name="imageUrl" maxlength="500" value="${esc(p.image_url||"")}" placeholder="https://…/photo.jpg"><span class="hint">Optional. Leave both empty to show the emoji instead.</span></div>
-  <div class="fld" style="max-width:160px"><label for="eEmoji">Fallback emoji</label><input id="eEmoji" name="emoji" maxlength="8" value="${esc(p.emoji||"")}" placeholder="🎧"></div>
+ <div class="sect"><h3>Photos</h3>
+  <p class="muted" style="margin-bottom:10px">The first photo is the main one. Add more for other angles or colours, and type the colour under a photo to link it to that colour.</p>
+  <div class="gal" id="gal"></div>
+  <div class="uplbtns" style="margin-top:10px"><label class="btn sm" for="eFile">📷 Upload photos</label><input id="eFile" type="file" accept="image/*" multiple hidden><span class="hint" id="uplMsg"></span></div>
+  <div class="inline" style="margin-top:10px"><input class="field" id="gLink" maxlength="500" placeholder="Or paste an image link https://…"><button type="button" class="btn sec sm" id="gLinkAdd">Add</button></div>
+  <input id="eImg" name="imageUrl" type="hidden" value="${esc(p.image_url||"")}">
+  <div class="fld" style="max-width:160px;margin-top:12px"><label for="eEmoji">Fallback emoji</label><input id="eEmoji" name="emoji" maxlength="8" value="${esc(p.emoji||"")}" placeholder="🎧"></div>
+  <datalist id="colList"></datalist>
  </div>
  <div class="sect"><h3>Pricing</h3>
-  <div class="frow3"><div class="fld"><label for="ePrice">Selling price (KES) *</label><input id="ePrice" name="price" type="number" min="1" step="any" required value="${esc(p.price===""?"":Number(p.price))}"></div>
+  <label class="tog" style="margin-bottom:12px"><span>Sold in different sizes<small>Each size gets its own price and stock (e.g. 5×6 / 6×6 / 6×7).</small></span><span class="switch"><input type="checkbox" id="sizedOn" ${vz.length?"checked":""}><span></span></span></label>
+  <div id="vzBox" hidden></div>
+  <div id="priceBox"><div class="frow3"><div class="fld"><label for="ePrice">Selling price (KES) *</label><input id="ePrice" name="price" type="number" min="1" step="any" required value="${esc(p.price===""?"":Number(p.price))}"></div>
    <div class="fld"><label for="eWas">“Was” price</label><input id="eWas" name="compareAtPrice" type="number" min="1" step="any" value="${esc(p.compare_at_price&&Number(p.compare_at_price)>Number(p.price)?Number(p.compare_at_price):"")}"><span class="hint">Shown crossed out for sales.</span></div>
    <div class="fld"><label for="eCost">Cost price (KES)</label><input id="eCost" name="costPrice" type="number" min="0" step="any" value="${esc(p.cost_price==null?"":Number(p.cost_price))}"><span class="hint">Private — for margins.</span></div></div>
-  <div class="calc" id="calc"></div>
+  <div class="calc" id="calc"></div></div>
  </div>
  <div class="sect"><h3>Inventory</h3>
-  ${id?`<div class="inline" style="justify-content:space-between;flex-wrap:wrap"><div><div class="stockbig" id="edStock">${p.stock}</div><span class="muted">in stock now</span></div><div class="muted" style="max-width:300px;font-size:13px">Use the adjuster below so every change is recorded in the history.</div></div>
+  <p class="muted" id="stockNote" hidden>This product is sold in sizes, so stock is counted per size in the Pricing section above.</p><div id="stockBox">${id?`<div class="inline" style="justify-content:space-between;flex-wrap:wrap"><div><div class="stockbig" id="edStock">${p.stock}</div><span class="muted">in stock now</span></div><div class="muted" style="max-width:300px;font-size:13px">Use the adjuster below so every change is recorded in the history.</div></div>
   <div class="frow3"><div class="fld"><label for="adMode">Action</label><select id="adMode"><option value="add">Add stock</option><option value="remove">Remove stock</option><option value="set">Set exact count</option></select></div>
    <div class="fld"><label for="adQty">Quantity</label><input id="adQty" type="number" min="0" step="1" placeholder="0"></div>
    <div class="fld"><label for="adReason">Reason</label><select id="adReason"><option value="restock">Restock</option><option value="correction">Stock count</option><option value="damaged">Damaged / lost</option><option value="return">Customer return</option><option value="other">Other</option></select></div></div>
   <div class="inline"><input class="field" id="adNote" maxlength="200" placeholder="Note (optional) — e.g. Supplier delivery #123"><button type="button" class="btn" id="adGo">Apply</button></div>`
-  :`<div class="fld" style="max-width:220px"><label for="eStock">Opening stock</label><input id="eStock" name="stock" type="number" min="0" step="1" value="0"></div>`}
+  :`<div class="fld" style="max-width:220px"><label for="eStock">Opening stock</label><input id="eStock" name="stock" type="number" min="0" step="1" value="0"></div>`}</div>
   <div class="frow"><div class="fld"><label for="eLow">Low-stock alert at</label><input id="eLow" name="lowStockThreshold" type="number" min="0" step="1" value="${esc(p.low_stock_threshold==null?"":p.low_stock_threshold)}" placeholder="Shop default: ${S.low_stock_threshold}"><span class="hint">You'll be alerted when stock reaches this number.</span></div>
    <div class="fld"><label for="eEta">Delivery estimate</label><input id="eEta" name="etaLabel" maxlength="40" value="${esc(p.eta_label)}"></div></div>
   <div class="fld" style="max-width:260px"><label for="eSku">SKU / product code</label><div class="inline"><input id="eSku" name="sku" maxlength="40" value="${esc(p.sku||"")}" placeholder="optional"><button type="button" class="btn sec sm" id="skuGen">Generate</button></div></div>
@@ -1101,17 +1157,29 @@ async function productEditor(id){
   $("descCount").textContent=`${val("description").length} / 2000`;
   $("tagPrev").innerHTML=val("tags").split(",").map(t=>t.trim()).filter(Boolean).map(t=>`<span class="tag">${esc(t)}</span>`).join("")};
  f.addEventListener("input",()=>{edDirty=true;updatePreview()});updatePreview();
- const syncUpl=()=>{const u=safeUrl(val("imageUrl"));$("uplPrev").innerHTML=u?`<img src="${esc(u)}" alt="" referrerpolicy="no-referrer">`:esc(val("emoji")||"📦");$("uplClear").style.display=u?"":"none"};
- const shrink=async file=>{try{const bm=await createImageBitmap(file),m=1600,k=Math.min(1,m/Math.max(bm.width,bm.height)),c=document.createElement("canvas");c.width=Math.round(bm.width*k);c.height=Math.round(bm.height*k);c.getContext("2d").drawImage(bm,0,0,c.width,c.height);const b=await new Promise(r=>c.toBlob(r,"image/jpeg",.88));return b&&b.size<file.size?b:file}catch{return file}};
- $("eFile").addEventListener("change",async()=>{const file=$("eFile").files[0];if(!file)return;const box=$("upl"),msg=$("uplMsg");
-  if(!/^image\//.test(file.type)){msg.textContent="Please choose an image file.";return}
-  box.classList.add("busy");msg.textContent="Uploading…";
-  try{const blob=await shrink(file);const d=await api("/uploads",{method:"POST",body:blob,headers:{"Content-Type":blob.type||"image/jpeg"}});
-   el("imageUrl").value=d.url;edDirty=true;updatePreview();syncUpl();msg.textContent="Photo uploaded. Save the product to publish it."}
-  catch(e){msg.textContent="Upload failed: "+e.message;handleErr(e)}
-  finally{box.classList.remove("busy");$("eFile").value=""}});
- $("uplClear").addEventListener("click",()=>{el("imageUrl").value="";edDirty=true;updatePreview();syncUpl()});
- f.addEventListener("input",syncUpl);syncUpl();
+ const colorNames=()=>[...new Set(val("colors").split(",").map(c=>c.trim()).filter(Boolean))];
+ const drawGal=()=>{const g=$("gal");el("imageUrl").value=gal[0]?gal[0].url:"";
+  g.innerHTML=gal.length?gal.map((x,i)=>`<div class="gt${i===0?" main":""}"><span class="gimg"><img src="${esc(safeUrl(x.url))}" alt="" referrerpolicy="no-referrer">${i===0?`<em>Main</em>`:""}</span><input class="gc" data-i="${i}" list="colList" maxlength="40" value="${esc(x.color)}" placeholder="Colour (optional)" aria-label="Colour of photo ${i+1}"><div class="gb"><button type="button" data-m="l" data-i="${i}" ${i===0?"disabled":""} aria-label="Move earlier">◀</button><button type="button" data-m="r" data-i="${i}" ${i===gal.length-1?"disabled":""} aria-label="Move later">▶</button><button type="button" data-m="x" data-i="${i}" aria-label="Remove photo">✕</button></div></div>`).join(""):`<p class="muted">No photos yet — the emoji is shown instead.</p>`;
+  $("colList").innerHTML=colorNames().map(c=>`<option value="${esc(c)}">`).join("");updatePreview()};
+ $("gal").addEventListener("input",e=>{if(e.target.classList.contains("gc")){gal[+e.target.dataset.i].color=e.target.value.trim();edDirty=true}});
+ $("gal").addEventListener("click",e=>{const b=e.target.closest("[data-m]");if(!b)return;const i=+b.dataset.i,m=b.dataset.m;edDirty=true;
+  if(m==="x")gal.splice(i,1);else{const k=m==="l"?i-1:i+1;[gal[i],gal[k]]=[gal[k],gal[i]]}drawGal()});
+ $("eFile").addEventListener("change",async()=>{const files=[...$("eFile").files].filter(x=>/^image\//.test(x.type)),msg=$("uplMsg");if(!files.length)return;
+  if(gal.length+files.length>12){msg.textContent="You can have up to 12 photos.";$("eFile").value="";return}
+  let n=0;try{for(const file of files){msg.textContent=`Uploading ${++n} of ${files.length}…`;const blob=await shrinkImg(file);const d=await api("/uploads",{method:"POST",body:blob,headers:{"Content-Type":blob.type||"image/jpeg"}});gal.push({url:d.url,color:""});drawGal()}
+   edDirty=true;msg.textContent="Uploaded. Save the product to publish."}catch(e){msg.textContent="Upload failed: "+e.message;handleErr(e)}finally{$("eFile").value=""}});
+ $("gLinkAdd").onclick=()=>{const u=$("gLink").value.trim();if(!safeUrl(u)){toast("The link must start with http:// or https://");return}if(gal.length>=12){toast("You can have up to 12 photos.");return}gal.push({url:u,color:""});$("gLink").value="";edDirty=true;drawGal()};
+ f.addEventListener("input",e=>{if(e.target.name==="colors")drawGal()});
+ drawGal();
+ /* sizes & prices */
+ const sized=()=>$("sizedOn").checked;
+ const drawVz=()=>{const on=sized(),box=$("vzBox");box.hidden=!on;$("priceBox").hidden=on;$("stockBox").hidden=on;$("stockNote").hidden=!on;if(!on)return;
+  box.innerHTML=`<div class="tablewrap"><table class="vzt"><thead><tr><th>Size</th><th>Price (KES)</th><th>Was price</th><th>Cost</th><th>Stock</th><th>Shown</th><th></th></tr></thead><tbody>${vz.map((v,i)=>`<tr><td><input data-i="${i}" data-f="label" maxlength="60" value="${esc(v.label)}" placeholder="e.g. 6×6" aria-label="Size name"></td><td><input data-i="${i}" data-f="price" type="number" min="1" step="any" value="${esc(v.price)}" aria-label="Price"></td><td><input data-i="${i}" data-f="was" type="number" min="1" step="any" value="${esc(v.was)}" aria-label="Was price"></td><td><input data-i="${i}" data-f="cost" type="number" min="0" step="any" value="${esc(v.cost)}" aria-label="Cost price"></td><td><input data-i="${i}" data-f="stock" type="number" min="0" step="1" value="${esc(v.stock)}" aria-label="Stock"></td><td><input data-i="${i}" data-f="active" type="checkbox" ${v.active!==false?"checked":""} aria-label="Shown in shop"></td><td><button type="button" class="btn sec sm" data-vx="${i}" aria-label="Remove size">✕</button></td></tr>`).join("")}</tbody></table></div><button type="button" class="btn sec sm" id="vzAdd" style="margin-top:8px">+ Add size</button><p class="hint">The shop shows "From KES …" using the lowest price. Customers choose a size before adding to the cart.</p>`;
+  $("vzAdd").onclick=()=>{vz.push({label:"",price:"",was:"",cost:"",stock:0,active:true});edDirty=true;drawVz();const r=box.querySelectorAll("tbody tr");r[r.length-1].querySelector("input").focus()};
+  box.querySelectorAll("[data-vx]").forEach(b=>b.onclick=()=>{vz.splice(+b.dataset.vx,1);edDirty=true;drawVz()})};
+ $("vzBox").addEventListener("input",e=>{const t=e.target,i=t.dataset.i;if(i==null)return;vz[+i][t.dataset.f]=t.type==="checkbox"?t.checked:t.value;edDirty=true});
+ $("sizedOn").onchange=()=>{if(sized()&&!vz.length){vz.push({label:"",price:val("price")||"",was:"",cost:val("costPrice")||"",stock:Number(id?p.stock:val("stock"))||0,active:true},{label:"",price:"",was:"",cost:"",stock:0,active:true})}edDirty=true;drawVz()};
+ drawVz();
 
  $("skuGen").onclick=()=>{el("sku").value="SHV-"+Math.random().toString(36).slice(2,7).toUpperCase();edDirty=true};
  const histHtml=h=>h.length?`<table class="hist"><thead><tr><th>When</th><th>Change</th><th>Stock after</th><th>Why</th></tr></thead><tbody>${h.map(x=>`<tr><td>${fdate(x.created_at)}</td><td class="${x.change_qty>0?"pos":"neg"}">${x.change_qty>0?"+":""}${x.change_qty}</td><td>${x.stock_after}</td><td>${esc(REASONS[x.reason]||x.reason)}${x.order_code?` · ${esc(x.order_code)}`:""}${x.note?`<br><small class="muted">${esc(x.note)}</small>`:""}</td></tr>`).join("")}</tbody></table>`:`<p class="muted">No stock changes recorded yet.</p>`;
@@ -1129,16 +1197,31 @@ async function productEditor(id){
    try{await api("/products/"+id,{method:"DELETE"});toast("Product deleted");closeEditor();if(view==="products"){loadProducts();loadSummary()}}catch(e){toast(e.message);handleErr(e)}}}
  $("edSave").onclick=async()=>{
   const err=$("edErr");err.textContent="";
-  const price=Number(val("price"));if(!val("name")||val("name").length<2){err.textContent="Enter a product name.";el("name").focus();return}
+  if(!val("name")||val("name").length<2){err.textContent="Enter a product name.";el("name").focus();return}
+  const on=sized();let sizes=[];
+  if(on){
+   if(!vz.length){err.textContent="Add at least one size, or switch off “Sold in different sizes”.";return}
+   const seen=new Set();
+   for(const[i,v]of vz.entries()){const n=String(v.label).trim(),pr=Number(v.price),wa=v.was===""?null:Number(v.was);
+    if(!n){err.textContent=`Size ${i+1} needs a name.`;return}if(seen.has(n.toLowerCase())){err.textContent=`The size “${n}” is listed twice.`;return}seen.add(n.toLowerCase());
+    if(!(pr>=1)){err.textContent=`Enter a price for “${n}”.`;return}if(wa!=null&&wa<pr){err.textContent=`The “was” price for “${n}” can't be lower than its price.`;return}
+    if(String(v.stock).trim()!==""&&!(Number(v.stock)>=0)){err.textContent=`Stock for “${n}” must be 0 or more.`;return}
+    sizes.push({id:v.id||undefined,label:n,price:pr,compareAtPrice:wa==null?undefined:wa,costPrice:v.cost===""?undefined:Number(v.cost),stock:Math.max(0,Math.floor(Number(v.stock)||0)),active:v.active!==false})}}
+  const shown=sizes.filter(x=>x.active),price=on?Math.min(...(shown.length?shown:sizes).map(x=>x.price)):Number(val("price"));
   if(!(price>0)){err.textContent="Enter a selling price above 0.";el("price").focus();return}
-  const was=val("compareAtPrice")?Number(val("compareAtPrice")):price;if(was<price){err.textContent="The “was” price can't be lower than the selling price.";return}
+  const was=val("compareAtPrice")?Number(val("compareAtPrice")):price;if(!on&&was<price){err.textContent="The “was” price can't be lower than the selling price.";return}
   const cost=val("costPrice")===""?null:Number(val("costPrice")),low=val("lowStockThreshold")===""?null:Math.floor(Number(val("lowStockThreshold")));
-  if(val("imageUrl")&&!safeUrl(val("imageUrl"))){err.textContent="The image link must start with http:// or https://";el("imageUrl").focus();return}
-  const body={name:val("name"),categoryId:Number(val("categoryId")),brand:val("brand"),sku:val("sku"),description:val("description"),tags:val("tags"),imageUrl:val("imageUrl"),emoji:val("emoji"),price,compareAtPrice:was,costPrice:cost,lowStockThreshold:low,etaLabel:val("etaLabel")||"2–4 days",active:el("active").checked,featured:el("featured").checked};
-  if(!id)body.stock=Math.max(0,Math.floor(Number(val("stock"))||0));
+  const body={name:val("name"),categoryId:Number(val("categoryId")),brand:val("brand"),sku:val("sku"),description:val("description"),tags:val("tags"),colors:val("colors"),emoji:val("emoji"),lowStockThreshold:low,etaLabel:val("etaLabel")||"2–4 days",active:el("active").checked,featured:el("featured").checked};
+  if(!on){body.price=price;body.compareAtPrice=was;body.costPrice=cost}else if(!id){body.price=price}
+  if(!id&&!on)body.stock=Math.max(0,Math.floor(Number(val("stock"))||0));
   const btn=$("edSave");btn.disabled=true;
-  try{const r=await api(id?"/products/"+id:"/products",send(id?"PATCH":"POST",body));
-   edDirty=false;toast(id?"Product saved":"Product added");
+  try{
+   if(id&&hadSizes&&!on)await api(`/products/${id}/variants`,send("PUT",{variants:[]}));
+   const r=await api(id?"/products/"+id:"/products",send(id?"PATCH":"POST",body));
+   const pid=id||r.product.id;let warn="";
+   if(on){const v=await api(`/products/${pid}/variants`,send("PUT",{variants:sizes}));hadSizes=true;vz.length=0;v.variants.forEach(x=>vz.push({id:x.id,label:x.label,price:x.price,was:x.compare_at_price>x.price?x.compare_at_price:"",cost:x.cost_price==null?"":x.cost_price,stock:x.stock,active:x.active}));drawVz()}else hadSizes=false;
+   try{await api(`/products/${pid}/photos`,send("PUT",{photos:gal.map(x=>({url:x.url,color:x.color||undefined}))}))}catch(e){warn=" — but the photos weren't saved: "+e.message}
+   edDirty=false;toast((id?"Product saved":"Product added")+warn);
    if(!id){closeEditor()}else{$("edTitle").textContent=r.product.name}
    if(view==="products"){loadProducts();loadSummary()}else if(view==="dashboard")vDashboard()}
   catch(e){err.textContent=e.message;handleErr(e)}finally{btn.disabled=false}};

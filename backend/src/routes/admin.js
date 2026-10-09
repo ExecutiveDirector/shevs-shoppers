@@ -5,7 +5,7 @@ const validate = require("../middleware/validate");
 const { adminAuthLimiter } = require("../middleware/rateLimiters");
 const { updateOrderStatusRules } = require("../validators/couponValidator");
 const e = require("../controllers/engagementController");
-const { bannerRules, promoRules, productRules, categoryRules, couponRules, stockRules, bulkRules, noteRules, settingsRules } = require("../validators/adminValidator");
+const { variantsRules, photosRules, bannerRules, promoRules, productRules, categoryRules, couponRules, stockRules, bulkRules, noteRules, settingsRules } = require("../validators/adminValidator");
 
 router.use(adminAuthLimiter, adminAuth);
 
@@ -13,6 +13,9 @@ router.get("/stats", c.stats);
 
 // Raw image bytes (not JSON) so the admin can upload a photo straight from the file picker.
 router.post("/uploads", require("express").raw({ type: ["image/*"], limit: "8mb" }), c.uploadImage);
+
+router.get("/ai-status", c.aiStatus);
+router.post("/photos/identify", require("express").raw({ type: ["image/*"], limit: "4mb" }), c.identifyPhoto);
 
 router.get("/orders", c.listOrders);
 router.get("/orders/:code", c.getOrder);
@@ -26,6 +29,8 @@ router.get("/products/:id", c.getProduct);
 router.post("/products/:id/stock", stockRules, validate, c.adjustStock);
 router.post("/products/:id/duplicate", c.duplicateProduct);
 router.patch("/products/:id", productRules(true), validate, c.updateProduct);
+router.put("/products/:id/variants", variantsRules, validate, c.putVariants);
+router.put("/products/:id/photos", photosRules, validate, c.putPhotos);
 router.delete("/products/:id", c.deleteProduct);
 
 router.get("/categories", c.listCategories);

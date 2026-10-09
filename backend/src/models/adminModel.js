@@ -206,7 +206,7 @@ async function setOrderStatus(code, status) {
 
     if (prev !== status && (status === "cancelled" || prev === "cancelled")) {
       const [items] = await conn.query(
-        "SELECT product_id, name_snapshot, qty FROM order_items WHERE order_id = ? AND product_id IS NOT NULL",
+        "SELECT product_id, variant_id, name_snapshot, qty FROM order_items WHERE order_id = ? AND product_id IS NOT NULL",
         [order.id]
       );
       for (const it of items) {
@@ -214,17 +214,21 @@ async function setOrderStatus(code, status) {
           const [[before]] = await conn.query("SELECT stock FROM products WHERE id = ?", [it.product_id]);
           if (before && before.stock <= 0) backInStock.push(it.product_id);
           await conn.query("UPDATE products SET stock = stock + ? WHERE id = ?", [it.qty, it.product_id]);
-          await logStock(conn, it.product_id, it.qty, "cancel", null, code);
+          if (it.variant_id) await conn.query("UPDATE product_variants SET stock = stock + ? WHERE id = ?", [it.qty, it.variant_id]);
+          await logStock(conn, it.product_id, it.qty, "cancel", it.variant_id ? it.name_snapshot : null, code);
           restocked += it.qty;
         } else {
-          const [[p]] = await conn.query("SELECT stock FROM products WHERE id = ? FOR UPDATE", [it.product_id]);
+          const [[p]] = it.variant_id
+            ? await conn.query("SELECT stock FROM product_variants WHERE id = ? FOR UPDATE", [it.variant_id])
+            : await conn.query("SELECT stock FROM products WHERE id = ? FOR UPDATE", [it.product_id]);
           if (p && p.stock < it.qty) {
             throw ApiError.conflict(
               `Can't re-open this order: only ${p.stock} of "${it.name_snapshot}" left in stock.`
             );
           }
           await conn.query("UPDATE products SET stock = stock - ? WHERE id = ?", [it.qty, it.product_id]);
-          await logStock(conn, it.product_id, -it.qty, "reopen", null, code);
+          if (it.variant_id) await conn.query("UPDATE product_variants SET stock = stock - ? WHERE id = ?", [it.qty, it.variant_id]);
+          await logStock(conn, it.product_id, -it.qty, "reopen", it.variant_id ? it.name_snapshot : null, code);
         }
       }
     }
@@ -247,7 +251,8 @@ const PRODUCT_SELECT = `
   SELECT p.id, p.category_id, c.name AS category_name, p.name, p.sku, p.brand, p.description,
          p.image_url, p.emoji, p.price, p.compare_at_price, p.cost_price, p.stock,
          p.low_stock_threshold, p.featured, p.tags, p.eta_label, p.rating, p.rating_count,
-         p.active, p.created_at, p.updated_at
+         p.active, p.created_at, p.updated_at, p.colors,
+         (SELECT COUNT(*) FROM product_variants v WHERE v.product_id = p.id) AS variant_count
   FROM products p JOIN categories c ON c.id = p.category_id`;
 
 const SORTS = {
@@ -292,6 +297,7 @@ async function listProducts({ q, categoryId, state, sort, limit, offset }) {
     `SELECT COUNT(*) AS total FROM products p JOIN categories c ON c.id = p.category_id ${w}`,
     params
   );
+  await require("./variantModel").attachExportText(rows);
   return { products: rows, total: Number(total), lowStockThreshold: low };
 }
 
@@ -317,8 +323,13 @@ async function getProductDetail(id) {
      FROM stock_log WHERE product_id = ? ORDER BY id DESC LIMIT 25`,
     [id]
   );
+  const variantModel = require("./variantModel");
+  const variants = await variantModel.listAll(id);
+  const photos = await variantModel.listPhotos(id);
   return {
     product,
+    variants,
+    photos,
     sales: {
       units: Number(sales.units),
       revenue: money(sales.revenue),
@@ -380,6 +391,7 @@ async function createProduct(d) {
       [id, d.stock, d.stock]
     );
   }
+  if (d.colors) await require("./variantModel").setColors(id, require("./variantModel").splitColors(d.colors));
   return getProduct(id);
 }
 
@@ -399,6 +411,7 @@ const PRODUCT_COLUMNS = {
   tags: "tags",
   etaLabel: "eta_label",
   active: "active",
+  colors: "colors",
 };
 const TEXT_FIELDS = ["sku", "brand", "description", "imageUrl"];
 
@@ -407,6 +420,13 @@ async function updateProduct(id, d) {
   if (!existing) return null;
   if (d.categoryId != null) await assertCategory(d.categoryId);
 
+  if (Number(existing.variant_count) > 0) {
+    const differs = (a, b) => a != null && Number(a) !== Number(b);
+    if (differs(d.price, existing.price) || differs(d.compareAtPrice, existing.compare_at_price) || differs(d.stock, existing.stock)) {
+      throw ApiError.badRequest("This product is sold in sizes, so its price and stock come from the sizes. Change them in the Sizes & prices section.");
+    }
+    delete d.price; delete d.compareAtPrice; delete d.stock;
+  }
   const price = d.price != null ? d.price : Number(existing.price);
   const compareAt = d.compareAtPrice != null ? d.compareAtPrice : Number(existing.compare_at_price);
   if (compareAt < price) {
@@ -420,6 +440,7 @@ async function updateProduct(id, d) {
     let v = d[key];
     if (TEXT_FIELDS.includes(key)) v = clean(v);
     else if (key === "tags") v = normaliseTags(v);
+    else if (key === "colors") v = require("./variantModel").splitColors(v).filter((c, i, a) => a.findIndex((x) => x.toLowerCase() === c.toLowerCase()) === i).join(", ").slice(0, 255) || null;
     else if (key === "active" || key === "featured") v = v ? 1 : 0;
     sets.push(`${col} = ?`);
     params.push(v);
@@ -447,6 +468,8 @@ async function adjustStock(id, { mode, qty, reason, note }) {
       await conn.rollback();
       return null;
     }
+    const [[hv]] = await conn.query("SELECT COUNT(*) AS n FROM product_variants WHERE product_id = ?", [id]);
+    if (hv.n > 0) throw ApiError.badRequest("This product is sold in sizes. Change the stock of each size in the Sizes & prices section.");
     const next = mode === "set" ? Number(qty) : p.stock + Number(qty);
     if (next < 0) throw ApiError.badRequest(`That would take stock below zero (currently ${p.stock}).`);
     const change = next - p.stock;
@@ -469,6 +492,12 @@ async function adjustStock(id, { mode, qty, reason, note }) {
   return getProduct(id);
 }
 
+// Compact catalogue for photo recognition: every product the shop sells.
+async function catalogueForMatching() {
+  const [rows] = await pool.query("SELECT p.id, p.name, p.brand, c.name AS category FROM products p JOIN categories c ON c.id = p.category_id ORDER BY p.id LIMIT 600");
+  return rows;
+}
+
 async function duplicateProduct(id) {
   const p = await getProduct(id);
   if (!p) return null;
@@ -480,7 +509,11 @@ async function duplicateProduct(id) {
     [p.category_id, `${p.name} (copy)`.slice(0, 160), p.brand, p.description, p.image_url, p.emoji, p.price,
      p.compare_at_price, p.cost_price, p.low_stock_threshold, p.tags, p.eta_label]
   );
-  return getProduct(r.insertId);
+  const nid = r.insertId;
+  await pool.query("UPDATE products SET colors = ? WHERE id = ?", [p.colors, nid]);
+  await pool.query("INSERT INTO product_photos (product_id, url, color, sort_order) SELECT ?, url, color, sort_order FROM product_photos WHERE product_id = ?", [nid, id]);
+  await pool.query("INSERT INTO product_variants (product_id, label, cost_price, price, compare_at_price, stock, sort_order, active) SELECT ?, label, cost_price, price, compare_at_price, 0, sort_order, active FROM product_variants WHERE product_id = ?", [nid, id]);
+  return getProduct(nid);
 }
 
 async function bulkProducts(ids, action, categoryId) {
@@ -647,6 +680,7 @@ async function listCustomers({ q, limit, offset }) {
 }
 
 module.exports = {
+  catalogueForMatching,
   STATUSES,
   getStats,
   listOrders,

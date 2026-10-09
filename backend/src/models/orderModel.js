@@ -4,6 +4,7 @@ const productModel = require("./productModel");
 const couponModel = require("./couponModel");
 const settingsModel = require("./settingsModel");
 const promoModel = require("./promoModel");
+const variantModel = require("./variantModel");
 const ApiError = require("../utils/ApiError");
 
 // No 0/O/1/I so codes are easy to read out over the phone or WhatsApp.
@@ -34,14 +35,18 @@ const round2 = (n) => Math.round(n * 100) / 100;
 async function createOrder(input) {
   const settings = await settingsModel.getAll();
 
-  // Same product twice in a cart → one line; fixed order → no lock-order deadlocks.
+  // Same product + size + colour twice in a cart → one line; fixed order → no lock-order deadlocks.
   const wanted = new Map();
-  for (const { productId, qty } of input.items) {
-    wanted.set(productId, (wanted.get(productId) || 0) + qty);
+  for (const { productId, qty, variantId, color } of input.items) {
+    const c = color ? String(color).trim().slice(0, 40) : "";
+    const key = `${productId}|${variantId || 0}|${c.toLowerCase()}`;
+    const cur = wanted.get(key) || { productId, variantId: variantId || 0, color: c, qty: 0 };
+    cur.qty += qty;
+    wanted.set(key, cur);
   }
-  const lines = [...wanted.entries()].sort((a, b) => a[0] - b[0]);
-  for (const [, qty] of lines) {
-    if (qty > 20) throw ApiError.badRequest("You can order at most 20 of one item at a time.");
+  const lines = [...wanted.values()].sort((a, b) => a.productId - b.productId || a.variantId - b.variantId);
+  for (const l of lines) {
+    if (l.qty > 20) throw ApiError.badRequest("You can order at most 20 of one item at a time.");
   }
 
   const promos = await promoModel.active();
@@ -52,34 +57,57 @@ async function createOrder(input) {
     const lineItems = [];
     let subtotal = 0;
 
-    for (const [productId, qty] of lines) {
+    for (const { productId, variantId, color, qty } of lines) {
       const product = await productModel.lockForUpdate(conn, productId);
       if (!product || !product.active) {
         throw ApiError.badRequest(`One of the items in your cart is no longer available.`, {
           productId,
         });
       }
-      if (product.stock < qty) {
+      // Sizes: when a product has them, the size decides the price and the stock.
+      const [sizes] = await conn.query(
+        "SELECT id, label, price, stock FROM product_variants WHERE product_id = ? AND active = 1 ORDER BY id FOR UPDATE", [productId]);
+      let variant = null;
+      if (sizes.length) {
+        if (!variantId) throw ApiError.badRequest(`Please choose a size for "${product.name}".`);
+        variant = sizes.find((v) => v.id === variantId);
+        if (!variant) throw ApiError.badRequest(`That size of "${product.name}" is no longer available. Please choose another.`);
+      } else if (variantId) {
+        throw ApiError.badRequest(`"${product.name}" is no longer sold in sizes. Please refresh your cart.`);
+      }
+      const colors = await variantModel.colorsFor(conn, productId);
+      let chosenColor = null;
+      if (colors.length >= 2) {
+        chosenColor = colors.find((c) => c.toLowerCase() === String(color || "").toLowerCase());
+        if (!chosenColor) throw ApiError.badRequest(`Please choose a colour for "${product.name}".`);
+      }
+      const shownName = `${product.name}${variant || chosenColor ? ` (${[variant && variant.label, chosenColor].filter(Boolean).join(", ")})` : ""}`;
+      const available = variant ? variant.stock : product.stock;
+      if (available < qty) {
         throw ApiError.conflict(
-          product.stock > 0
-            ? `Only ${product.stock} left of "${product.name}" — please adjust the quantity.`
-            : `"${product.name}" just sold out.`
+          available > 0
+            ? `Only ${available} left of "${shownName}" — please adjust the quantity.`
+            : `"${shownName}" just sold out.`
         );
       }
       // Same promotion rules the storefront shows, re-applied here so the price is never taken from the client.
-      const unitPrice = promoModel.discounted(product.price, promoModel.percentFor(promos, product, qty));
+      const basePrice = variant ? variant.price : product.price;
+      const unitPrice = promoModel.discounted(basePrice, promoModel.percentFor(promos, product, qty));
       const lineTotal = round2(unitPrice * qty);
       subtotal = round2(subtotal + lineTotal);
 
       lineItems.push({
         productId: product.id,
-        name: product.name,
+        variantId: variant ? variant.id : null,
+        color: chosenColor,
+        name: shownName,
         unitPrice,
         qty,
         lineTotal,
         stockAfter: product.stock - qty,
       });
 
+      if (variant) await conn.query("UPDATE product_variants SET stock = stock - ? WHERE id = ?", [qty, variant.id]);
       await productModel.decrementStock(conn, product.id, qty);
     }
 
@@ -136,14 +164,14 @@ async function createOrder(input) {
 
     for (const li of lineItems) {
       await conn.query(
-        `INSERT INTO order_items (order_id, product_id, name_snapshot, unit_price_snapshot, qty, line_total)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [orderId, li.productId, li.name, li.unitPrice, li.qty, li.lineTotal]
+        `INSERT INTO order_items (order_id, product_id, variant_id, color, name_snapshot, unit_price_snapshot, qty, line_total)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [orderId, li.productId, li.variantId, li.color, li.name, li.unitPrice, li.qty, li.lineTotal]
       );
       await conn.query(
-        `INSERT INTO stock_log (product_id, change_qty, stock_after, reason, order_code)
-         VALUES (?, ?, ?, 'sale', ?)`,
-        [li.productId, -li.qty, li.stockAfter, orderCode]
+        `INSERT INTO stock_log (product_id, change_qty, stock_after, reason, order_code, note)
+         VALUES (?, ?, ?, 'sale', ?, ?)`,
+        [li.productId, -li.qty, li.stockAfter, orderCode, li.variantId ? li.name.slice(0, 200) : null]
       );
     }
 

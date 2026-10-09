@@ -51,7 +51,7 @@ const registerLimiter = rateLimit({
 // guessing the key is.
 const adminAuthLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 20,
+  limit: Number(process.env.ADMIN_AUTH_LIMIT) || 20,
   skipSuccessfulRequests: true,
   standardHeaders: true,
   legacyHeaders: false,

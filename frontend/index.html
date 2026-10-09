@@ -260,7 +260,9 @@ background-image:radial-gradient(circle at 20% 30%,rgba(255,255,255,.05) 0 2px,t
 
 /* detail */
 .dwrap{display:grid;grid-template-columns:minmax(0,480px) 1fr;gap:40px;margin-bottom:8px}
-.dgal{position:relative}
+.dgal{position:relative}.thumbs{display:flex;gap:8px;margin-top:10px;overflow-x:auto;padding-bottom:4px}.thumbs button{flex:0 0 64px;height:64px;border:2px solid transparent;border-radius:12px;padding:0;overflow:hidden;background:var(--card);cursor:pointer}.thumbs button[aria-pressed=true]{border-color:var(--accent)}.thumbs img{width:100%;height:100%;object-fit:cover;display:block}
+.opt{margin:16px 0}.opt>b{display:block;margin-bottom:8px;font-size:14px}.chipsel{display:flex;flex-wrap:wrap;gap:8px}.chipsel button{border:1.5px solid var(--line);background:var(--card);border-radius:12px;padding:9px 14px;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;gap:1px;font:inherit;color:inherit;min-height:44px}.chipsel button small{color:var(--mute);font-size:12px}.chipsel button[aria-pressed=true]{border-color:var(--accent);background:var(--tint);box-shadow:0 0 0 1px var(--accent) inset}.chipsel button:disabled{opacity:.45;cursor:not-allowed;text-decoration:line-through}
+.opt.flash{animation:optflash .9s}@keyframes optflash{0%,60%{background:#fff4d6;border-radius:12px}100%{background:transparent}}.dprice .from{color:var(--mute);font-size:14px;font-weight:500;margin-right:4px}.ci .opts{display:block;color:var(--mute)}
 .dinfo{display:flex;flex-direction:column;gap:14px;min-width:0}
 .dinfo h1{font-size:clamp(28px,3.6vw,42px)}
 .dprice{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
@@ -587,6 +589,13 @@ const hue=ci=>HUE[ci%HUE.length];
 const safeUrl=u=>/^https?:\/\//i.test(u||"")?u:"";
 const disc=x=>x.o>x.p?Math.round((1-x.p/x.o)*100):0;
 const G=id=>PM.get(+id);
+/* Cart lines: a plain product is keyed by its id ("12"). A product with sizes/colours is keyed "12:<sizeId>:<colour>". K() gives the line as a product-like object with the size's price and stock. */
+const KC=new Map(),needs=x=>!!x&&(x.vs.length>0||x.cl.length>=2),encC=c=>encodeURIComponent(c).replace(/'/g,"%27");
+const ck=(pid,vid,col)=>String(pid)+((vid||col)?":"+(vid||0)+":"+(col?encC(col):""):"");
+function K(key){key=String(key);if(KC.has(key))return KC.get(key);const[a,b,c]=key.split(":"),x=PM.get(+a),vid=+b||0,col=c?decodeURIComponent(c):"";let r=null;
+if(x){if(!vid&&!col)r=needs(x)?null:x;else{const v=vid?x.vs.find(v=>v.id===vid):null;if(!(vid&&!v)&&(!needs(x)||vid||!x.vs.length)&&!(x.cl.length>=2&&!col))r={...x,key,vid,vl:v?v.l:"",col,...(v?{p:v.p,o:v.o,bp:v.bp,st:v.st}:{})}}}
+KC.set(key,r);return r}
+const lineName=id=>{const x=K(id),o=[x.vl,x.col].filter(Boolean).join(", ");return x.n+(o?` (${o})`:"")};
 
 /* ---------- catalog ---------- */
 let CATS=[],P=[],PM=new Map(),CC=[],VOC=[],CATIDS=[];
@@ -598,9 +607,9 @@ for(let pg=2;rows.length===(pg-1)*100&&pg<=10;pg++){const r=await apiGet("/api/p
 const catList=Array.isArray(cr)?cr:(cr.categories||[]);
 const cats=catList.map(c=>({id:c.id,n:c.name,e:c.icon||"🛍️"})),cmap=new Map(cats.map((c,i)=>[c.id,i]));
 const prods=rows.filter(r=>cmap.has(r.category_id)).map(r=>{const p=+r.price,o=+r.compare_at_price||p;
-return{id:r.id,n:r.name,c:r.category_name,ci:cmap.get(r.category_id),e:r.emoji||"🛍️",p,o:o>p?o:p,r:+r.rating||0,rc:+r.rating_count||0,st:+r.stock||0,eta:r.eta_label||"",img:safeUrl(r.image_url),d:r.description||"",br:r.brand||"",tg:parseTags(r.tags),f:!!r.featured,bulk:Array.isArray(r.bulk)?r.bulk:null,bp:+r.base_price||p}});
+return{id:r.id,n:r.name,c:r.category_name,ci:cmap.get(r.category_id),e:r.emoji||"🛍️",p,o:o>p?o:p,r:+r.rating||0,rc:+r.rating_count||0,st:+r.stock||0,eta:r.eta_label||"",img:safeUrl(r.image_url),d:r.description||"",br:r.brand||"",tg:parseTags(r.tags),f:!!r.featured,bulk:Array.isArray(r.bulk)?r.bulk:null,bp:+r.base_price||p,vs:(r.variants||[]).map(v=>({id:v.id,l:v.label,p:+v.price,o:Math.max(+v.compare_at_price||0,+v.price),bp:+v.base_price||+v.price,st:+v.stock||0})),cl:Array.isArray(r.colors)?r.colors:[]}});
 return{cats,prods}}
-function setCatalog({cats,prods}){
+function setCatalog({cats,prods}){KC.clear();
 CATS=cats.map(c=>[c.n,c.e]);CATID=cats.map(c=>c.id);P=prods;PM=new Map(P.map(x=>[x.id,x]));CC=CATS.map((_,i)=>P.filter(x=>x.ci===i).length);
 P.forEach(x=>{x.nn=norm(x.n);x.w=norm(x.n+" "+x.c+" "+x.br+" "+x.tg.join(" ")).split(" ")});
 POP=CATS.map((_,i)=>P.find(x=>x.ci===i&&x.st>0)).filter(Boolean).map(x=>x.n).slice(0,6);
@@ -608,7 +617,7 @@ VOC=[...new Set(P.flatMap(x=>x.w).filter(w=>w.length>=4&&!/\d/.test(w)))]}
 let POP=[],CATID=[],BANNERS=[];
 /* Price per unit at a given quantity: same promotion rule the server applies when the order is placed. */
 function unit(x,q){let u=x.p;if(x.bulk)for(const t of x.bulk)if(q>=t.minQty)u=Math.min(u,Math.round(x.bp*(100-t.percent)/100));return u}
-const line=id=>{const x=G(id);return Math.round(unit(x,cart[id])*cart[id]*100)/100};
+const line=id=>{const x=K(id);return Math.round(unit(x,cart[id])*cart[id]*100)/100};
 function bulkNote(x){if(!x.bulk||!x.bulk.length)return"";const t=[...x.bulk].sort((a,b)=>a.minQty-b.minQty)[0];return`Buy ${t.minQty} or more, get ${t.percent}% off`}
 
 /* ---------- state ---------- */
@@ -619,8 +628,8 @@ if(!cart||typeof cart!=="object"||Array.isArray(cart))cart={};
 if(!Array.isArray(recent))recent=[];
 if(!Array.isArray(viewed))viewed=[];
 const S={q:"",cat:-1,sort:"rel",price:"any",rating:0,sale:false,on:false};
-const cartIds=()=>Object.keys(cart).map(Number).filter(id=>G(id));
-function pruneState(){Object.keys(cart).forEach(k=>{if(!G(k)||!(cart[k]>0))delete cart[k]});viewed=viewed.filter(G);[...fav].forEach(id=>{if(!G(id))fav.delete(id)});store.set("shevs.cart2",cart);store.set("shevs.fav2",[...fav]);store.set("shevs.viewed2",viewed)}
+const cartIds=()=>Object.keys(cart).filter(k=>K(k));
+function pruneState(){Object.keys(cart).forEach(k=>{if(!K(k)||!(cart[k]>0))delete cart[k]});viewed=viewed.filter(G);[...fav].forEach(id=>{if(!G(id))fav.delete(id)});store.set("shevs.cart2",cart);store.set("shevs.fav2",[...fav]);store.set("shevs.viewed2",viewed)}
 function stockInfo(x){if(x.st<=0)return{txt:"Out of stock",cls:"out"};if(x.st<=4)return{txt:`Only ${x.st} left`,cls:"low"};return{txt:"In stock",cls:""}}
 const desc=x=>x.d||`A popular pick from our ${x.c} range. Checked before it ships, with easy returns within 7 days.`;
 const tile=(x,cls="",alt="")=>`<div class="ph ${cls}" style="--t:${hue(x.ci)}"><span aria-hidden="true">${x.e}</span>${x.img?`<img src="${esc(x.img)}" alt="${esc(alt)}" loading="lazy" decoding="async" onerror="this.remove()">`:""}</div>`;
@@ -714,28 +723,36 @@ if(!list.length){$("rgrid").innerHTML=`<div class="empty"><span class="eb" aria-
 $("rgrid").innerHTML=list.map(card).join("")}
 
 /* ---------- cards + cart ---------- */
-const stepper=id=>`<div class="step"><button type="button" data-k="dec" aria-label="Remove one" onclick="dec(${id})">−</button><span aria-live="polite">${cart[id]}</span><button type="button" data-k="inc" aria-label="Add one more" onclick="inc(${id})">+</button></div>`;
-function slotHtml(id){if(cart[id])return stepper(id);const x=G(id);if(!x||x.st<=0)return `<button class="add" type="button" disabled>Out of stock</button>`;return `<button class="add" type="button" data-k="add" onclick="inc(${id})">Add to cart</button>`}
+const stepper=id=>`<div class="step"><button type="button" data-k="dec" aria-label="Remove one" onclick="dec('${id}')">−</button><span aria-live="polite">${cart[id]}</span><button type="button" data-k="inc" aria-label="Add one more" onclick="inc('${id}')">+</button></div>`;
+function slotHtml(id){if(cart[id])return stepper(id);const b=G(String(id).split(":")[0]);if(!b||b.st<=0)return `<button class="add" type="button" disabled>Out of stock</button>`;
+if(needs(b)&&String(id).indexOf(":")<0)return `<button class="add" type="button" data-k="add" onclick="openDetail(${b.id})">Choose options</button>`;
+const x=K(id);if(!x||x.st<=0)return `<button class="add" type="button" disabled>Out of stock</button>`;return `<button class="add" type="button" data-k="add" onclick="inc('${id}')">Add to cart</button>`}
+/* the add-to-cart area on the product page follows the size/colour the customer picked */
+const SEL={};
+const selKey=pid=>{const x=G(pid),s=SEL[pid]||{v:0,c:""};return ck(pid,s.v,s.c)};
+const selMissing=pid=>{const x=G(pid),s=SEL[pid]||{v:0,c:""};if(x.vs.length&&!s.v)return"size";if(x.cl.length>=2&&!s.c)return"colour";return""};
+function detSlot(pid){const m=selMissing(pid);if(m)return `<button class="add" type="button" data-k="add" onclick="needSel(${pid})">Choose a ${m}</button>`;const key=selKey(pid),x=K(key);if(!x||x.st<=0)return `<button class="add" type="button" disabled>Out of stock</button>`;return cart[key]?stepper(key):`<button class="add" type="button" data-k="add" onclick="inc('${key}')">Add to cart</button>`}
+function needSel(pid){const m=selMissing(pid),el=$(m==="size"?"optSize":"optColor");if(el){el.scrollIntoView({block:"center",behavior:"smooth"});el.classList.remove("flash");void el.offsetWidth;el.classList.add("flash")}toast("Please choose a "+m)}
 function card(x){const d=disc(x),f=fav.has(x.id),si=stockInfo(x);
-return `<article class="p"><button class="fav" type="button" data-id="${x.id}" aria-pressed="${f}" aria-label="Save ${esc(x.n)} to wishlist" onclick="toggleFav(${x.id})">${I("heart",18)}</button><a class="pl" href="#p${x.id}" onclick="openDetail(${x.id});return false" aria-label="View ${esc(x.n)}">${tile(x)}${d?`<span class="tag">-${d}%</span>`:""}<div class="pi">${x.br?`<span class="br">${esc(x.br)}</span>`:""}<h3>${esc(x.n)}</h3>${x.rc?`<div class="rate" aria-label="Rated ${x.r.toFixed(1)} out of 5 from ${x.rc} reviews"><span class="stars" aria-hidden="true">★</span><b>${x.r.toFixed(1)}</b><small>(${x.rc})</small></div>`:""}<div class="pr ${d?"sale":""}"><b>${kes(x.p)}</b>${d?`<span class="old">${kes(x.o)}</span>`:""}</div></div></a>${si.cls?`<div class="stock ${si.cls}">${si.txt}</div>`:""}<div class="slot" data-id="${x.id}">${slotHtml(x.id)}</div></article>`}
-function inc(id){const x=G(id);if(!x)return;if((cart[id]||0)>=x.st&&x.st>0&&cart[id]){toast(`Only ${x.st} in stock`);return}if(x.st<=0)return;const first=!cart[id];cart[id]=(cart[id]||0)+1;syncCart();if(first)toast(x.n+" added",{label:"View cart",fn:"panel('cart')"})}
-function dec(id){if(!cart[id])return;cart[id]--;if(cart[id]<=0)delete cart[id];syncCart()}
-function removeItem(id){delete cart[id];syncCart()}
+return `<article class="p"><button class="fav" type="button" data-id="${x.id}" aria-pressed="${f}" aria-label="Save ${esc(x.n)} to wishlist" onclick="toggleFav(${x.id})">${I("heart",18)}</button><a class="pl" href="#p${x.id}" onclick="openDetail(${x.id});return false" aria-label="View ${esc(x.n)}">${tile(x)}${d?`<span class="tag">-${d}%</span>`:""}<div class="pi">${x.br?`<span class="br">${esc(x.br)}</span>`:""}<h3>${esc(x.n)}</h3>${x.rc?`<div class="rate" aria-label="Rated ${x.r.toFixed(1)} out of 5 from ${x.rc} reviews"><span class="stars" aria-hidden="true">★</span><b>${x.r.toFixed(1)}</b><small>(${x.rc})</small></div>`:""}<div class="pr ${d?"sale":""}">${x.vs.length>1?`<small class="from">From </small>`:""}<b>${kes(x.p)}</b>${d?`<span class="old">${kes(x.o)}</span>`:""}</div></div></a>${si.cls?`<div class="stock ${si.cls}">${si.txt}</div>`:""}<div class="slot" data-id="${x.id}">${slotHtml(x.id)}</div></article>`}
+function inc(id){id=String(id);const x=K(id);if(!x)return;if((cart[id]||0)>=x.st&&x.st>0&&cart[id]){toast(`Only ${x.st} in stock`);return}if(x.st<=0)return;const first=!cart[id];cart[id]=(cart[id]||0)+1;syncCart();if(first)toast(lineName(id)+" added",{label:"View cart",fn:"panel('cart')"})}
+function dec(id){id=String(id);if(!cart[id])return;cart[id]--;if(cart[id]<=0)delete cart[id];syncCart()}
+function removeItem(id){delete cart[String(id)];syncCart()}
 function syncCart(){store.set("shevs.cart2",cart);
 const a=document.activeElement,slot=a&&a.closest&&a.closest(".slot"),kind=a&&a.dataset?a.dataset.k:"";
 const n=Object.values(cart).reduce((s,v)=>s+v,0);
 ["cnt","bcnt"].forEach(id=>{$(id).textContent=n;$(id).hidden=!n});
-document.querySelectorAll(".slot").forEach(s=>{s.innerHTML=slotHtml(+s.dataset.id)});
-if(slot){const id=+slot.dataset.id,k=cart[id]?(kind==="dec"?"dec":"inc"):"add";const t=slot.querySelector(`[data-k="${k}"]`);if(t)t.focus({preventScroll:true})}
+document.querySelectorAll(".slot").forEach(s=>{s.innerHTML=s.dataset.det?detSlot(+s.dataset.det):slotHtml(s.dataset.id)});
+if(slot){const id=slot.dataset.det?selKey(+slot.dataset.det):slot.dataset.id,k=cart[id]?(kind==="dec"?"dec":"inc"):"add";const t=slot.querySelector(`[data-k="${k}"]`);if(t)t.focus({preventScroll:true})}
 if(openP==="cart")drawCart()}
-function drawCart(){const a=document.activeElement,ci=a&&a.closest&&a.closest(".ci"),key=ci?ci.dataset.id+":"+a.dataset.k:"";
+function drawCart(){const a=document.activeElement,ci=a&&a.closest&&a.closest(".ci"),key=ci?ci.dataset.id+"|"+a.dataset.k:"";
 const ids=cartIds(),total=ids.reduce((s,id)=>s+line(id),0);
 if(!ids.length){$("cbody").innerHTML=`<div class="cempty"><span class="big" aria-hidden="true">🛒</span><h3>Your cart is empty</h3><p>Add something you like and it will show up here.</p><button class="btn" type="button" onclick="panel(null)">Start shopping</button></div>`;$("cfoot").hidden=true;return}
 $("cfoot").hidden=false;
-$("cbody").innerHTML=ids.map(id=>{const x=G(id);return `<div class="ci" data-id="${id}"><div class="th" style="--t:${hue(x.ci)}" aria-hidden="true">${x.e}${x.img?`<img src="${esc(x.img)}" alt="" onerror="this.remove()">`:""}</div><div class="tx"><b>${esc(x.n)}</b><small>${kes(unit(x,cart[id]))} each${unit(x,cart[id])<x.p?" · multi-buy price":(bulkNote(x)?" · "+esc(bulkNote(x)):"")}</small>${stepper(id)}</div><div class="ct"><b>${kes(line(id))}</b><button class="rm" type="button" data-k="rm" onclick="removeItem(${id})" aria-label="Remove ${esc(x.n)}">Remove</button></div></div>`}).join("");
+$("cbody").innerHTML=ids.map(id=>{const x=K(id);return `<div class="ci" data-id="${id}"><div class="th" style="--t:${hue(x.ci)}" aria-hidden="true">${x.e}${x.img?`<img src="${esc(x.img)}" alt="" onerror="this.remove()">`:""}</div><div class="tx"><b>${esc(x.n)}</b>${x.vl||x.col?`<small class="opts">${esc([x.vl,x.col].filter(Boolean).join(" · "))}</small>`:""}<small>${kes(unit(x,cart[id]))} each${unit(x,cart[id])<x.p?" · multi-buy price":(bulkNote(x)?" · "+esc(bulkNote(x)):"")}</small>${stepper(id)}</div><div class="ct"><b>${kes(line(id))}</b><button class="rm" type="button" data-k="rm" onclick="removeItem('${id}')" aria-label="Remove ${esc(lineName(id))}">Remove</button></div></div>`}).join("");
 const rem=free()-total;
 $("cfoot").innerHTML=`${free()?`<div class="ship">${rem>0?`Add <b>${kes(rem)}</b> more for free delivery`:`<b>You’ve unlocked free delivery</b>`}<div class="bar"><i style="width:${Math.min(100,total/free()*100)}%"></i></div></div>`:""}<div class="sub-r"><span>Subtotal</span><span>${kes(total)}</span></div><button class="btn" type="button" onclick="openCheckout()">Checkout</button>`;
-if(key){const [id,k]=key.split(":");const t=document.querySelector(`#cbody .ci[data-id="${id}"] [data-k="${k}"]`)||document.querySelector("#cartp .x");if(t)t.focus({preventScroll:true})}}
+if(key){const [id,k]=key.split("|");const t=document.querySelector(`#cbody .ci[data-id="${id}"] [data-k="${k}"]`)||document.querySelector("#cartp .x");if(t)t.focus({preventScroll:true})}}
 function syncWishBadge(){const n=fav.size;["wcnt","bwcnt"].forEach(id=>{const el=$(id);if(el){el.textContent=n;el.hidden=!n}})}
 function toggleFav(id){fav.has(id)?fav.delete(id):fav.add(id);store.set("shevs.fav2",[...fav]);
 document.querySelectorAll(`.fav[data-id="${id}"]`).forEach(e=>e.setAttribute("aria-pressed",fav.has(id)));
@@ -850,7 +867,9 @@ async function claimOrder(e){e.preventDefault();const c=$("clc").value.trim().to
 if(!/^SHV-[A-Z0-9]{6}$/.test(c)){m.textContent="Enter your order number, like SHV-ABC234.";return}if(!PHONE_OK(p)){m.textContent="Enter the phone number you ordered with.";return}
 m.textContent="Adding…";const r=await acct("POST","/api/account/orders/claim",{orderCode:c,phone:p});if(!r.ok){m.textContent=r.error;return}ACC.orders=r.data.orders;toast("Order added");drawOrders()}
 function reorder(code){const o=(ACC.orders||[]).find(x=>x.order_code===code);if(!o)return;let added=0,skipped=[];
-for(const it of o.items){const x=it.product_id&&G(it.product_id);if(!x||x.st<=0){skipped.push(it.name_snapshot);continue}const q=Math.min(it.qty,x.st);cart[x.id]=Math.min(x.st,(cart[x.id]||0)+q);added+=q}
+for(const it of o.items){const b=it.product_id&&G(it.product_id);if(!b){skipped.push(it.name_snapshot);continue}
+const key=(it.variant_id||it.color||needs(b))?(it.variant_id&&!b.vs.some(v=>v.id===it.variant_id)?null:ck(b.id,it.variant_id,it.color)):String(b.id),x=key&&K(key);
+if(!x||x.st<=0){skipped.push(it.name_snapshot);continue}const q=Math.min(it.qty,x.st);cart[key]=Math.min(x.st,(cart[key]||0)+q);added+=q}
 syncCart();if(!added){toast("Those items aren't available right now");return}
 toast(skipped.length?`Added to cart · ${skipped.length} item${skipped.length>1?"s":""} unavailable`:"Added to your cart",{label:"View cart",fn:"panel('cart')"})}
 function reviewFrom(code){const o=(ACC.orders||[]).find(x=>x.order_code===code);const it=o&&o.items.find(i=>i.product_id&&G(i.product_id));if(!it){toast("That product isn't in the shop any more");return}
@@ -875,20 +894,37 @@ function go(i){hideAllViews();if(location.hash)history.replaceState(null,"",loca
 requestAnimationFrame(()=>{act=i<0?-1:i;nav();if(i===-1)scrollTo({top:0,behavior:smooth()});else if(i===-2){const el=$("shelves");el&&el.scrollIntoView({behavior:smooth(),block:"start"})}else{const el=$("c"+i);if(el)el.scrollIntoView({behavior:smooth(),block:"start"})}})}
 
 /* ---------- detail / wishlist / checkout ---------- */
-function openDetail(id){const x=G(id);if(!x)return;if(openP)panel(null);
+let openDetailId=0;
+function openDetail(id){const x=G(id);if(!x)return;openDetailId=id;if(openP)panel(null);
 viewed=[id,...viewed.filter(v=>v!==id)].slice(0,12);store.set("shevs.viewed2",viewed);updateHomeViewed();
-const f=fav.has(id),si=stockInfo(x),d=disc(x);
+SEL[id]={v:x.vs.length===1?x.vs[0].id:0,c:""};const f=fav.has(id),si=stockInfo(x),d=disc(x);
 crumbs("crumbsD",[{t:"Home",fn:"go(-1)"},{t:x.c,fn:`go(${x.ci})`},{t:x.n}]);
 const related=P.filter(p=>p.ci===x.ci&&p.id!==id).slice(0,6);
 const seen=viewed.filter(v=>v!==id).slice(0,6).map(G).filter(Boolean);
-$("detailBody").innerHTML=`<div class="dwrap"><div class="dgal">${tile(x,"big",x.n)}${d?`<span class="tag" style="font-size:14px;top:20px;left:20px;padding:6px 10px">-${d}%</span>`:""}</div><div class="dinfo">${x.br?`<span class="br">${esc(x.br)}</span>`:""}<h1>${esc(x.n)}</h1>${x.rc?`<div class="rate" aria-label="Rated ${x.r.toFixed(1)} out of 5 from ${x.rc} reviews"><span class="stars" aria-hidden="true">★</span><b>${x.r.toFixed(1)}</b><small>(${x.rc} reviews)</small></div>`:""}<div class="dprice ${d?"sale":""}"><b>${kes(x.p)}</b>${d?`<span class="old">${kes(x.o)}</span><span class="save">Save ${kes(x.o-x.p)}</span>`:""}</div><p class="ddesc">${esc(desc(x))}</p>${x.tg.length?`<div class="chips">${x.tg.map(t=>`<span>${esc(t)}</span>`).join("")}</div>`:""}<div class="dcta"><div class="slot" data-id="${id}">${slotHtml(id)}</div><button class="dfav" type="button" data-id="${id}" aria-pressed="${f}" onclick="toggleFav(${id})">${I("heart",18)}<span>${f?"Saved":"Save"}</span></button><button class="dfav" type="button" onclick="shareProduct(${id})" aria-label="Share ${esc(x.n)}">${I("share",18)}<span>Share</span></button></div>${bulkNote(x)?`<p class="bulk">🏷️ ${esc(bulkNote(x))}</p>`:""}<ul class="dmeta"><li class="stock ${si.cls}" style="padding:0">${si.txt}</li>${x.eta?`<li>Delivery in <b>${esc(x.eta)}</b></li>`:""}<li>${free()?`Free delivery on orders above ${kes(free())}`:`Delivery ${kes(fee())}`}</li><li>Returns within 7 days</li></ul><a class="ask" target="_blank" rel="noopener" href="${esc(waLink("Hi Shevs, I have a question about: "+x.n))}">${I("chat",18)}Ask about this on WhatsApp</a>${x.st<=0?`<form class="nfy" onsubmit="notifyMe(event,${id})"><b>Tell me when it's back</b><div><input id="nfyc" required placeholder="Phone (07…) or email" aria-label="Phone number or email" autocomplete="tel"><button class="btn" type="submit">Notify me</button></div><small id="nfyMsg" aria-live="polite"></small></form>`:""}</div></div><section class="revs" id="revs" aria-label="Customer reviews"></section>${related.length?sliderSection("More from "+x.c,related):""}${seen.length?sliderSection("Recently viewed",seen):""}`;
+$("detailBody").innerHTML=`<div class="dwrap"><div class="dgal"><div id="gmain">${tile(x,"big",x.n)}</div>${d?`<span class="tag" style="font-size:14px;top:20px;left:20px;padding:6px 10px">-${d}%</span>`:""}<div class="thumbs" id="gthumbs" hidden></div></div><div class="dinfo">${x.br?`<span class="br">${esc(x.br)}</span>`:""}<h1>${esc(x.n)}</h1>${x.rc?`<div class="rate" aria-label="Rated ${x.r.toFixed(1)} out of 5 from ${x.rc} reviews"><span class="stars" aria-hidden="true">★</span><b>${x.r.toFixed(1)}</b><small>(${x.rc} reviews)</small></div>`:""}<div class="dprice" id="dprice"></div><p class="ddesc">${esc(desc(x))}</p>${x.vs.length?`<div class="opt" id="optSize"><b>Size</b><div class="chipsel">${x.vs.map(v=>`<button type="button" data-v="${v.id}" ${v.st<=0?"disabled":""} onclick="pickSize(${id},${v.id})"><span>${esc(v.l)}</span><small>${v.st<=0?"Sold out":kes(v.p)}</small></button>`).join("")}</div></div>`:""}${x.cl.length>=2?`<div class="opt" id="optColor"><b>Colour</b><div class="chipsel">${x.cl.map(c=>`<button type="button" data-c="${esc(c)}" onclick="pickColor(${id},this.dataset.c)"><span>${esc(c)}</span></button>`).join("")}</div></div>`:""}${x.tg.length?`<div class="chips">${x.tg.map(t=>`<span>${esc(t)}</span>`).join("")}</div>`:""}<div class="dcta"><div class="slot" data-det="${id}">${detSlot(id)}</div><button class="dfav" type="button" data-id="${id}" aria-pressed="${f}" onclick="toggleFav(${id})">${I("heart",18)}<span>${f?"Saved":"Save"}</span></button><button class="dfav" type="button" onclick="shareProduct(${id})" aria-label="Share ${esc(x.n)}">${I("share",18)}<span>Share</span></button></div>${bulkNote(x)?`<p class="bulk">🏷️ ${esc(bulkNote(x))}</p>`:""}<ul class="dmeta"><li class="stock ${si.cls}" id="dstock" style="padding:0">${si.txt}</li>${x.eta?`<li>Delivery in <b>${esc(x.eta)}</b></li>`:""}<li>${free()?`Free delivery on orders above ${kes(free())}`:`Delivery ${kes(fee())}`}</li><li>Returns within 7 days</li></ul><a class="ask" target="_blank" rel="noopener" href="${esc(waLink("Hi Shevs, I have a question about: "+x.n))}">${I("chat",18)}Ask about this on WhatsApp</a>${x.st<=0?`<form class="nfy" onsubmit="notifyMe(event,${id})"><b>Tell me when it's back</b><div><input id="nfyc" required placeholder="Phone (07…) or email" aria-label="Phone number or email" autocomplete="tel"><button class="btn" type="submit">Notify me</button></div><small id="nfyMsg" aria-live="polite"></small></form>`:""}</div></div><section class="revs" id="revs" aria-label="Customer reviews"></section>${related.length?sliderSection("More from "+x.c,related):""}${seen.length?sliderSection("Recently viewed",seen):""}`;
 showView("detail");loadReviews(id);
 document.title=x.n+" — "+kes(x.p)+" | "+(CFG.shopName||"Shevs");
 if(location.hash!=="#p"+id)history.replaceState(null,"","#p"+id);
-$("stickybuy").innerHTML=`<div class="wrap sbrow"><div class="sbprice">${kes(x.p)}</div><div class="slot" data-id="${id}">${slotHtml(id)}</div></div>`;
+$("stickybuy").innerHTML=`<div class="wrap sbrow"><div class="sbprice" id="sbprice">${kes(x.p)}</div><div class="slot" data-det="${id}">${detSlot(id)}</div></div>`;paintSel(id);loadGallery(id);
 if(window.buyObs)window.buyObs.disconnect();
 window.buyObs=new IntersectionObserver(es=>{$("stickybuy").hidden=es[0].isIntersecting},{threshold:0});
 window.buyObs.observe(document.querySelector(".dcta"))}
+/* size + colour pickers, gallery */
+function curSel(id){const x=G(id),s=SEL[id]||{v:0,c:""},v=s.v?x.vs.find(v=>v.id===s.v):null;return{x,v,c:s.c,p:v?v.p:x.p,o:v?v.o:x.o,st:v?v.st:x.st}}
+function paintSel(id){const{x,v,c,p,o,st}=curSel(id),sale=o>p,from=x.vs.length>1&&!v;
+const dp=$("dprice");if(dp){dp.className="dprice"+(sale?" sale":"");dp.innerHTML=`${from?`<small class="from">From </small>`:""}<b>${kes(p)}</b>${sale?`<span class="old">${kes(o)}</span><span class="save">Save ${kes(o-p)}</span>`:""}`}
+const sp=$("sbprice");if(sp)sp.textContent=(from?"From ":"")+kes(p);
+const ds=$("dstock");if(ds){const si=stockInfo({st});ds.className="stock "+si.cls;ds.textContent=si.txt}
+document.querySelectorAll("#optSize [data-v]").forEach(b=>b.setAttribute("aria-pressed",String(+b.dataset.v===(v&&v.id))));
+document.querySelectorAll("#optColor [data-c]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.c===c)));
+document.querySelectorAll(".slot[data-det='"+id+"']").forEach(s=>{s.innerHTML=detSlot(id)})}
+function pickSize(id,vid){SEL[id].v=vid;paintSel(id)}
+function pickColor(id,c){SEL[id].c=c;paintSel(id);const ph=(G(id).ph||[]).findIndex(p=>p.color&&p.color.toLowerCase()===c.toLowerCase());if(ph>=0)showPhoto(id,ph)}
+function showPhoto(id,i){const x=G(id),ph=x.ph||[];if(!ph[i])return;const m=document.querySelector("#gmain .ph");if(!m)return;let im=m.querySelector("img");if(!im){im=document.createElement("img");im.alt=x.n;m.appendChild(im)}im.src=ph[i].url;document.querySelectorAll("#gthumbs button").forEach((b,j)=>b.setAttribute("aria-pressed",String(j===i)))}
+async function loadGallery(id){const x=G(id);if(!x)return;let ph=x.ph;
+if(!ph){try{const r=await apiGet("/api/products/"+id);ph=x.ph=((r.product&&r.product.photos)||[]).map(p=>({url:safeUrl(p.url),color:p.color})).filter(p=>p.url)}catch{return}}
+const box=$("gthumbs");if(!box||openDetailId!==id||ph.length<2)return;
+box.hidden=false;box.innerHTML=ph.map((p,i)=>`<button type="button" aria-pressed="${i===0}" aria-label="Photo ${i+1}${p.color?" — "+esc(p.color):""}" onclick="showPhoto(${id},${i})"><img src="${esc(p.url)}" alt="" loading="lazy"></button>`).join("");showPhoto(id,0)}
 function shareProduct(id){const x=G(id);if(!x)return;const url=location.origin+"/p/"+id,text=x.n+" — "+kes(x.p);
 if(navigator.share){navigator.share({title:x.n,text,url}).catch(()=>{});return}
 if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(url).then(()=>toast("Link copied"),()=>prompt("Copy this link",url));else prompt("Copy this link",url)}
@@ -939,7 +975,7 @@ ckDiscount=0;ckCode="";msg.textContent="We couldn't check that code right now. T
 updateCkTotals()}
 function updateCkTotals(){$("ckTotals").innerHTML=`<div class="oi"><span>Subtotal</span><span>${kes(ckSubtotal())}</span></div>${ckDiscount?`<div class="oi"><span>Coupon (${esc(ckCode)})</span><span>−${kes(ckDiscount)}</span></div>`:""}<div class="oi"><span>Delivery</span><span>${ckShip()?kes(ckShip()):"Free"}</span></div><div class="oi tot"><span>Total</span><span>${kes(ckTotal())}</span></div>`}
 function renderCheckout(){const ids=cartIds();
-$("checkoutBody").innerHTML=`<div class="ckwrap"><form id="ckform" novalidate><h1 style="font-size:30px;margin-bottom:18px">Delivery details</h1><div class="fld"><label for="ckn">Full name</label><input id="ckn" required autocomplete="name"></div><div class="fld"><label for="ckp">Phone number</label><input id="ckp" type="tel" required placeholder="07XX XXX XXX" autocomplete="tel"></div><div class="fld"><label for="cke">Email <small style="color:var(--mute)">(optional — for your receipt)</small></label><input id="cke" type="email" autocomplete="email" placeholder="you@example.com"></div><div class="fld"><label for="ckc">County</label><select id="ckc" required><option value="">Select county</option>${["Nairobi","Mombasa","Kisumu","Nakuru","Uasin Gishu","Kiambu","Machakos","Other"].map(c=>`<option>${c}</option>`).join("")}</select></div><div class="fld"><label for="cka">Estate / street address</label><input id="cka" required autocomplete="street-address"></div><h2 style="font-size:18px;margin:20px 0 10px">How will you pay?</h2><label class="pm"><input type="radio" name="pay" value="mpesa" checked><span>M-Pesa<small>We share payment details on WhatsApp</small></span></label><label class="pm"><input type="radio" name="pay" value="cod"><span>Cash on delivery<small>Pay the rider when it arrives</small></span></label><button class="btn" type="submit" style="margin-top:18px;width:100%;text-align:center;padding:15px;font-size:16px">Send order</button><p class="note">You won't be charged on this website. We confirm your order on WhatsApp first.</p></form><div class="osum"><h2 style="font-size:19px;margin-bottom:10px">Order summary</h2>${ids.map(id=>`<div class="oi"><span>${cart[id]} × ${esc(G(id).n)}</span><span>${kes(line(id))}</span></div>`).join("")}<div class="fld" style="margin:14px 0"><label for="ckq">Coupon code</label><div style="display:flex;gap:8px"><input id="ckq" placeholder="Enter code" style="flex:1"><button type="button" class="see" onclick="applyCoupon()">Apply</button></div><div id="ckqMsg" class="note" aria-live="polite" style="margin-top:4px"></div></div><div id="ckTotals"></div></div></div>`;
+$("checkoutBody").innerHTML=`<div class="ckwrap"><form id="ckform" novalidate><h1 style="font-size:30px;margin-bottom:18px">Delivery details</h1><div class="fld"><label for="ckn">Full name</label><input id="ckn" required autocomplete="name"></div><div class="fld"><label for="ckp">Phone number</label><input id="ckp" type="tel" required placeholder="07XX XXX XXX" autocomplete="tel"></div><div class="fld"><label for="cke">Email <small style="color:var(--mute)">(optional — for your receipt)</small></label><input id="cke" type="email" autocomplete="email" placeholder="you@example.com"></div><div class="fld"><label for="ckc">County</label><select id="ckc" required><option value="">Select county</option>${["Nairobi","Mombasa","Kisumu","Nakuru","Uasin Gishu","Kiambu","Machakos","Other"].map(c=>`<option>${c}</option>`).join("")}</select></div><div class="fld"><label for="cka">Estate / street address</label><input id="cka" required autocomplete="street-address"></div><h2 style="font-size:18px;margin:20px 0 10px">How will you pay?</h2><label class="pm"><input type="radio" name="pay" value="mpesa" checked><span>M-Pesa<small>We share payment details on WhatsApp</small></span></label><label class="pm"><input type="radio" name="pay" value="cod"><span>Cash on delivery<small>Pay the rider when it arrives</small></span></label><button class="btn" type="submit" style="margin-top:18px;width:100%;text-align:center;padding:15px;font-size:16px">Send order</button><p class="note">You won't be charged on this website. We confirm your order on WhatsApp first.</p></form><div class="osum"><h2 style="font-size:19px;margin-bottom:10px">Order summary</h2>${ids.map(id=>`<div class="oi"><span>${cart[id]} × ${esc(lineName(id))}</span><span>${kes(line(id))}</span></div>`).join("")}<div class="fld" style="margin:14px 0"><label for="ckq">Coupon code</label><div style="display:flex;gap:8px"><input id="ckq" placeholder="Enter code" style="flex:1"><button type="button" class="see" onclick="applyCoupon()">Apply</button></div><div id="ckqMsg" class="note" aria-live="polite" style="margin-top:4px"></div></div><div id="ckTotals"></div></div></div>`;
 if(ACC.user){const u=ACC.user;$("ckn").value=u.name;$("ckp").value=ph0(u);if(u.email)$("cke").value=u.email;if(u.county)$("ckc").value=u.county;if(u.address)$("cka").value=u.address}
 else{$("ckform").insertAdjacentHTML("afterbegin",`<p class="acctnudge">Have an account? <button class="see" type="button" onclick="window._authThen=()=>renderCheckout();openAuth('login')">Sign in</button> to fill this in automatically.</p>`)}
 updateCkTotals();
@@ -953,7 +989,7 @@ if(!county){toast("Please select a county");$("ckc").focus();return}
 if(!address){toast("Please enter your delivery address");$("cka").focus();return}
 btn.disabled=true;btn.textContent="Sending…";
 window._guest={name,phone,email,claim:null};
-const payload={customerName:name,phone,customerEmail:email||undefined,county,address,paymentMethod:document.querySelector('input[name="pay"]:checked').value,couponCode:ckDiscount?ckCode:null,items:cartIds().map(id=>({productId:id,qty:cart[id]}))};
+const payload={customerName:name,phone,customerEmail:email||undefined,county,address,paymentMethod:document.querySelector('input[name="pay"]:checked').value,couponCode:ckDiscount?ckCode:null,items:cartIds().map(id=>{const x=K(id);return{productId:x.id,qty:cart[id],variantId:x.vid||undefined,color:x.col||undefined}})};
 const res=await apiPost("/api/orders",payload);
 if(res===null){btn.disabled=false;btn.textContent=label;toast("We couldn't reach the shop. Check your connection and try again.");return}
 if(res.ok){window._guest.claim={orderCode:res.data.orderCode,phone};placeOrder(res.data.total,res.data.orderCode,res.data.whatsappUrl,!!email);return}

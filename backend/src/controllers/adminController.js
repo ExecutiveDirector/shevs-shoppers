@@ -1,6 +1,8 @@
 const adminModel = require("../models/adminModel");
 const settingsModel = require("../models/settingsModel");
 const imageModel = require("../models/imageModel");
+const variantModel = require("../models/variantModel");
+const vision = require("../utils/vision");
 const mailer = require("../utils/mailer");
 const reportModel = require("../models/reportModel");
 const asyncHandler = require("../utils/asyncHandler");
@@ -123,6 +125,18 @@ const uploadImage = asyncHandler(async (req, res) => {
   res.status(201).json({ id: img.id, url: `${origin.replace(/\/$/, "")}/api/images/${img.id}.webp`, width: img.width, height: img.height });
 });
 
+const aiStatus = (req, res) => res.json({ photoRecognition: vision.enabled() });
+
+const identifyPhoto = asyncHandler(async (req, res) => {
+  if (!Buffer.isBuffer(req.body) || !req.body.length) throw ApiError.badRequest("Send an image to identify.");
+  const type = (req.get("content-type") || "").split(";")[0];
+  if (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(type)) throw ApiError.badRequest("Use a JPG, PNG or WebP photo.");
+  const products = await adminModel.catalogueForMatching();
+  const r = await vision.identify(req.body, type, products);
+  const p = products.find((x) => x.id === r.productId);
+  res.json({ ...r, name: p ? p.name : null });
+});
+
 const testEmail = asyncHandler(async (req, res) => {
   const s = await settingsModel.getAll();
   if (!s.owner_email) throw ApiError.badRequest("Save an order-alert email address first.");
@@ -155,6 +169,18 @@ const updateSettings = asyncHandler(async (req, res) => {
 
 const createProduct = asyncHandler(async (req, res) => {
   res.status(201).json({ product: await adminModel.createProduct(req.body) });
+});
+
+const putVariants = asyncHandler(async (req, res) => {
+  const ok = await variantModel.replaceVariants(idParam(req), req.body.variants);
+  if (!ok) throw ApiError.notFound("Product not found.");
+  res.json({ variants: await variantModel.listAll(idParam(req)), product: await adminModel.getProduct(idParam(req)) });
+});
+
+const putPhotos = asyncHandler(async (req, res) => {
+  const ok = await variantModel.replacePhotos(idParam(req), req.body.photos);
+  if (!ok) throw ApiError.notFound("Product not found.");
+  res.json({ photos: await variantModel.listPhotos(idParam(req)), product: await adminModel.getProduct(idParam(req)) });
 });
 
 const updateProduct = asyncHandler(async (req, res) => {
@@ -221,7 +247,7 @@ const listCustomers = asyncHandler(async (req, res) => {
 
 module.exports = {
   stats, listOrders, getOrder, setOrderStatus, setOrderNote,
-  listProducts, getProduct, createProduct, updateProduct, deleteProduct,
+  aiStatus, identifyPhoto, listProducts, getProduct, createProduct, updateProduct, putVariants, putPhotos, deleteProduct,
   adjustStock, duplicateProduct, bulkProducts,
   salesReport, exportCsv, uploadImage, testEmail, getSettings, updateSettings,
   listCategories, createCategory, updateCategory, deleteCategory,

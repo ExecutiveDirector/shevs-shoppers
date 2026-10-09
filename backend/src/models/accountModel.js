@@ -92,7 +92,7 @@ async function listOrders(userId) {
      FROM orders WHERE user_id = ? ORDER BY created_at DESC, id DESC LIMIT 100`, [userId]);
   if (!orders.length) return [];
   const [items] = await pool.query(
-    `SELECT oi.order_id, oi.product_id, oi.name_snapshot, oi.unit_price_snapshot, oi.qty, oi.line_total, p.image_url, p.emoji
+    `SELECT oi.order_id, oi.product_id, oi.variant_id, oi.color, oi.name_snapshot, oi.unit_price_snapshot, oi.qty, oi.line_total, p.image_url, p.emoji
      FROM order_items oi LEFT JOIN products p ON p.id = oi.product_id WHERE oi.order_id IN (?) ORDER BY oi.id`, [orders.map((o) => o.id)]);
   const by = new Map();
   for (const it of items) { if (!by.has(it.order_id)) by.set(it.order_id, []); by.get(it.order_id).push(it); }

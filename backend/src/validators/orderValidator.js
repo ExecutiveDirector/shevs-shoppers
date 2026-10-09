@@ -16,6 +16,8 @@ const createOrderRules = [
   body("couponCode").optional({ values: "falsy" }).trim().isLength({ max: 40 }),
   body("items").isArray({ min: 1 }).withMessage("Your cart is empty."),
   body("items.*.productId").isInt({ min: 1 }).withMessage("Invalid item in cart."),
+  body("items.*.variantId").optional({ values: "falsy" }).isInt({ min: 1 }).withMessage("Invalid size in cart.").toInt(),
+  body("items.*.color").optional({ values: "falsy" }).isString().isLength({ max: 40 }).withMessage("Invalid colour in cart."),
   body("items.*.qty").isInt({ min: 1, max: 20 }).withMessage("Quantity must be between 1 and 20."),
 ];
 
