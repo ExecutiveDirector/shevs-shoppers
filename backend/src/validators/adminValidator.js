@@ -109,4 +109,25 @@ const promoRules = [
   body().custom((v) => { if (v.startsAt && v.endsAt && new Date(v.endsAt) <= new Date(v.startsAt)) throw new Error("The end must be after the start."); return true; }),
 ];
 
-module.exports = { variantsRules, photosRules, bannerRules, promoRules, productRules, categoryRules, couponRules, stockRules, bulkRules, noteRules, settingsRules };
+const zoneRules = [
+  body("name").optional().trim().isLength({ min: 2, max: 60 }).withMessage("Zone names are 2 to 60 characters."),
+  body("fee").optional().isFloat({ min: 0, max: 100000 }).withMessage("Enter a delivery fee."),
+  body("freeOver").optional({ values: "null" }).custom((v) => v === "" || (Number.isFinite(Number(v)) && Number(v) >= 0)).withMessage("Enter an amount, or leave blank to use the shop-wide setting."),
+  body("eta").optional({ values: "falsy" }).trim().isLength({ max: 40 }),
+  body("courier").optional().isBoolean().toBoolean(),
+  body("active").optional().isBoolean().toBoolean(),
+];
+const areaRules = [
+  body("name").optional().trim().isLength({ min: 2, max: 80 }).withMessage("Place names are 2 to 80 characters."),
+  body("county").optional().trim().isLength({ min: 2, max: 40 }).withMessage("Choose a county."),
+  body("zoneId").optional().isInt({ min: 1 }).toInt(),
+  body("active").optional().isBoolean().toBoolean(),
+];
+const areasAddRules = [
+  body("names").isString().isLength({ min: 2, max: 8000 }).withMessage("Enter at least one place name."),
+  body("county").trim().isLength({ min: 2, max: 40 }).withMessage("Choose a county."),
+];
+const orderFeeRules = [body("fee").isFloat({ min: 0, max: 100000 }).withMessage("Enter the delivery charge in KES.")];
+
+module.exports = {
+  zoneRules, areaRules, areasAddRules, orderFeeRules, variantsRules, photosRules, bannerRules, promoRules, productRules, categoryRules, couponRules, stockRules, bulkRules, noteRules, settingsRules };

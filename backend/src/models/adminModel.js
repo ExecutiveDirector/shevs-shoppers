@@ -160,8 +160,8 @@ function orderFilters({ status, q, from, to }) {
 async function listOrders({ status, q, from, to, limit, offset }) {
   const f = orderFilters({ status, q, from, to });
   const [rows] = await pool.query(
-    `SELECT id, order_code, customer_name, phone, county, address, payment_method, status,
-            subtotal, delivery_fee, discount, coupon_code, total, created_at
+    `SELECT id, order_code, customer_name, phone, county, area, address, payment_method, status,
+            subtotal, delivery_fee, delivery_pending, discount, coupon_code, total, created_at
      FROM orders ${f.sql} ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?`,
     [...f.params, limit, offset]
   );
@@ -178,6 +178,17 @@ async function getOrder(code) {
     [orders[0].id]
   );
   return { order: orders[0], items };
+}
+
+// The courier quote for far-away places: sets the delivery fee and recalculates the total.
+async function setOrderDelivery(code, fee) {
+  const [rows] = await pool.query("SELECT id, status, subtotal, discount FROM orders WHERE order_code = ?", [code]);
+  const o = rows[0];
+  if (!o) return null;
+  if (o.status === "cancelled") throw ApiError.badRequest("This order is cancelled.");
+  const total = Math.max(0, Math.round((Number(o.subtotal) + fee - Number(o.discount)) * 100) / 100);
+  await pool.query("UPDATE orders SET delivery_fee = ?, delivery_pending = 0, total = ? WHERE id = ?", [fee, total, o.id]);
+  return { delivery_fee: fee, total };
 }
 
 async function setOrderNote(code, note) {
@@ -680,6 +691,7 @@ async function listCustomers({ q, limit, offset }) {
 }
 
 module.exports = {
+  setOrderDelivery,
   catalogueForMatching,
   STATUSES,
   getStats,

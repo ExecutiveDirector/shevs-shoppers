@@ -6,7 +6,7 @@ const asyncHandler = require("../utils/asyncHandler");
 const ApiError = require("../utils/ApiError");
 
 const create = asyncHandler(async (req, res) => {
-  const { customerName, phone, customerEmail, county, address, paymentMethod, couponCode, items } = req.body;
+  const { customerName, phone, customerEmail, county, address, paymentMethod, couponCode, items, areaId, zoneId, town } = req.body;
 
   const { order, items: lineItems } = await orderModel.createOrder({
     customerName,
@@ -14,6 +14,9 @@ const create = asyncHandler(async (req, res) => {
     customerEmail: customerEmail || null,
     userId: req.user ? req.user.id : null,
     county,
+    areaId: areaId || null,
+    zoneId: zoneId || null,
+    town: town || null,
     address,
     paymentMethod,
     couponCode: couponCode || null,
@@ -23,7 +26,7 @@ const create = asyncHandler(async (req, res) => {
   // Remember where a signed-in customer last shipped, so next checkout is pre-filled.
   if (req.user) {
     const { pool } = require("../config/db");
-    pool.query("UPDATE users SET county = ?, address = ? WHERE id = ?", [county, address, req.user.id]).catch(() => {});
+    pool.query("UPDATE users SET county = ?, address = ? WHERE id = ?", [order.county, address, req.user.id]).catch(() => {});
     // Google sign-ups have no phone yet: keep the one used on this order (ignored if another account has it).
     if (!req.user.phone) pool.query("UPDATE users SET phone = ? WHERE id = ? AND phone IS NULL", [require("../utils/auth").normalizePhone(req.body.phone), req.user.id]).catch(() => {});
   }
@@ -46,6 +49,7 @@ const create = asyncHandler(async (req, res) => {
     status: order.status,
     subtotal: order.subtotal,
     deliveryFee: order.delivery_fee,
+    deliveryPending: !!order.delivery_pending,
     discount: order.discount,
     total: order.total,
     items: lineItems,
@@ -63,6 +67,7 @@ const getByCode = asyncHandler(async (req, res) => {
     status: order.status,
     subtotal: order.subtotal,
     deliveryFee: order.delivery_fee,
+    deliveryPending: !!order.delivery_pending,
     discount: order.discount,
     total: order.total,
     createdAt: order.created_at,

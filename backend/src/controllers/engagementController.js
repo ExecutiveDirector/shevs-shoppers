@@ -17,6 +17,13 @@ const submitReview = asyncHandler(async (req, res) => {
   res.status(201).json({ ok: true, message: "Thanks! Your review will appear once the shop approves it." });
 });
 
+const lookupReview = asyncHandler(async (req, res) => res.json(await model.reviewableByOrder(req.body.orderCode, req.body.phone)));
+const myReviewable = asyncHandler(async (req, res) => res.json({ orders: await model.reviewableForUser(req.user.id) }));
+const submitMine = asyncHandler(async (req, res) => {
+  await model.submitReviewForUser(req.user, req.body);
+  res.status(201).json({ ok: true, message: "Thanks! Your review will appear once the shop approves it." });
+});
+
 const notify = asyncHandler(async (req, res) => {
   await model.addAlert(id(req), req.body.contact);
   res.status(201).json({ ok: true, message: "Done — we'll let you know when it's back." });
@@ -79,7 +86,7 @@ const badges = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
-  listReviews, submitReview, notify,
+  listReviews, submitReview, notify, lookupReview, myReviewable, submitMine,
   adminAlerts, alertDone, alertDelete, adminReviews, reviewStatus, reviewDelete,
   adminBanners, bannerCreate: bannerSave(false), bannerUpdate: bannerSave(true), bannerDelete,
   adminPromos, promoCreate: promoSave(false), promoUpdate: promoSave(true), promoDelete, badges,

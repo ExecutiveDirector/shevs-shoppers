@@ -357,12 +357,12 @@ const fday=d=>new Date(d).toLocaleDateString("en-KE",{timeZone:TZ,day:"numeric",
 const waNumber=p=>{let d=String(p||"").replace(/\D/g,"");if(d.startsWith("0"))d="254"+d.slice(1);return d};
 const STATUSES=["pending","confirmed","dispatched","delivered","cancelled"];
 const DEFAULT_API="https://shevs-api-production.up.railway.app";
-const VIEWS=["dashboard","orders","customers","coupons","products","categories","settings","reports","reviews","waitlist","promotions","import","photos"];
+const VIEWS=["dashboard","orders","customers","coupons","products","categories","settings","reports","reviews","waitlist","promotions","import","photos","delivery"];
 const NAV=[
  ["Overview",[["dashboard","🏠","Dashboard","d"]]],
  ["Sales",[["orders","🧾","Orders","o"],["customers","👥","Customers","u"],["coupons","🏷️","Coupons","c"],["reports","📈","Reports","r"]]],
  ["Catalogue",[["products","📦","Products","p"],["categories","🗂️","Categories","a"],["promotions","🎁","Promotions","m"],["reviews","⭐","Reviews","v"],["waitlist","🔔","Waiting list","w"]]],
- ["Store",[["settings","⚙️","Settings","s"]]]];
+ ["Store",[["delivery","🚚","Delivery","y"],["settings","⚙️","Settings","s"]]]];
 const TABS=[["dashboard","🏠","Home"],["orders","🧾","Orders"],["products","📦","Products"],["customers","👥","Customers"]];
 const ACCENTS={green:["#0F5B4A","Forest"],blue:["#1D4ED8","Ocean"],purple:["#6D28D9","Plum"],orange:["#C2410C","Sunset"],rose:["#BE123C","Rose"],slate:["#334155","Slate"]};
 const REASONS={restock:"Restock",correction:"Stock count",damaged:"Damaged / lost",return:"Customer return",other:"Other",sale:"Sale",cancel:"Order cancelled",reopen:"Order re-opened"};
@@ -452,7 +452,7 @@ function go(v){
  const sec=NAV.find(([,it])=>it.some(x=>x[0]===v));const item=sec&&sec[1].find(x=>x[0]===v);
  if(v==="import"){$("crumb").innerHTML="Catalogue › <b>Import products</b>";document.querySelectorAll(".nlink[data-view=products]").forEach(t=>t.classList.add("on"))}else if(v==="photos"){$("crumb").innerHTML="Catalogue › <b>Match photos</b>";document.querySelectorAll(".nlink[data-view=products]").forEach(t=>t.classList.add("on"))}else $("crumb").innerHTML=item?`${esc(sec[0])} › <b>${item[2]}</b>`:"";
  window.scrollTo(0,0);
- ({dashboard:vDashboard,orders:vOrders,products:vProducts,categories:vCategories,coupons:vCoupons,customers:vCustomers,settings:vSettings,reports:vReports,reviews:vReviews,waitlist:vWaitlist,promotions:vPromotions,import:vImport,photos:vPhotos})[v]()}
+ ({dashboard:vDashboard,orders:vOrders,products:vProducts,categories:vCategories,coupons:vCoupons,customers:vCustomers,settings:vSettings,reports:vReports,reviews:vReviews,waitlist:vWaitlist,promotions:vPromotions,import:vImport,photos:vPhotos,delivery:vDelivery})[v]()}
 async function poll(){
  try{
   const d=await api("/stats");
@@ -484,6 +484,7 @@ function act(name,el){
   copyOrder,printOrder:()=>window.print(),saveNote:()=>saveNote(d.code),
   newProduct:()=>productEditor(),matchPhotos:()=>{PH.rows=[];go("photos")},stockAll:()=>stockAllForm(),importProducts:()=>{IMP.table=null;IMP.done=null;IMP.existing=null;go("import")},editProduct:()=>productEditor(+d.id),exportProducts:()=>exportProducts(el),
   stockStep:()=>stockStep(+d.id,+d.d,el),
+  newZone:()=>zoneForm(),saveZone:()=>saveZone(+d.id),addAreas:()=>areasForm(+d.id,d.name),delZone:()=>delZone(+d.id,d.name),delArea:()=>delArea(+d.id,d.name),setFee:()=>setFee(d.code),
   newCategory:()=>categoryForm(),editCategory:()=>categoryForm(+d.id),delCategory:()=>delCategory(+d.id,d.name),
   resetAcct:()=>resetAcct(+d.id,d.name),newPromo:()=>promoForm(),editPromo:()=>promoForm(+d.id),delPromo:()=>delPromo(+d.id,d.name),newBanner:()=>bannerForm(),editBanner:()=>bannerForm(+d.id),delBanner:()=>delBanner(+d.id,d.name),
   revSet:()=>revSet(+d.id,d.status),revDel:()=>revDel(+d.id),alertDone:()=>alertDone(+d.id),alertDel:()=>alertDel(+d.id),repRange:()=>repRange(d.r),repExport:()=>repExport(el),
@@ -659,7 +660,7 @@ async function loadOrders(){
  try{
   const d=await api("/orders"+qs({page:s.page,pageSize:s.size,status:s.status,q:s.q,from:s.from,to:s.to}));
   s.total=d.total;s.rows=d.orders;
-  body.innerHTML=d.orders.length?d.orders.map(o=>`<tr class="click" data-act="openOrder" data-code="${esc(o.order_code)}"><td class="code">${esc(o.order_code)}</td><td>${esc(o.customer_name)}</td><td>${esc(o.phone)}</td><td>${esc(o.county)}</td><td>${o.payment_method==="mpesa"?"M-Pesa":"Cash on delivery"}</td><td class="r">${kes(o.total)}</td><td>${badge(o.status)}</td><td>${fdate(o.created_at)}</td></tr>`).join(""):`<tr><td colspan="8" class="empty"><b>No orders match</b>Try a different search or clear the filters.</td></tr>`;
+  body.innerHTML=d.orders.length?d.orders.map(o=>`<tr class="click" data-act="openOrder" data-code="${esc(o.order_code)}"><td class="code">${esc(o.order_code)}${o.delivery_pending?` ${badge("pending","Fee TBC")}`:""}</td><td>${esc(o.customer_name)}</td><td>${esc(o.phone)}</td><td>${o.area?esc(o.area)+", ":""}${esc(o.county)}</td><td>${o.payment_method==="mpesa"?"M-Pesa":"Cash on delivery"}</td><td class="r">${kes(o.total)}</td><td>${badge(o.status)}</td><td>${fdate(o.created_at)}</td></tr>`).join(""):`<tr><td colspan="8" class="empty"><b>No orders match</b>Try a different search or clear the filters.</td></tr>`;
   $("oPager").innerHTML=d.total>s.size?pager(s,"orders"):`<div class="pager">${num(d.total)} order${d.total===1?"":"s"}</div>`;
  }catch(e){body.innerHTML=`<tr><td colspan="8" class="empty">Couldn't load orders: ${esc(e.message)}</td></tr>`;handleErr(e)}}
 
@@ -671,7 +672,7 @@ async function openOrder(code){
  catch(e){$("drawerBody").innerHTML=`<p style="color:var(--sale)">Couldn't load this order: ${esc(e.message)}</p>`;handleErr(e)}}
 const WA_UPDATES=[["confirmed","✅","Confirmed"],["dispatched","🚚","On its way"],["delivered","📦","Delivered"],["cancelled","✖️","Cancelled"]];
 function waUpdate(st,o){const hi=`Hello ${o.customer_name}, `,ref=`order ${o.order_code} (${kes(o.total)})`,sign=`\n\n— ${S.shop_name}`;
- return {confirmed:`${hi}your ${ref} is confirmed. We'll deliver to ${o.address}, ${o.county}. Thank you for shopping with ${S.shop_name}!${sign}`,
+ return {confirmed:`${hi}your ${ref} is confirmed. We'll deliver to ${o.address}, ${o.area?o.area+", ":""}${o.county}. Thank you for shopping with ${S.shop_name}!${sign}`,
   dispatched:`${hi}your ${ref} is on its way to ${o.address}. Our rider will call you on arrival.${o.payment_method==="cod"?` Please have ${kes(o.total)} ready.`:""}${sign}`,
   delivered:`${hi}your ${ref} has been delivered. Thank you! If you enjoyed it, we'd love a review: ${location.origin}/${sign}`,
   cancelled:`${hi}your ${ref} has been cancelled. Message us here if that's unexpected.${sign}`}[st]}
@@ -686,6 +687,7 @@ function drawerOrder({order:o,items}){
  <div class="drow"><span>Name</span><b>${esc(o.customer_name)}</b></div>
  <div class="drow"><span>Phone</span><b>${esc(o.phone)}</b></div>
  <div class="drow"><span>County</span><b>${esc(o.county)}</b></div>
+ ${o.area?`<div class="drow"><span>Area</span><b>${esc(o.area)}${o.zone_name?` <small class="muted">· ${esc(o.zone_name)}</small>`:""}</b></div>`:""}
  <div class="drow"><span>Address</span><b>${esc(o.address)}</b></div>
  ${o.customer_email?`<div class="drow"><span>Email</span><b>${esc(o.customer_email)}</b></div>`:""}
  <div class="actions"><a class="btn sec sm" href="tel:${esc(o.phone)}">📞 Call</a><a class="btn sec sm" target="_blank" rel="noopener" href="https://wa.me/${wa}?text=${msg}">💬 WhatsApp</a></div>
@@ -697,7 +699,8 @@ function drawerOrder({order:o,items}){
  <div class="dsec">Payment</div>
  <div class="drow"><span>Method</span><b>${o.payment_method==="mpesa"?"M-Pesa":"Cash on delivery"}</b></div>
  <div class="drow"><span>Subtotal</span><b>${kes(o.subtotal)}</b></div>
- <div class="drow"><span>Delivery</span><b>${Number(o.delivery_fee)?kes(o.delivery_fee):"Free"}</b></div>
+ ${o.delivery_pending?`<div class="drow"><span>Delivery</span><b style="color:var(--warn,#b45309)">Courier charge to confirm</b></div>
+ <div class="fld"><label for="feeIn">Courier charge for ${esc(o.area||o.county)} (KES)</label><div class="inline"><input id="feeIn" type="number" min="0" step="10" inputmode="numeric" placeholder="e.g. 450"><button type="button" class="btn sm" data-act="setFee" data-code="${esc(o.order_code)}">Set</button></div><span class="hint">Agree it with the customer on WhatsApp first. Setting it updates the order total.</span></div>`:`<div class="drow"><span>Delivery</span><b>${Number(o.delivery_fee)?kes(o.delivery_fee):"Free"}</b></div>`}
  ${Number(o.discount)?`<div class="drow"><span>Discount${o.coupon_code?` (${esc(o.coupon_code)})`:""}</span><b>-${kes(o.discount)}</b></div>`:""}
  <div class="drow"><span><b>Total</b></span><b style="font-size:17px">${kes(o.total)}</b></div>
  <div class="dsec">Your private note</div>
@@ -706,6 +709,9 @@ function drawerOrder({order:o,items}){
  <div class="dsec">Placed</div><div class="drow"><span>Date</span><b>${fdateLong(o.created_at)}</b></div>
  <div class="actions" style="margin-top:16px"><button class="btn sec sm" data-act="copyOrder">Copy summary</button><button class="btn sec sm" data-act="printOrder">Print</button></div>
  ${o.status==="cancelled"?`<p class="muted" style="margin-top:12px;font-size:13px">Cancelled orders return their items to stock.</p>`:""}`}
+async function setFee(code){
+ const v=$("feeIn").value.trim();if(v===""||Number(v)<0){toast("Enter the courier charge in KES");return}
+ try{const r=await api(`/orders/${encodeURIComponent(code)}/delivery`,send("PATCH",{fee:Number(v)}));toast(`Delivery set · total ${kes(r.total)}`);openOrder(code);if(view==="orders")loadOrders&&loadOrders()}catch(e){toast(e.message);handleErr(e)}}
 async function saveNote(code){
  try{await api(`/orders/${encodeURIComponent(code)}/note`,send("PATCH",{note:$("orderNote").value.trim()}));toast("Note saved")}catch(e){toast(e.message);handleErr(e)}}
 async function setStatus(code,status){
@@ -717,7 +723,7 @@ async function setStatus(code,status){
  }catch(e){toast(e.message);handleErr(e)}}
 function copyOrder(){
  if(!curOrder)return;const{order:o,items}=curOrder;
- const t=`Order ${o.order_code} (${o.status})\n${o.customer_name} · ${o.phone}\n${o.address}, ${o.county}\n\n${items.map(i=>`${i.qty} × ${i.name_snapshot} — ${kes(i.line_total)}`).join("\n")}\n\nDelivery: ${Number(o.delivery_fee)?kes(o.delivery_fee):"Free"}${Number(o.discount)?`\nDiscount: -${kes(o.discount)}`:""}\nTotal: ${kes(o.total)} (${o.payment_method==="mpesa"?"M-Pesa":"Cash on delivery"})`;
+ const t=`Order ${o.order_code} (${o.status})\n${o.customer_name} · ${o.phone}\n${o.address}, ${o.area?o.area+", ":""}${o.county}\n\n${items.map(i=>`${i.qty} × ${i.name_snapshot} — ${kes(i.line_total)}`).join("\n")}\n\nDelivery: ${Number(o.delivery_fee)?kes(o.delivery_fee):"Free"}${Number(o.discount)?`\nDiscount: -${kes(o.discount)}`:""}\nTotal: ${kes(o.total)} (${o.payment_method==="mpesa"?"M-Pesa":"Cash on delivery"})`;
  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast("Order summary copied"),()=>toast("Couldn't copy — select and copy manually"))}
 
 const csvCell=v=>{v=String(v==null?"":v);if(/^[=+\-@]/.test(v))v="'"+v;return `"${v.replace(/"/g,'""')}"`};
@@ -1254,6 +1260,49 @@ function categoryForm(id){
 async function delCategory(id,name){
  if(!(await confirmBox("Delete category?",`"${name}" will be removed. Categories that still have products can't be deleted.`,"Delete")))return;
  try{await api("/categories/"+id,{method:"DELETE"});toast("Category deleted");vCategories()}catch(e){toast(e.message);handleErr(e)}}
+
+/* ---------- delivery zones ---------- */
+const COUNTIES=["Nairobi","Kiambu","Machakos","Kajiado","Murang'a","Nakuru","Nyeri","Kirinyaga","Embu","Meru","Mombasa","Kisumu","Uasin Gishu","Kakamega","Nyandarua","Laikipia","Kericho","Bomet","Narok","Kilifi","Kwale","Garissa","Taita Taveta","Makueni","Kitui","Tharaka Nithi","Bungoma","Busia","Siaya","Homa Bay","Migori","Kisii","Nyamira","Vihiga","Nandi","Trans Nzoia","Baringo","Elgeyo Marakwet","West Pokot","Turkana","Samburu","Isiolo","Marsabit","Mandera","Wajir","Lamu","Tana River"];
+let DZ=[];
+async function vDelivery(){
+ const c=$("content");c.innerHTML=`<div class="loading">Loading…</div>`;
+ try{DZ=(await api("/delivery")).zones;drawDelivery()}catch(e){c.innerHTML=`<div class="empty">Couldn't load: ${esc(e.message)}</div>`}}
+function drawDelivery(){
+ const c=$("content"),open=new Set([...document.querySelectorAll(".zcard[open]")].map(x=>x.dataset.z));
+ c.innerHTML=`<div class="pagehead"><h2>Delivery zones</h2><span class="sub">Group places into zones and set one price per zone</span><span class="sp"></span><button class="btn" data-act="newZone">+ Add zone</button></div>
+ <div class="card imp"><p class="muted">At checkout the customer picks their area and the delivery fee of its zone is added. For far-away places (Meru, Kisumu, Murang'a…) use a <b>courier zone</b>: the customer enters their town, the order shows <i>courier charge to confirm</i>, and you set the amount on the order after agreeing it on WhatsApp. “Free over” blank = the shop-wide amount in Settings (currently ${S.free_delivery_threshold?kes(S.free_delivery_threshold):"off"}); 0 = never free in that zone.</p></div>
+ ${DZ.map(z=>`<details class="card zcard" data-z="${z.id}" ${open.has(String(z.id))||!open.size&&DZ.length<=2?"open":""} style="margin-top:12px;padding:0">
+  <summary style="padding:14px 16px;cursor:pointer;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><b>${esc(z.name)}</b>${z.courier?badge("confirmed","Courier"):`<span class="muted">${kes(z.fee)}</span>`}${z.active?"":badge("cancelled","Hidden")}<span class="muted">${z.areas.length} place${z.areas.length===1?"":"s"}${z.eta_label?" · "+esc(z.eta_label):""}</span></summary>
+  <div style="padding:0 16px 16px"><div class="frow"><div class="fld"><label>Zone name</label><input id="zn${z.id}" maxlength="60" value="${esc(z.name)}"></div><div class="fld"><label>Delivery time</label><input id="ze${z.id}" maxlength="40" value="${esc(z.eta_label)}" placeholder="e.g. 1–2 days"></div></div>
+  <div class="frow">${z.courier?"":`<div class="fld"><label>Delivery fee (KES)</label><input id="zf${z.id}" type="number" min="0" step="10" value="${z.fee}"></div><div class="fld"><label>Free over (KES)</label><input id="zo${z.id}" type="number" min="0" step="100" value="${z.free_over===null?"":z.free_over}" placeholder="shop-wide"></div>`}</div>
+  <label class="chk"><input type="checkbox" id="zc${z.id}" ${z.courier?"checked":""}> Courier zone — charge is quoted per order</label>
+  <label class="chk"><input type="checkbox" id="za${z.id}" ${z.active?"checked":""}> Shown to customers</label>
+  <div class="actions" style="margin:10px 0"><button class="btn sm" data-act="saveZone" data-id="${z.id}">Save zone</button><button class="btn sec sm" data-act="addAreas" data-id="${z.id}" data-name="${esc(z.name)}">+ Add places</button><button class="btn sec sm" data-act="delZone" data-id="${z.id}" data-name="${esc(z.name)}">Delete zone</button></div>
+  ${z.courier?`<p class="hint">Customers choose “other town” and type it, so you don't need to list places here.</p>`:""}
+  <div class="zareas" style="display:flex;flex-wrap:wrap;gap:6px">${z.areas.map(a=>`<span class="badge" style="display:inline-flex;gap:6px;align-items:center;padding:4px 8px">${esc(a.name)} <small class="muted">${esc(a.county)}</small> <button type="button" class="x" aria-label="Remove ${esc(a.name)}" data-act="delArea" data-id="${a.id}" data-name="${esc(a.name)}" style="border:0;background:none;cursor:pointer;font-size:15px;line-height:1">×</button></span>`).join("")||`<span class="muted">No places yet.</span>`}</div></div></details>`).join("")}`}
+async function saveZone(id){
+ const g=k=>$(k+id),o=g("zo");
+ const body={name:g("zn").value.trim(),eta:g("ze").value.trim(),courier:g("zc").checked,active:g("za").checked};
+ if(g("zf"))body.fee=Number(g("zf").value)||0;if(o)body.freeOver=o.value.trim()===""?null:Number(o.value);
+ if(body.name.length<2){toast("Give the zone a name");return}
+ try{await api("/delivery/zones/"+id,send("PATCH",body));toast("Zone saved");await vDelivery()}catch(e){toast(e.message);handleErr(e)}}
+function zoneForm(){
+ modal(`<h3>Add zone</h3><div class="fld"><label for="zzn">Zone name</label><input id="zzn" name="name" maxlength="60" required placeholder="e.g. Zone 6 · Nakuru side"></div>
+ <div class="frow"><div class="fld"><label for="zzf">Delivery fee (KES)</label><input id="zzf" name="fee" type="number" min="0" step="10" value="500"></div><div class="fld"><label for="zze">Delivery time</label><input id="zze" name="eta" maxlength="40" placeholder="e.g. 2–3 days"></div></div>
+ <label class="chk"><input type="checkbox" name="courier"> Courier zone — charge is quoted per order</label>
+ <div class="err" aria-live="polite"></div><div class="mact"><button type="button" class="btn sec" data-act="closeModal">Cancel</button><button class="btn" type="submit">Add zone</button></div>`,
+ async f=>{const n=f.elements.name.value.trim();if(n.length<2)throw new Error("Give the zone a name.");
+  await api("/delivery/zones",send("POST",{name:n,fee:Number(f.elements.fee.value)||0,eta:f.elements.eta.value.trim(),courier:f.elements.courier.checked}));closeModal();toast("Zone added");vDelivery()})}
+function areasForm(id,name){
+ modal(`<h3>Add places to ${esc(name)}</h3><div class="fld"><label for="aan">Places</label><textarea id="aan" name="names" rows="6" required placeholder="One per line or separated by commas&#10;e.g. Ruiru, Juja, Kimbo"></textarea><span class="hint">A place that's already in another zone is moved here.</span></div>
+ <div class="fld"><label for="aac">County</label><input id="aac" name="county" list="cnty" required value="Nairobi" autocomplete="off"><datalist id="cnty">${COUNTIES.map(x=>`<option value="${esc(x)}">`).join("")}</datalist><span class="hint">Applies to all the places above. Add other counties separately.</span></div>
+ <div class="err" aria-live="polite"></div><div class="mact"><button type="button" class="btn sec" data-act="closeModal">Cancel</button><button class="btn" type="submit">Add places</button></div>`,
+ async f=>{const r=await api(`/delivery/zones/${id}/areas`,send("POST",{names:f.elements.names.value,county:f.elements.county.value.trim()}));closeModal();toast(`${r.added} place${r.added===1?"":"s"} added`);vDelivery()})}
+async function delZone(id,name){
+ if(!(await confirmBox("Delete zone?",`"${name}" and its list of places will be removed. Past orders keep their delivery details.`,"Delete")))return;
+ try{await api("/delivery/zones/"+id,{method:"DELETE"});toast("Zone deleted");vDelivery()}catch(e){toast(e.message);handleErr(e)}}
+async function delArea(id,name){
+ try{await api("/delivery/areas/"+id,{method:"DELETE"});toast(name+" removed");vDelivery()}catch(e){toast(e.message);handleErr(e)}}
 
 /* ---------- coupons ---------- */
 let coupons=[];

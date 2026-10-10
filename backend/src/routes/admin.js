@@ -5,7 +5,8 @@ const validate = require("../middleware/validate");
 const { adminAuthLimiter } = require("../middleware/rateLimiters");
 const { updateOrderStatusRules } = require("../validators/couponValidator");
 const e = require("../controllers/engagementController");
-const { variantsRules, photosRules, bannerRules, promoRules, productRules, categoryRules, couponRules, stockRules, bulkRules, noteRules, settingsRules } = require("../validators/adminValidator");
+const dc = require("../controllers/deliveryController");
+const { zoneRules, areaRules, areasAddRules, orderFeeRules, variantsRules, photosRules, bannerRules, promoRules, productRules, categoryRules, couponRules, stockRules, bulkRules, noteRules, settingsRules } = require("../validators/adminValidator");
 
 router.use(adminAuthLimiter, adminAuth);
 
@@ -17,9 +18,18 @@ router.post("/uploads", require("express").raw({ type: ["image/*"], limit: "8mb"
 router.get("/ai-status", c.aiStatus);
 router.post("/photos/identify", require("express").raw({ type: ["image/*"], limit: "4mb" }), c.identifyPhoto);
 
+router.get("/delivery", dc.adminList);
+router.post("/delivery/zones", zoneRules, validate, dc.zoneCreate);
+router.patch("/delivery/zones/:id", zoneRules, validate, dc.zoneUpdate);
+router.delete("/delivery/zones/:id", dc.zoneDelete);
+router.post("/delivery/zones/:id/areas", areasAddRules, validate, dc.areasAdd);
+router.patch("/delivery/areas/:id", areaRules, validate, dc.areaUpdate);
+router.delete("/delivery/areas/:id", dc.areaDelete);
+
 router.get("/orders", c.listOrders);
 router.get("/orders/:code", c.getOrder);
 router.patch("/orders/:code/status", updateOrderStatusRules, validate, c.setOrderStatus);
+router.patch("/orders/:code/delivery", orderFeeRules, validate, dc.orderFee);
 router.patch("/orders/:code/note", noteRules, validate, c.setOrderNote);
 
 router.get("/products", c.listProducts);

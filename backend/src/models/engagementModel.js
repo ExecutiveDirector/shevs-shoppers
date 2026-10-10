@@ -63,10 +63,7 @@ async function listApproved(productId) {
 
 // Only someone who actually received this product can review it: order code + phone must match
 // a delivered order containing it. That's what makes the reviews trustworthy.
-async function submitReview(productId, { orderCode, phone, name, rating, comment }) {
-  const [orders] = await pool.query("SELECT id, phone, status FROM orders WHERE order_code = ?", [String(orderCode).toUpperCase()]);
-  const order = orders[0];
-  if (!order || !samePhone(order.phone, phone)) throw ApiError.badRequest("We couldn't match that order number and phone number.");
+async function insertReview(order, productId, { name, rating, comment }) {
   if (order.status !== "delivered") throw ApiError.badRequest("You can review a product once your order has been delivered.");
   const [[item]] = await pool.query("SELECT id FROM order_items WHERE order_id = ? AND product_id = ?", [order.id, productId]);
   if (!item) throw ApiError.badRequest("That product isn't in this order.");
@@ -76,6 +73,47 @@ async function submitReview(productId, { orderCode, phone, name, rating, comment
     if (err.code === "ER_DUP_ENTRY") throw ApiError.conflict("You've already reviewed this product for this order.");
     throw err;
   }
+}
+
+async function submitReview(productId, { orderCode, phone, name, rating, comment }) {
+  const [orders] = await pool.query("SELECT id, phone, status FROM orders WHERE order_code = ?", [String(orderCode).toUpperCase()]);
+  const order = orders[0];
+  if (!order || !samePhone(order.phone, phone)) throw ApiError.badRequest("We couldn't match that order number and phone number.");
+  await insertReview(order, productId, { name, rating, comment });
+}
+
+// Signed-in customers don't need to type the order number or phone: the order must be on their account.
+async function submitReviewForUser(user, { orderCode, productId, rating, comment }) {
+  const [orders] = await pool.query("SELECT id, status FROM orders WHERE order_code = ? AND user_id = ?", [String(orderCode).toUpperCase(), user.id]);
+  if (!orders[0]) throw ApiError.badRequest("We couldn't find that order on your account.");
+  await insertReview(orders[0], productId, { name: user.name, rating, comment });
+}
+
+// The items of one delivered order, with whether each has been reviewed already.
+async function itemsForReview(orderId) {
+  const [rows] = await pool.query(
+    `SELECT oi.product_id, MIN(oi.name_snapshot) AS name, MIN(p.image_url) AS image_url, MIN(p.emoji) AS emoji,
+            (SELECT COUNT(*) FROM reviews r WHERE r.order_id = oi.order_id AND r.product_id = oi.product_id) AS reviewed
+     FROM order_items oi JOIN products p ON p.id = oi.product_id
+     WHERE oi.order_id = ? GROUP BY oi.product_id, oi.order_id ORDER BY MIN(oi.id)`, [orderId]);
+  return rows.map((r) => ({ productId: r.product_id, name: r.name, imageUrl: r.image_url, emoji: r.emoji, reviewed: r.reviewed > 0 }));
+}
+
+// Guest: order number + phone → the items they can review.
+async function reviewableByOrder(orderCode, phone) {
+  const [orders] = await pool.query("SELECT id, order_code, phone, status, customer_name, created_at FROM orders WHERE order_code = ?", [String(orderCode).toUpperCase()]);
+  const o = orders[0];
+  if (!o || !samePhone(o.phone, phone)) throw ApiError.badRequest("We couldn't match that order number and phone number.");
+  if (o.status !== "delivered") throw ApiError.badRequest("You can review once your order has been delivered.");
+  return { orderCode: o.order_code, name: o.customer_name, createdAt: o.created_at, items: await itemsForReview(o.id) };
+}
+
+// Signed in: every delivered order on the account, each with its items.
+async function reviewableForUser(userId) {
+  const [orders] = await pool.query("SELECT id, order_code, created_at FROM orders WHERE user_id = ? AND status = 'delivered' ORDER BY created_at DESC, id DESC LIMIT 50", [userId]);
+  const out = [];
+  for (const o of orders) out.push({ orderCode: o.order_code, createdAt: o.created_at, items: await itemsForReview(o.id) });
+  return out;
 }
 
 async function listReviews({ status }) {
@@ -171,7 +209,7 @@ async function deletePromotion(id) {
 
 module.exports = {
   addAlert, listAlerts, pendingForProduct, markAlerts, markAlert, deleteAlert, pendingCount,
-  listApproved, submitReview, listReviews, setReviewStatus, deleteReview, pendingReviews,
+  listApproved, submitReview, submitReviewForUser, reviewableByOrder, reviewableForUser, listReviews, setReviewStatus, deleteReview, pendingReviews,
   publicBanners, listBanners, saveBanner, deleteBanner,
   listPromotions, savePromotion, deletePromotion,
 };

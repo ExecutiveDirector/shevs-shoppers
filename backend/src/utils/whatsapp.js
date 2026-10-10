@@ -10,13 +10,13 @@ function buildOrderWhatsAppLink(order, items, whatsappNumber, shopName) {
     "",
     ...items.map((it) => `${it.qty} x ${it.name_snapshot} — KES ${Number(it.line_total).toLocaleString("en-KE")}`),
     "",
-    `Delivery: KES ${Number(order.delivery_fee).toLocaleString("en-KE")}`,
+    order.delivery_pending ? "Delivery: to be confirmed (courier charges apply to my area)" : `Delivery: KES ${Number(order.delivery_fee).toLocaleString("en-KE")}`,
     order.discount ? `Discount: -KES ${Number(order.discount).toLocaleString("en-KE")}` : null,
-    `Total: KES ${Number(order.total).toLocaleString("en-KE")}`,
+    `${order.delivery_pending ? "Total before delivery" : "Total"}: KES ${Number(order.total).toLocaleString("en-KE")}`,
     "",
     `Name: ${order.customer_name}`,
     `Phone: ${order.phone}`,
-    `Deliver to: ${order.address}, ${order.county}`,
+    `Deliver to: ${order.address}, ${order.area ? order.area + ", " : ""}${order.county}`,
     `Payment method: ${order.payment_method === "mpesa" ? "M-Pesa" : "Cash on delivery"}`,
   ].filter(Boolean);
 

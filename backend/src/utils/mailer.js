@@ -2,6 +2,8 @@
 // problem must not break checkout, so failures are logged and reported as false.
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const kes = (n) => "KES " + Number(n || 0).toLocaleString("en-KE");
+const shipTxt = (o) => (o.delivery_pending ? "To be confirmed (courier)" : kes(o.delivery_fee));
+const placeTxt = (o) => [o.address, o.area, o.county].filter(Boolean).join(", ");
 
 function configured() {
   return Boolean(process.env.RESEND_API_KEY);
@@ -37,7 +39,7 @@ function orderEmail(order, items, shopName, adminUrl) {
     ...lines,
     "",
     `Customer: ${order.customer_name} (${order.phone})`,
-    `Deliver to: ${order.address}, ${order.county}`,
+    `Deliver to: ${placeTxt(order)}`,
     `Payment: ${order.payment_method === "mpesa" ? "M-Pesa" : "Cash on delivery"}`,
     "",
     "The customer will message you on WhatsApp to confirm.",
@@ -48,11 +50,11 @@ function orderEmail(order, items, shopName, adminUrl) {
 <h2 style="margin:0 0 4px">🛍️ New order ${esc(order.order_code)}</h2>
 <p style="margin:0 0 14px;color:#666">${esc(shopName)} · ${esc(kes(order.total))}</p>
 <table style="border-collapse:collapse;width:100%;font-size:15px">${rows}
-<tr><td style="padding-top:8px;color:#666">Delivery</td><td align="right" style="padding-top:8px">${esc(kes(order.delivery_fee))}</td></tr>
+<tr><td style="padding-top:8px;color:#666">Delivery</td><td align="right" style="padding-top:8px">${esc(shipTxt(order))}</td></tr>
 ${order.discount ? `<tr><td style="color:#666">Discount</td><td align="right">-${esc(kes(order.discount))}</td></tr>` : ""}
 <tr><td style="padding-top:6px"><b>Total</b></td><td align="right" style="padding-top:6px"><b>${esc(kes(order.total))}</b></td></tr></table>
 <p style="margin:16px 0 4px"><b>${esc(order.customer_name)}</b> · <a href="tel:${esc(order.phone)}">${esc(order.phone)}</a></p>
-<p style="margin:0;color:#444">${esc(order.address)}, ${esc(order.county)}<br>${order.payment_method === "mpesa" ? "M-Pesa" : "Cash on delivery"}</p>
+<p style="margin:0;color:#444">${esc(placeTxt(order))}<br>${order.payment_method === "mpesa" ? "M-Pesa" : "Cash on delivery"}</p>
 <p style="color:#666;font-size:13px;margin-top:16px">The customer will message you on WhatsApp to confirm.</p>
 ${adminUrl ? `<p><a href="${esc(adminUrl)}" style="display:inline-block;background:#1b1b1f;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none">Open admin</a></p>` : ""}</div>`;
   return { subject: `New order ${order.order_code} — ${kes(order.total)}`, html, text };
@@ -65,10 +67,10 @@ const trackUrl = (code) => (process.env.STOREFRONT_URL ? `${process.env.STOREFRO
 function receiptEmail(order, items, shopName) {
   const rows = items.map((i) => `<tr><td style="padding:4px 12px 4px 0">${esc(i.qty)} × ${esc(i.name_snapshot)}</td><td align="right">${esc(kes(i.line_total))}</td></tr>`).join("");
   const url = trackUrl(order.order_code);
-  const text = [`Thanks for your order, ${order.customer_name}!`, `Order number: ${order.order_code}`, "", ...items.map((i) => `${i.qty} × ${i.name_snapshot} — ${kes(i.line_total)}`), "", `Delivery: ${kes(order.delivery_fee)}`, `Total: ${kes(order.total)}`, "", "We'll confirm with you on WhatsApp.", url ? `Track your order: ${url}` : ""].join("\n");
+  const text = [`Thanks for your order, ${order.customer_name}!`, `Order number: ${order.order_code}`, "", ...items.map((i) => `${i.qty} × ${i.name_snapshot} — ${kes(i.line_total)}`), "", `Delivery: ${shipTxt(order)}`, `Total: ${kes(order.total)}`, "", "We'll confirm with you on WhatsApp.", url ? `Track your order: ${url}` : ""].join("\n");
   const html = shell(`<h2 style="margin:0 0 4px">Thanks for your order!</h2><p style="color:#666;margin:0 0 14px">${esc(shopName)} · order <b>${esc(order.order_code)}</b></p>
-<table style="border-collapse:collapse;width:100%;font-size:15px">${rows}<tr><td style="padding-top:8px;color:#666">Delivery</td><td align="right" style="padding-top:8px">${esc(kes(order.delivery_fee))}</td></tr>${order.discount ? `<tr><td style="color:#666">Discount</td><td align="right">-${esc(kes(order.discount))}</td></tr>` : ""}<tr><td style="padding-top:6px"><b>Total</b></td><td align="right" style="padding-top:6px"><b>${esc(kes(order.total))}</b></td></tr></table>
-<p style="margin:16px 0 4px;color:#444">Deliver to: ${esc(order.address)}, ${esc(order.county)}</p><p style="color:#666;font-size:13px">We'll confirm with you on WhatsApp. Pay ${order.payment_method === "mpesa" ? "via M-Pesa" : "on delivery"}.</p>${url ? `<p><a href="${esc(url)}" style="display:inline-block;background:#1b1b1f;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none">Track your order</a></p>` : ""}`);
+<table style="border-collapse:collapse;width:100%;font-size:15px">${rows}<tr><td style="padding-top:8px;color:#666">Delivery</td><td align="right" style="padding-top:8px">${esc(shipTxt(order))}</td></tr>${order.discount ? `<tr><td style="color:#666">Discount</td><td align="right">-${esc(kes(order.discount))}</td></tr>` : ""}<tr><td style="padding-top:6px"><b>Total</b></td><td align="right" style="padding-top:6px"><b>${esc(kes(order.total))}</b></td></tr></table>
+<p style="margin:16px 0 4px;color:#444">Deliver to: ${esc(placeTxt(order))}</p><p style="color:#666;font-size:13px">We'll confirm with you on WhatsApp. Pay ${order.payment_method === "mpesa" ? "via M-Pesa" : "on delivery"}.</p>${url ? `<p><a href="${esc(url)}" style="display:inline-block;background:#1b1b1f;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none">Track your order</a></p>` : ""}`);
   return { subject: `Your ${shopName} order ${order.order_code}`, html, text };
 }
 

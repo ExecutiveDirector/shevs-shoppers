@@ -88,7 +88,7 @@ async function updateProfile(user, d) {
 /* ---- orders ---- */
 async function listOrders(userId) {
   const [orders] = await pool.query(
-    `SELECT id, order_code, status, subtotal, delivery_fee, discount, total, payment_method, county, address, created_at
+    `SELECT id, order_code, status, subtotal, delivery_fee, delivery_pending, discount, total, payment_method, county, area, address, created_at
      FROM orders WHERE user_id = ? ORDER BY created_at DESC, id DESC LIMIT 100`, [userId]);
   if (!orders.length) return [];
   const [items] = await pool.query(

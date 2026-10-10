@@ -5,6 +5,7 @@ const couponModel = require("./couponModel");
 const settingsModel = require("./settingsModel");
 const promoModel = require("./promoModel");
 const variantModel = require("./variantModel");
+const deliveryModel = require("./deliveryModel");
 const ApiError = require("../utils/ApiError");
 
 // No 0/O/1/I so codes are easy to read out over the phone or WhatsApp.
@@ -124,7 +125,8 @@ async function createOrder(input) {
       // customer whether it applied before they reached this point.
     }
 
-    const deliveryFee = subtotal >= settings.free_delivery_threshold ? 0 : settings.delivery_fee;
+    const ship = await deliveryModel.quote(conn, input, subtotal, settings);
+    const deliveryFee = ship.fee;
     const total = Math.max(0, round2(subtotal + deliveryFee - discount));
 
     // Random codes can (very rarely) collide; retry with a fresh one.
@@ -135,20 +137,23 @@ async function createOrder(input) {
       try {
         const [orderResult] = await conn.query(
           `INSERT INTO orders
-            (order_code, user_id, customer_name, phone, customer_email, county, address, payment_method,
-             status, subtotal, delivery_fee, discount, coupon_code, total)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?)`,
+            (order_code, user_id, customer_name, phone, customer_email, county, area, zone_name, address, payment_method,
+             status, subtotal, delivery_fee, delivery_pending, discount, coupon_code, total)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?)`,
           [
             orderCode,
             input.userId || null,
             input.customerName,
             input.phone,
             input.customerEmail || null,
-            input.county,
+            ship.county,
+            ship.area,
+            ship.zoneName,
             input.address,
             input.paymentMethod,
             subtotal,
             deliveryFee,
+            ship.pending ? 1 : 0,
             discount,
             couponCode,
             total,
@@ -184,12 +189,15 @@ async function createOrder(input) {
         customer_name: input.customerName,
         phone: input.phone,
         customer_email: input.customerEmail || null,
-        county: input.county,
+        county: ship.county,
+        area: ship.area,
+        zone_name: ship.zoneName,
         address: input.address,
         payment_method: input.paymentMethod,
         status: "pending",
         subtotal,
         delivery_fee: deliveryFee,
+        delivery_pending: ship.pending,
         discount,
         coupon_code: couponCode,
         total,

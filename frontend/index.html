@@ -302,7 +302,7 @@ background-image:radial-gradient(circle at 20% 30%,rgba(255,255,255,.05) 0 2px,t
 @media(max-width:560px){.af .frow{grid-template-columns:1fr}.acchead h1{font-size:26px}}
 .bulk{background:#fff4d6;color:#7a5200;border-radius:10px;padding:9px 12px;font-weight:600;margin:12px 0}
 .nfy{display:grid;gap:8px;border:1.5px dashed var(--line);border-radius:14px;padding:14px;margin-top:14px}.nfy div{display:flex;gap:8px}.nfy input{flex:1;min-width:0}.nfy small{color:var(--mute)}
-.revs{margin-top:34px}.rf{display:grid;gap:10px;border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}.rf .frow{display:grid;grid-template-columns:1fr 1fr;gap:10px}.rf input,.rf select,.rf textarea,.nfy input{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:11px 12px;font-size:15px;width:100%}.rf textarea{min-height:80px;resize:vertical}.rf small{color:var(--mute)}
+.rvpick{display:grid;gap:8px;margin:10px 0}.rvpick button{display:flex;gap:10px;align-items:center;justify-content:space-between;text-align:left;border:1.5px solid var(--line);background:var(--card);border-radius:12px;padding:12px;cursor:pointer;font:inherit;color:inherit}.rvpick button:hover:not(:disabled){border-color:var(--accent)}.rvpick button:disabled{opacity:.55;cursor:default}.rvpick small{color:var(--mute)}.rvpick .it{display:flex;gap:10px;align-items:center}.rvpick img,.rvpick .em{width:44px;height:44px;border-radius:8px;object-fit:cover;background:#eef1ef;display:grid;place-items:center;font-size:22px}.rvstars{display:flex;gap:4px;margin:6px 0}.rvstars button{border:0;background:none;font-size:30px;line-height:1;cursor:pointer;color:#c9ccca}.rvstars button.on{color:#e8a200}.revs{margin-top:34px}.rf{display:grid;gap:10px;border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}.rf .frow{display:grid;grid-template-columns:1fr 1fr;gap:10px}.rf input,.rf select,.rf textarea,.nfy input{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:11px 12px;font-size:15px;width:100%}.rf textarea{min-height:80px;resize:vertical}.rf small{color:var(--mute)}
 @media(max-width:560px){.rf .frow{grid-template-columns:1fr}}
 .rv{border-top:1px solid var(--line);padding:14px 0}.rvh{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}.rvh .stars{color:#e8a200;letter-spacing:1px}.rvh small{color:var(--mute)}.rv p{margin:6px 0 0}
 .bnr{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:12px 0 2px;-webkit-overflow-scrolling:touch}.bnr[hidden]{display:none}
@@ -540,7 +540,7 @@ body{padding-bottom:64px}
 
 <footer><div class="wrap fg">
 <div><a class="logo" href="#" onclick="go(-1);return false">shevs<b>.</b></a><p>An independent shop based in Kenya. We pick, pack and deliver every order ourselves.</p></div>
-<div><h3>Help</h3><a href="#" onclick="openTrack();return false">Track your order</a><a href="#" onclick="openDelivery();return false">Delivery info</a><a href="#" onclick="openReturns();return false">Returns</a><a href="#" onclick="openContact();return false">Contact us</a></div>
+<div><h3>Help</h3><a href="#" onclick="openTrack();return false">Track your order</a><a href="#" onclick="openReview();return false">Write a review</a><a href="#" onclick="openDelivery();return false">Delivery info</a><a href="#" onclick="openReturns();return false">Returns</a><a href="#" onclick="openContact();return false">Contact us</a></div>
 <div><h3>About</h3><a href="#" onclick="openAbout();return false">About Shevs</a><a href="#" onclick="openTerms();return false">Terms &amp; privacy</a></div>
 <div><h3>Pay</h3><a href="#" onclick="openMpesa();return false">M-Pesa</a><a href="#" onclick="openCOD();return false">Cash on delivery</a></div>
 </div></footer>
@@ -773,7 +773,10 @@ function openInfo(title,html){$("infoTitle").textContent=title;$("infoBody").inn
 const waBtn=(t,label="Chat on WhatsApp")=>`<a class="btn" href="${esc(waLink(t))}" target="_blank" rel="noopener" style="margin-top:8px">${label}</a>`;
 function openAbout(){openInfo("About Shevs",`<p>Shevs is an independent shop based in Kenya. We pick, stock and pack every item ourselves, so you deal with one shop from the first message to the doorstep.</p><p>Have a question before you buy? Message us on WhatsApp.</p>${waBtn("Hi Shevs, I have a question")}`)}
 function openContact(){openInfo("Contact us",`<p>We're fastest to reach on WhatsApp.</p><p><b>WhatsApp / call:</b> ${esc(waShow())}<br><b>Hours:</b> Mon–Sat, 8am–6pm EAT</p>${waBtn("Hi Shevs, I have a question")}`)}
-function openDelivery(){openInfo("Delivery info",`<p>We deliver countrywide.</p><ul><li>Nairobi: 1–2 working days</li><li>Major towns: 2–4 working days</li><li>Rest of Kenya: 3–5 working days</li></ul><p>${free()?`Orders above ${kes(free())} ship free. Below that, delivery is ${kes(fee())}.`:`Delivery is ${kes(fee())}.`} You see the exact amount at checkout before you send your order.</p>`)}
+function openDelivery(){const zs=ZONES.filter(z=>z.areas.length||z.courier);
+ const rows=zs.length?`<ul>${zs.map(z=>z.courier?`<li><b>${esc(z.name.replace(/^Zone \d+ · /,""))}</b>: courier charge quoted for your town${z.eta?` · ${esc(z.eta)}`:""}</li>`:`<li><b>${esc(z.name.replace(/^Zone \d+ · /,""))}</b>: ${kes(z.fee)}${z.freeOver?` (free over ${kes(z.freeOver)})`:""}${z.eta?` · ${esc(z.eta)}`:""}</li>`).join("")}</ul><p>Pick your area at checkout to see the exact amount before you send your order.</p>`
+ :`<ul><li>Nairobi: 1–2 working days</li><li>Major towns: 2–4 working days</li><li>Rest of Kenya: 3–5 working days</li></ul><p>${free()?`Orders above ${kes(free())} ship free. Below that, delivery is ${kes(fee())}.`:`Delivery is ${kes(fee())}.`} You see the exact amount at checkout before you send your order.</p>`;
+ openInfo("Delivery info",`<p>We deliver countrywide.</p>${rows}`)}
 function openReturns(){openInfo("Returns",`<p>Not happy with something? You can return it within <b>7 days</b> of delivery.</p><ul><li>Item must be unused and in its original packaging</li><li>Faulty or wrong items: we cover return delivery and refund in full</li><li>Change-of-mind returns: return delivery is on the buyer</li></ul><p>To start a return, message us on WhatsApp with your order number.</p>${waBtn("Hi Shevs, I'd like to return an order")}`)}
 function openTerms(){openInfo("Terms &amp; privacy",`<p>By ordering from Shevs you agree to pay for what you order and to give accurate delivery details. Prices are in Kenyan Shillings and may change without notice.</p><p>We only use your contact details to process and deliver your order. We don't sell or share your information.</p>`)}
 function openMpesa(){openInfo("Paying with M-Pesa",`<p>Nothing is charged on this website. Once you send your order, we confirm it on WhatsApp and share our M-Pesa payment details there.</p><p>You can also choose cash on delivery.</p>`)}
@@ -872,8 +875,7 @@ const key=(it.variant_id||it.color||needs(b))?(it.variant_id&&!b.vs.some(v=>v.id
 if(!x||x.st<=0){skipped.push(it.name_snapshot);continue}const q=Math.min(it.qty,x.st);cart[key]=Math.min(x.st,(cart[key]||0)+q);added+=q}
 syncCart();if(!added){toast("Those items aren't available right now");return}
 toast(skipped.length?`Added to cart · ${skipped.length} item${skipped.length>1?"s":""} unavailable`:"Added to your cart",{label:"View cart",fn:"panel('cart')"})}
-function reviewFrom(code){const o=(ACC.orders||[]).find(x=>x.order_code===code);const it=o&&o.items.find(i=>i.product_id&&G(i.product_id));if(!it){toast("That product isn't in the shop any more");return}
-window._revOpen=true;openDetail(it.product_id)}
+function reviewFrom(code){openReview(null,code)}
 function accDetails(){const u=ACC.user;$("accPane").innerHTML=`<form class="af acf" id="profF" onsubmit="saveProfile(event)" novalidate><div class="fld"><label for="pfn">Full name</label><input id="pfn" value="${esc(u.name)}" autocomplete="name"></div>${u.phone?`<div class="fld"><label>Phone</label><input value="${esc(ph0(u))}" disabled><small>Your phone number is your sign-in. To change it, message us on WhatsApp.</small></div>`:`<div class="fld"><label for="pfp">Phone number</label><input id="pfp" type="tel" placeholder="07XX XXX XXX" autocomplete="tel"><small>Add it so we can match your orders and reach you about deliveries.</small></div>`}<div class="fld"><label for="pfe">Email</label><input id="pfe" type="email" value="${esc(u.email||"")}" autocomplete="email"></div><div class="frow"><div class="fld"><label for="pfc">County</label><select id="pfc"><option value="">Select county</option>${["Nairobi","Mombasa","Kisumu","Nakuru","Uasin Gishu","Kiambu","Machakos","Other"].map(c=>`<option ${u.county===c?"selected":""}>${c}</option>`).join("")}</select></div><div class="fld"><label for="pfa">Delivery address</label><input id="pfa" value="${esc(u.address||"")}" autocomplete="street-address"></div></div><button class="btn" type="submit">Save details</button><p class="note" id="pfm" aria-live="polite"></p></form>
 <form class="af acf" id="pwF" onsubmit="savePassword(event)" novalidate><h2 style="font-size:18px">${u.hasPassword?"Change password":"Set a password"}</h2>${u.hasPassword?`<div class="fld"><label for="pwc">Current password</label><input id="pwc" type="password" autocomplete="current-password"></div>`:`<p class="note">You signed up with Google. A password is optional — it lets you also sign in with your phone number.</p>`}<div class="fld"><label for="pwn">New password <small>(at least 8 characters)</small></label><input id="pwn" type="password" autocomplete="new-password"></div><button class="btn sec" type="submit">${u.hasPassword?"Change password":"Set password"}</button><p class="note" id="pwm" aria-live="polite"></p></form>`}
 async function saveProfile(e){e.preventDefault();const m=$("pfm"),n=$("pfn").value.trim(),em=$("pfe").value.trim(),ph=$("pfp")?cleanPhone($("pfp").value):"";if(ph&&!PHONE_OK(ph)){m.textContent="Enter a valid phone number, e.g. 07XXXXXXXX.";return}
@@ -938,30 +940,77 @@ const stars=n=>"★★★★★".slice(0,Math.round(n))+"☆☆☆☆☆".slice(
 async function loadReviews(id){const box=$("revs");if(!box)return;
 let list=[];try{list=(await apiGet("/api/products/"+id+"/reviews")).reviews||[]}catch{}
 if($("revs")!==box)return;
-box.innerHTML=`<div class="sh"><div><h2>Customer reviews</h2><p>${list.length?`${list.length} verified buyer${list.length===1?"":"s"}`:"No reviews yet"}</p></div><button class="see" type="button" onclick="$('revForm').hidden=!$('revForm').hidden">Write a review</button></div>
-<form id="revForm" class="rf" hidden onsubmit="sendReview(event,${id})"><p class="note">Only customers who received this product can review it. Use the order number and phone you ordered with.</p><div class="frow"><input id="rvo" required placeholder="Order number (SHV-…)" aria-label="Order number" autocomplete="off"><input id="rvp" required type="tel" placeholder="Phone number" aria-label="Phone number" autocomplete="tel"></div><div class="frow"><input id="rvn" required placeholder="Your name" aria-label="Your name" autocomplete="name"><select id="rvr" aria-label="Rating"><option value="5">★★★★★ Excellent</option><option value="4">★★★★ Good</option><option value="3">★★★ Okay</option><option value="2">★★ Poor</option><option value="1">★ Bad</option></select></div><textarea id="rvc" maxlength="1000" placeholder="What did you think? (optional)" aria-label="Your review"></textarea><button class="btn" type="submit">Send review</button><small id="rvMsg" aria-live="polite"></small></form>
-${ACC.user?`<p class="note">Signed in as ${esc(ACC.user.name)} — we'll fill in your order details when you have a delivered order with this product.</p>`:""}${list.map(r=>`<article class="rv"><div class="rvh"><span class="stars" aria-label="${r.rating} out of 5">${stars(r.rating)}</span><b>${esc(r.name)}</b><small>Verified buyer · ${new Date(r.created_at).toLocaleDateString("en-KE",{day:"numeric",month:"short",year:"numeric"})}</small></div>${r.comment?`<p>${esc(r.comment)}</p>`:""}</article>`).join("")}`;prefillReview(id)}
-async function prefillReview(id){if(!ACC.user)return;
-if(!ACC.orders){const r=await acct("GET","/api/account/orders");if(r.ok)ACC.orders=r.data.orders}
-const o=(ACC.orders||[]).find(x=>x.status==="delivered"&&x.items.some(i=>i.product_id===id));if(!$("rvo"))return;
-if(o){$("rvo").value=o.order_code;$("rvp").value=ph0(ACC.user);$("rvn").value=ACC.user.name}
-else $("rvn").value=ACC.user.name;
-if(window._revOpen){window._revOpen=false;$("revForm").hidden=false;$("revs").scrollIntoView({behavior:"smooth",block:"start"})}}
-async function sendReview(e,id){e.preventDefault();const m=$("rvMsg"),btn=e.target.querySelector("button[type=submit]");m.textContent="Sending…";btn.disabled=true;
-const r=await apiPost("/api/products/"+id+"/reviews",{orderCode:$("rvo").value.trim().toUpperCase(),phone:$("rvp").value.replace(/[\s-]/g,""),name:$("rvn").value.trim(),rating:+$("rvr").value,comment:$("rvc").value.trim()});
-btn.disabled=false;m.textContent=r===null?"We couldn't reach the shop. Try again.":r.ok?r.data.message:r.error;if(r&&r.ok)e.target.reset()}
+box.innerHTML=`<div class="sh"><div><h2>Customer reviews</h2><p>${list.length?`${list.length} verified buyer${list.length===1?"":"s"}`:"No reviews yet"}</p></div><button class="see" type="button" onclick="openReview(${id})">Write a review</button></div>
+
+${list.map(r=>`<article class="rv"><div class="rvh"><span class="stars" aria-label="${r.rating} out of 5">${stars(r.rating)}</span><b>${esc(r.name)}</b><small>Verified buyer · ${new Date(r.created_at).toLocaleDateString("en-KE",{day:"numeric",month:"short",year:"numeric"})}</small></div>${r.comment?`<p>${esc(r.comment)}</p>`:""}</article>`).join("")}`;}
+/* ---- write a review: pick your order, then the item ---- */
+let RV={pid:null,orders:null,order:null,item:null,rating:5,guest:null,msg:""};
+const rvDate=d=>new Date(d).toLocaleDateString("en-KE",{day:"numeric",month:"short",year:"numeric"});
+async function openReview(pid,code){
+ RV={pid:pid||null,orders:null,order:null,item:null,rating:5,guest:null,msg:"",code:code||null};
+ openInfo("Write a review",`<p class="muted">Loading…</p>`);
+ if(ACC.user){const r=await acct("GET","/api/account/reviewable");RV.orders=r.ok?r.data.orders:[];
+  let list=RV.orders;if(RV.pid)list=list.filter(o=>o.items.some(i=>i.productId===RV.pid&&!i.reviewed));
+  if(RV.code){const o=RV.orders.find(x=>x.orderCode===RV.code);if(o)list=[o]}
+  if(list.length===1)rvOrder(list[0].orderCode);else rvDraw()}
+ else rvDraw()}
+function rvOrder(code){RV.order=RV.orders.find(o=>o.orderCode===code);const un=RV.order.items.filter(i=>!i.reviewed);
+ RV.item=null;const want=RV.pid&&un.find(i=>i.productId===RV.pid);if(want)RV.item=want;else if(un.length===1)RV.item=un[0];rvDraw()}
+function rvBack(){if(RV.item&&RV.order&&RV.order.items.filter(i=>!i.reviewed).length>1&&!RV.pid){RV.item=null}else if(RV.guest){RV.guest=null;RV.order=null;RV.item=null}else{RV.order=null;RV.item=null}RV.msg="";rvDraw()}
+function rvDraw(){const b=$("infoBody");if(!b)return;
+ const thumb=i=>i.imageUrl&&safeUrl(i.imageUrl)?`<img src="${esc(safeUrl(i.imageUrl))}" alt="" referrerpolicy="no-referrer">`:`<span class="em">${esc(i.emoji||"🛍️")}</span>`;
+ let h="";
+ if(RV.item){const o=RV.order;
+  h=`<button class="see" type="button" onclick="rvBack()">← Back</button><p class="muted" style="margin:8px 0">Order <b>${esc(o.orderCode)}</b></p><div class="rvpick"><div class="it" style="padding:4px 0">${thumb(RV.item)}<b>${esc(RV.item.name)}</b></div></div>
+  <form onsubmit="rvSend(event)" class="rf" novalidate>${ACC.user?"":`<input id="rvn" required maxlength="60" placeholder="Your name" aria-label="Your name" value="${esc(RV.guest&&RV.guest.name||"")}" autocomplete="name">`}
+  <div class="rvstars" role="radiogroup" aria-label="Rating">${[1,2,3,4,5].map(n=>`<button type="button" role="radio" aria-checked="${RV.rating>=n}" class="${RV.rating>=n?"on":""}" aria-label="${n} star${n>1?"s":""}" onclick="RV.rating=${n};rvStars()">★</button>`).join("")}</div>
+  <textarea id="rvc" maxlength="1000" placeholder="What did you think? (optional)" aria-label="Your review"></textarea><button class="btn" type="submit">Send review</button><small id="rvMsg" aria-live="polite">${esc(RV.msg)}</small></form>`}
+ else if(RV.order){const o=RV.order;
+  h=`${ACC.user&&!RV.pid&&RV.orders.length>1||RV.guest?`<button class="see" type="button" onclick="rvBack()">← Back</button>`:""}<p style="margin:8px 0"><b>Which item from ${esc(o.orderCode)}?</b></p><div class="rvpick">${o.items.map(i=>`<button type="button" ${i.reviewed?"disabled":""} onclick="rvItem(${i.productId})"><span class="it">${thumb(i)}<span>${esc(i.name)}</span></span><small>${i.reviewed?"Reviewed ✓":"Select"}</small></button>`).join("")}</div>${o.items.every(i=>i.reviewed)?`<p class="note">You've reviewed everything in this order. Thank you!</p>`:""}`}
+ else if(ACC.user){const list=(RV.orders||[]).filter(o=>!RV.pid||o.items.some(i=>i.productId===RV.pid));
+  h=list.length?`<p style="margin:0 0 6px"><b>Which order?</b></p><p class="muted" style="margin:0">Delivered orders on your account.</p><div class="rvpick">${list.map(o=>`<button type="button" onclick="rvOrder('${esc(o.orderCode)}')"><span><b>${esc(o.orderCode)}</b><br><small>${rvDate(o.createdAt)} · ${o.items.map(i=>esc(i.name)).slice(0,2).join(", ")}${o.items.length>2?" +"+(o.items.length-2)+" more":""}</small></span><small>${o.items.every(i=>i.reviewed)?"Reviewed ✓":"Select"}</small></button>`).join("")}</div>`
+   :`<p class="note">You can review an item once your order has been delivered. When it has, it will show up here.</p><p class="note">Ordered before you signed up? Add that order from <b>My orders</b> on your account, or enter its number below.</p>${rvLookupForm()}`}
+ else h=`<p class="muted">Only customers who received an item can review it. Enter your order number and the phone you ordered with, and we'll show what you bought.</p>${rvLookupForm()}<p class="note" style="margin-top:12px">Have an account? <button class="see" type="button" onclick="window._authThen=()=>openReview(${RV.pid||"null"});openAuth('login')">Sign in</button> to see your orders automatically.</p>`;
+ b.innerHTML=h;if(RV.msg&&!RV.item&&$("rvlMsg"))$("rvlMsg").textContent=RV.msg}
+function rvLookupForm(){return `<form onsubmit="rvLookup(event)" class="rf" novalidate><input id="rvo" required placeholder="Order number (SHV-…)" aria-label="Order number" autocomplete="off"><input id="rvp" required type="tel" placeholder="Phone number" aria-label="Phone number" autocomplete="tel"><button class="btn" type="submit">Find my order</button><small id="rvlMsg" aria-live="polite"></small></form>`}
+function rvStars(){document.querySelectorAll(".rvstars button").forEach((b,i)=>{b.classList.toggle("on",RV.rating>i);b.setAttribute("aria-checked",RV.rating>i)})}
+function rvItem(pid){RV.item=RV.order.items.find(i=>i.productId===pid);RV.msg="";rvDraw()}
+async function rvLookup(e){e.preventDefault();const m=$("rvlMsg"),btn=e.target.querySelector("button[type=submit]");m.textContent="Looking…";btn.disabled=true;
+ const code=$("rvo").value.trim().toUpperCase(),phone=$("rvp").value.replace(/[\s-]/g,"");
+ const r=await apiPost("/api/products/review-lookup",{orderCode:code,phone});btn.disabled=false;
+ if(r===null){m.textContent="We couldn't reach the shop. Try again.";return}
+ if(!r.ok){m.textContent=r.error;return}
+ RV.guest={code,phone,name:r.data.name};RV.order={orderCode:r.data.orderCode,items:r.data.items};RV.orders=[RV.order];
+ const un=RV.order.items.filter(i=>!i.reviewed),want=RV.pid&&un.find(i=>i.productId===RV.pid);RV.item=want||(un.length===1?un[0]:null);rvDraw()}
+async function rvSend(e){e.preventDefault();const m=$("rvMsg"),btn=e.target.querySelector("button[type=submit]");
+ const comment=$("rvc").value.trim();let r;m.textContent="Sending…";btn.disabled=true;
+ if(ACC.user)r=await acct("POST","/api/account/reviews",{orderCode:RV.order.orderCode,productId:RV.item.productId,rating:RV.rating,comment});
+ else{const name=$("rvn").value.trim();if(name.length<2){m.textContent="Enter your name.";btn.disabled=false;return}
+  const x=await apiPost("/api/products/"+RV.item.productId+"/reviews",{orderCode:RV.guest.code,phone:RV.guest.phone,name,rating:RV.rating,comment});r=x===null?null:x}
+ btn.disabled=false;if(r===null||(r.ok===undefined)){m.textContent="We couldn't reach the shop. Try again.";return}
+ if(!r.ok){m.textContent=r.error;return}
+ RV.item.reviewed=true;const left=RV.order.items.filter(i=>!i.reviewed);
+ $("infoBody").innerHTML=`<div class="conf" style="text-align:left"><h3>Thank you! ⭐</h3><p>${esc(r.data.message||"Your review will appear once the shop approves it.")}</p>${left.length?`<button class="btn" type="button" onclick="RV.item=null;rvDraw()">Review another item from this order</button>`:""}<button class="see" type="button" onclick="panel(null)">Close</button></div>`}
 function openWishlist(){if(openP)panel(null);crumbs("crumbsW",[{t:"Home",fn:"go(-1)"},{t:"Wishlist"}]);renderWishlist();showView("wishlist")}
 function renderWishlist(){const items=[...fav].map(G).filter(Boolean);
 if(!items.length){$("wgrid").innerHTML=`<div class="empty"><span class="eb" aria-hidden="true">🤍</span><h3>Your wishlist is empty</h3><p>Tap the heart on anything you like and it will be saved here.</p><button class="btn" type="button" onclick="go(-1)">Browse products</button></div>`;return}
 $("wgrid").innerHTML=items.map(card).join("")}
 
 let ckDiscount=0,ckCode="";
+let ZONES=[];
+const COUNTIES=["Nairobi","Kiambu","Machakos","Kajiado","Murang'a","Nakuru","Nyeri","Kirinyaga","Embu","Meru","Mombasa","Kisumu","Uasin Gishu","Kakamega","Nyandarua","Laikipia","Kericho","Bomet","Narok","Kilifi","Kwale","Garissa","Taita Taveta","Makueni","Kitui","Tharaka Nithi","Bungoma","Busia","Siaya","Homa Bay","Migori","Kisii","Nyamira","Vihiga","Nandi","Trans Nzoia","Baringo","Elgeyo Marakwet","West Pokot","Turkana","Samburu","Isiolo","Marsabit","Mandera","Wajir","Lamu","Tana River","Other"];
+// What the customer picked for delivery: {kind:"area",zone,area} | {kind:"other",zone} | null
+const ckPick=()=>{const el=$("cka2");if(!el||!el.value)return null;const[k,id]=el.value.split(":");
+ if(k==="a"){for(const z of ZONES){const a=z.areas.find(x=>x.id===+id);if(a)return{kind:"area",zone:z,area:a}}return null}
+ const z=ZONES.find(x=>x.id===+id);return z?{kind:"other",zone:z}:null};
 function openCheckout(){if(!cartIds().length)return;if(openP)panel(null);
 ckDiscount=0;ckCode="";
 crumbs("crumbsK",[{t:"Home",fn:"go(-1)"},{t:"Cart",fn:"panel('cart')"},{t:"Checkout"}]);
 renderCheckout();showView("checkout")}
 const ckSubtotal=()=>cartIds().reduce((s,id)=>s+line(id),0);
-const ckShip=()=>free()&&ckSubtotal()>=free()?0:fee();
+const ckShip=()=>{if(!ZONES.length)return free()&&ckSubtotal()>=free()?0:fee();const p=ckPick();if(!p||p.kind==="other"||p.zone.courier)return 0;
+ const fo=p.zone.freeOver;return fo>0&&ckSubtotal()>=fo?0:p.zone.fee};
+const ckPending=()=>{if(!ZONES.length)return false;const p=ckPick();return !!p&&(p.kind==="other"||p.zone.courier)};
 const ckTotal=()=>Math.max(0,ckSubtotal()+ckShip()-ckDiscount);
 async function applyCoupon(){const v=$("ckq").value.trim().toUpperCase(),msg=$("ckqMsg");
 if(!v){ckDiscount=0;ckCode="";msg.textContent="";updateCkTotals();return}
@@ -973,32 +1022,40 @@ updateCkTotals();return}
 if(res&&!res.ok){ckDiscount=0;ckCode="";msg.textContent=res.error;msg.style.color="var(--pink)";updateCkTotals();return}
 ckDiscount=0;ckCode="";msg.textContent="We couldn't check that code right now. Try again.";msg.style.color="var(--pink)"
 updateCkTotals()}
-function updateCkTotals(){$("ckTotals").innerHTML=`<div class="oi"><span>Subtotal</span><span>${kes(ckSubtotal())}</span></div>${ckDiscount?`<div class="oi"><span>Coupon (${esc(ckCode)})</span><span>−${kes(ckDiscount)}</span></div>`:""}<div class="oi"><span>Delivery</span><span>${ckShip()?kes(ckShip()):"Free"}</span></div><div class="oi tot"><span>Total</span><span>${kes(ckTotal())}</span></div>`}
+function updateCkTotals(){const pend=ckPending(),none=ZONES.length&&!ckPick();$("ckTotals").innerHTML=`<div class="oi"><span>Subtotal</span><span>${kes(ckSubtotal())}</span></div>${ckDiscount?`<div class="oi"><span>Coupon (${esc(ckCode)})</span><span>−${kes(ckDiscount)}</span></div>`:""}<div class="oi"><span>Delivery</span><span>${none?"Choose your area":pend?"We'll confirm on WhatsApp":ckShip()?kes(ckShip()):"Free"}</span></div><div class="oi tot"><span>Total${pend||none?" (before delivery)":""}</span><span>${kes(ckTotal())}</span></div>${pend?`<p class="note" style="margin-top:8px">Courier charges for far-away places depend on your town. We'll agree the amount with you on WhatsApp before dispatch.</p>`:""}`}
+function areaFields(){
+ if(!ZONES.length)return `<div class="fld"><label for="ckc">County</label><select id="ckc" required><option value="">Select county</option>${["Nairobi","Mombasa","Kisumu","Nakuru","Uasin Gishu","Kiambu","Machakos","Other"].map(c=>`<option>${c}</option>`).join("")}</select></div>`;
+ const fixed=ZONES.filter(z=>!z.courier&&z.areas.length),cour=ZONES.filter(z=>z.courier);
+ return `<div class="fld"><label for="cka2">Delivery area</label><select id="cka2" required onchange="areaChanged()"><option value="">Select your area</option>${fixed.map(z=>`<optgroup label="${esc(z.name)} — ${kes(z.fee)}">${z.areas.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(a=>`<option value="a:${a.id}">${esc(a.name)}</option>`).join("")}</optgroup>`).join("")}${cour.map(z=>`<option value="z:${z.id}">Somewhere else (courier charges apply)</option>`).join("")}</select></div><div id="otherBox" hidden><div class="frow"><div class="fld"><label for="ckc">County</label><select id="ckc"><option value="">Select county</option>${COUNTIES.map(c=>`<option>${esc(c)}</option>`).join("")}</select></div><div class="fld"><label for="ckt">Town</label><input id="ckt" maxlength="80" placeholder="e.g. Meru Town"></div></div></div>`}
+function areaChanged(){const p=ckPick();$("otherBox").hidden=!(p&&(p.kind==="other"||p.zone.courier));updateCkTotals()}
 function renderCheckout(){const ids=cartIds();
-$("checkoutBody").innerHTML=`<div class="ckwrap"><form id="ckform" novalidate><h1 style="font-size:30px;margin-bottom:18px">Delivery details</h1><div class="fld"><label for="ckn">Full name</label><input id="ckn" required autocomplete="name"></div><div class="fld"><label for="ckp">Phone number</label><input id="ckp" type="tel" required placeholder="07XX XXX XXX" autocomplete="tel"></div><div class="fld"><label for="cke">Email <small style="color:var(--mute)">(optional — for your receipt)</small></label><input id="cke" type="email" autocomplete="email" placeholder="you@example.com"></div><div class="fld"><label for="ckc">County</label><select id="ckc" required><option value="">Select county</option>${["Nairobi","Mombasa","Kisumu","Nakuru","Uasin Gishu","Kiambu","Machakos","Other"].map(c=>`<option>${c}</option>`).join("")}</select></div><div class="fld"><label for="cka">Estate / street address</label><input id="cka" required autocomplete="street-address"></div><h2 style="font-size:18px;margin:20px 0 10px">How will you pay?</h2><label class="pm"><input type="radio" name="pay" value="mpesa" checked><span>M-Pesa<small>We share payment details on WhatsApp</small></span></label><label class="pm"><input type="radio" name="pay" value="cod"><span>Cash on delivery<small>Pay the rider when it arrives</small></span></label><button class="btn" type="submit" style="margin-top:18px;width:100%;text-align:center;padding:15px;font-size:16px">Send order</button><p class="note">You won't be charged on this website. We confirm your order on WhatsApp first.</p></form><div class="osum"><h2 style="font-size:19px;margin-bottom:10px">Order summary</h2>${ids.map(id=>`<div class="oi"><span>${cart[id]} × ${esc(lineName(id))}</span><span>${kes(line(id))}</span></div>`).join("")}<div class="fld" style="margin:14px 0"><label for="ckq">Coupon code</label><div style="display:flex;gap:8px"><input id="ckq" placeholder="Enter code" style="flex:1"><button type="button" class="see" onclick="applyCoupon()">Apply</button></div><div id="ckqMsg" class="note" aria-live="polite" style="margin-top:4px"></div></div><div id="ckTotals"></div></div></div>`;
-if(ACC.user){const u=ACC.user;$("ckn").value=u.name;$("ckp").value=ph0(u);if(u.email)$("cke").value=u.email;if(u.county)$("ckc").value=u.county;if(u.address)$("cka").value=u.address}
+$("checkoutBody").innerHTML=`<div class="ckwrap"><form id="ckform" novalidate><h1 style="font-size:30px;margin-bottom:18px">Delivery details</h1><div class="fld"><label for="ckn">Full name</label><input id="ckn" required autocomplete="name"></div><div class="fld"><label for="ckp">Phone number</label><input id="ckp" type="tel" required placeholder="07XX XXX XXX" autocomplete="tel"></div><div class="fld"><label for="cke">Email <small style="color:var(--mute)">(optional — for your receipt)</small></label><input id="cke" type="email" autocomplete="email" placeholder="you@example.com"></div>${areaFields()}<div class="fld"><label for="cka">Estate / street address</label><input id="cka" required autocomplete="street-address"></div><h2 style="font-size:18px;margin:20px 0 10px">How will you pay?</h2><label class="pm"><input type="radio" name="pay" value="mpesa" checked><span>M-Pesa<small>We share payment details on WhatsApp</small></span></label><label class="pm"><input type="radio" name="pay" value="cod"><span>Cash on delivery<small>Pay the rider when it arrives</small></span></label><button class="btn" type="submit" style="margin-top:18px;width:100%;text-align:center;padding:15px;font-size:16px">Send order</button><p class="note">You won't be charged on this website. We confirm your order on WhatsApp first.</p></form><div class="osum"><h2 style="font-size:19px;margin-bottom:10px">Order summary</h2>${ids.map(id=>`<div class="oi"><span>${cart[id]} × ${esc(lineName(id))}</span><span>${kes(line(id))}</span></div>`).join("")}<div class="fld" style="margin:14px 0"><label for="ckq">Coupon code</label><div style="display:flex;gap:8px"><input id="ckq" placeholder="Enter code" style="flex:1"><button type="button" class="see" onclick="applyCoupon()">Apply</button></div><div id="ckqMsg" class="note" aria-live="polite" style="margin-top:4px"></div></div><div id="ckTotals"></div></div></div>`;
+if(ACC.user){const u=ACC.user;$("ckn").value=u.name;$("ckp").value=ph0(u);if(u.email)$("cke").value=u.email;if(u.county&&$("ckc")&&!ZONES.length)$("ckc").value=u.county;if(u.address)$("cka").value=u.address}
 else{$("ckform").insertAdjacentHTML("afterbegin",`<p class="acctnudge">Have an account? <button class="see" type="button" onclick="window._authThen=()=>renderCheckout();openAuth('login')">Sign in</button> to fill this in automatically.</p>`)}
+try{const sv=localStorage.getItem("shevs_area");if(sv&&$("cka2")&&[...$("cka2").options].some(o=>o.value===sv))$("cka2").value=sv}catch{}
 updateCkTotals();
 $("ckform").onsubmit=async e=>{e.preventDefault();
 const btn=$("ckform").querySelector('button[type="submit"]'),label=btn.textContent;
-const email=$("cke").value.trim(),name=$("ckn").value.trim(),phone=$("ckp").value.replace(/[\s-]/g,""),county=$("ckc").value,address=$("cka").value.trim();
+const email=$("cke").value.trim(),name=$("ckn").value.trim(),phone=$("ckp").value.replace(/[\s-]/g,""),pick=ckPick();let county=$("ckc")?$("ckc").value:"";const address=$("cka").value.trim(),town=$("ckt")?$("ckt").value.trim():"";
 if(!name){toast("Please enter your name");$("ckn").focus();return}
 if(!/^(?:\+254|254|0)[17]\d{8}$/.test(phone)){toast("Enter a valid phone number, e.g. 07XXXXXXXX");$("ckp").focus();return}
 if(email&&!/^\S+@\S+\.\S+$/.test(email)){toast("That email address doesn't look right");$("cke").focus();return}
-if(!county){toast("Please select a county");$("ckc").focus();return}
+if(ZONES.length){if(!pick){toast("Please select your delivery area");$("cka2").focus();return}
+ if(pick.kind==="area")county=pick.area.county;else{if(!county){toast("Please select your county");$("ckc").focus();return}if(town.length<2){toast("Please enter your town");$("ckt").focus();return}}}
+else if(!county){toast("Please select a county");$("ckc").focus();return}
 if(!address){toast("Please enter your delivery address");$("cka").focus();return}
 btn.disabled=true;btn.textContent="Sending…";
 window._guest={name,phone,email,claim:null};
-const payload={customerName:name,phone,customerEmail:email||undefined,county,address,paymentMethod:document.querySelector('input[name="pay"]:checked').value,couponCode:ckDiscount?ckCode:null,items:cartIds().map(id=>{const x=K(id);return{productId:x.id,qty:cart[id],variantId:x.vid||undefined,color:x.col||undefined}})};
+const payload={customerName:name,phone,customerEmail:email||undefined,county,address,areaId:pick&&pick.kind==='area'?pick.area.id:undefined,zoneId:pick&&pick.kind==='other'?pick.zone.id:undefined,town:pick&&pick.kind==='other'?town:undefined,paymentMethod:document.querySelector('input[name="pay"]:checked').value,couponCode:ckDiscount?ckCode:null,items:cartIds().map(id=>{const x=K(id);return{productId:x.id,qty:cart[id],variantId:x.vid||undefined,color:x.col||undefined}})};
 const res=await apiPost("/api/orders",payload);
 if(res===null){btn.disabled=false;btn.textContent=label;toast("We couldn't reach the shop. Check your connection and try again.");return}
-if(res.ok){window._guest.claim={orderCode:res.data.orderCode,phone};placeOrder(res.data.total,res.data.orderCode,res.data.whatsappUrl,!!email);return}
+if(res.ok){window._guest.claim={orderCode:res.data.orderCode,phone};window._pend=!!res.data.deliveryPending;try{if(pick&&pick.kind==="area")localStorage.setItem("shevs_area",$("cka2").value)}catch{}placeOrder(res.data.total,res.data.orderCode,res.data.whatsappUrl,!!email);return}
 btn.disabled=false;btn.textContent=label;toast(res.error)}}
 function placeOrder(total,orderCode,whatsappUrl,emailed){const oid=orderCode;
 const wa=whatsappUrl||waLink("Hi Shevs, I'd like to confirm order "+oid);
 const d=new Date(Date.now()+3*86400000),eta=d.toLocaleDateString("en-KE",{weekday:"long",day:"numeric",month:"short"});
 cart={};syncCart();
-$("checkoutBody").innerHTML=`<div class="conf"><span class="cb-ic" aria-hidden="true">✅</span><h1>Order ${esc(oid)} is in</h1><p>${kes(total)} · expect delivery around <b>${eta}</b>.</p><ol><li><b>Send it on WhatsApp.</b> Tap the button so we get your order.</li><li><b>We confirm.</b> We reply to check stock and arrange delivery.</li><li><b>You pay.</b> By M-Pesa or cash, as you chose.</li></ol><a class="btn" href="${esc(wa)}" target="_blank" rel="noopener">Send order on WhatsApp</a><br>${emailed?`<p class="note" style="margin-top:12px">A receipt is on its way to your email.</p>`:""}<button class="see" type="button" onclick="openTrack(${JSON.stringify(oid).replace(/"/g,'&quot;')})">Track this order</button> · <button class="see" type="button" onclick="go(-1)">Continue shopping</button>${ACC.user?`<p class="note" style="margin-top:12px">This order is saved in <a href="#" onclick="renderAccount('orders');return false">your account</a>.</p>`:`<div class="acctnudge" style="margin-top:18px"><b>Keep your order history</b><br>Create an account in one step — we'll add this order to it.<br><button class="btn sm" type="button" style="margin-top:8px" onclick="openAuth('register',window._guest)">Create account</button></div>`}</div>`;
+$("checkoutBody").innerHTML=`<div class="conf"><span class="cb-ic" aria-hidden="true">✅</span><h1>Order ${esc(oid)} is in</h1><p>${kes(total)}${window._pend?" before delivery":""} · expect delivery around <b>${eta}</b>.</p>${window._pend?`<p class="note">We'll confirm the courier charge for your area on WhatsApp.</p>`:""}<ol><li><b>Send it on WhatsApp.</b> Tap the button so we get your order.</li><li><b>We confirm.</b> We reply to check stock and arrange delivery.</li><li><b>You pay.</b> By M-Pesa or cash, as you chose.</li></ol><a class="btn" href="${esc(wa)}" target="_blank" rel="noopener">Send order on WhatsApp</a><br>${emailed?`<p class="note" style="margin-top:12px">A receipt is on its way to your email.</p>`:""}<button class="see" type="button" onclick="openTrack(${JSON.stringify(oid).replace(/"/g,'&quot;')})">Track this order</button> · <button class="see" type="button" onclick="go(-1)">Continue shopping</button>${ACC.user?`<p class="note" style="margin-top:12px">This order is saved in <a href="#" onclick="renderAccount('orders');return false">your account</a>.</p>`:`<div class="acctnudge" style="margin-top:18px"><b>Keep your order history</b><br>Create an account in one step — we'll add this order to it.<br><button class="btn sm" type="button" style="margin-top:8px" onclick="openAuth('register',window._guest)">Create account</button></div>`}</div>`;
 loadCatalog(true)}
 
 /* ---------- home rendering ---------- */
@@ -1040,8 +1097,8 @@ function showError(){$("win").hidden=true;$("shelves").innerHTML=`<div class="er
 async function loadCatalog(quiet){
 try{
 if(API_BASE){
-const [s,c]=await Promise.all([apiGet("/api/settings").catch(()=>null),apiCatalog()]);
-if(s)CFG={...DEF,...s};
+const [s,c,dz]=await Promise.all([apiGet("/api/settings").catch(()=>null),apiCatalog(),apiGet("/api/delivery").catch(()=>null)]);
+if(s)CFG={...DEF,...s};ZONES=(dz&&dz.zones)||[];
 setCatalog(c);BANNERS=((await apiGet("/api/banners").catch(()=>null))||{}).banners||[]}
 else throw new Error("API_BASE is not set");
 }catch(e){if(!quiet)showError();return}
